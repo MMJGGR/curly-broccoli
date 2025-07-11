@@ -1,6 +1,6 @@
 from datetime import date
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, constr, Field
+from pydantic import BaseModel, EmailStr, constr, Field, ConfigDict
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -28,16 +28,14 @@ class UserProfileCreate(UserProfileBase):
     pass
 
 class UserProfileOut(UserProfileBase):
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DependentBase(BaseModel):
     name: str
     relation_type: str = Field(..., alias="relationship")
     date_of_birth: date
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 class DependentCreate(DependentBase):
     pass
@@ -45,8 +43,7 @@ class DependentCreate(DependentBase):
 class DependentOut(DependentBase):
     id: str
 
-    class Config(DependentBase.Config):
-        orm_mode = True
+    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
 
 class ProfileOut(UserProfileOut):
     dependents: List[DependentOut] = []

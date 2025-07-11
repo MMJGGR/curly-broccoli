@@ -31,8 +31,9 @@ class UserProfile(Base):
     kra_pin = Column(EncryptedString(20), nullable=False)
     marital_status = Column(Enum("Single", "Married", "Divorced", "Widowed", name="marital_status"))
     employment_status = Column(Enum("Employed", "Self-employed", "Unemployed", "Student", "Retired", name="employment_status"), nullable=False)
-    monthly_income_kes = Column(Numeric(12,2), nullable=False)
-    net_worth_estimate = Column(Numeric(14,2))
+    # Store amounts as strings to preserve decimal precision in SQLite
+    monthly_income_kes = Column(String, nullable=False)
+    net_worth_estimate = Column(String)
     risk_tolerance_score = Column(Integer, nullable=False)
     retirement_age_goal = Column(Integer)
     investment_goals = Column(String)
