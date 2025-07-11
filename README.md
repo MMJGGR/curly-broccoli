@@ -24,7 +24,7 @@ This repository contains a basic setup for a FastAPI API service and a React fro
 
 - **API**
   - Install dependencies: `pip install -r api/requirements.txt` (includes `httpx` for HTTP requests)
-  - Run tests: `pytest`
+  - Run tests from the repository root with `pytest`
   - Lint code: `flake8 api`
 - **Frontend**
   - Install dependencies: `npm install`
