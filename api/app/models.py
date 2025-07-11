@@ -47,7 +47,7 @@ class Dependent(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
-    relationship = Column(Enum("Spouse", "Child", "Parent", "Other", name="relationship"), nullable=False)
+    relation_type = Column(Enum("Spouse", "Child", "Parent", "Other", name="relationship"), nullable=False)
     date_of_birth = Column(String, nullable=False)
 
     user = relationship("User", back_populates="dependents")
