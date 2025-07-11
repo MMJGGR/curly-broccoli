@@ -5,3 +5,8 @@ pytest
 flake8
 opentelemetry-api
 opentelemetry-sdk
+sqlalchemy
+psycopg2-binary
+bcrypt
+PyJWT
+cryptography
