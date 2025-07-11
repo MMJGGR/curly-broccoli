@@ -2,7 +2,13 @@ import logging
 import os
 import uuid
 from fastapi import FastAPI, Request
+from sqlalchemy.orm import Session
+from .database import Base, engine
+from .users import router as users_router
+from .profile import router as profile_router
 from fastapi.responses import JSONResponse
+
+Base.metadata.create_all(bind=engine)
 from pydantic import BaseModel
 from compute.operations import add
 
@@ -47,3 +53,7 @@ class Numbers(BaseModel):
 def add_numbers(nums: Numbers):
     result = add(nums.a, nums.b)
     return {"result": result}
+
+
+app.include_router(users_router)
+app.include_router(profile_router)

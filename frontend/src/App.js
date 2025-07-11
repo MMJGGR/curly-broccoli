@@ -1,7 +1,9 @@
+import Onboarding from './components/Onboarding';
+
 function App() {
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold text-center">Welcome to React + Tailwind</h1>
+    <div className="bg-white min-h-screen p-4">
+      <Onboarding />
     </div>
   );
 }
