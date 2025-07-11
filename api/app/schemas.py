@@ -1,6 +1,6 @@
 from datetime import date
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr, constr
+from pydantic import BaseModel, EmailStr, constr, Field
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -33,15 +33,19 @@ class UserProfileOut(UserProfileBase):
 
 class DependentBase(BaseModel):
     name: str
-    relationship: str
+    relation_type: str = Field(..., alias="relationship")
     date_of_birth: date
+
+    class Config:
+        allow_population_by_field_name = True
 
 class DependentCreate(DependentBase):
     pass
 
 class DependentOut(DependentBase):
     id: str
-    class Config:
+
+    class Config(DependentBase.Config):
         orm_mode = True
 
 class ProfileOut(UserProfileOut):
