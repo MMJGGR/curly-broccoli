@@ -1,12 +1,16 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "curly-broccoli",
+  "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "api",
+    "frontend",
+    "compute"
+  ],
   "scripts": {
-    "start": "react-scripts start",
-    "dev": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "jest --coverage"
+    "dev": "concurrently \"npm run backend-dev\" \"npm run frontend-dev\"",
+    "backend-dev": "uvicorn api.app.main:app --reload",
+    "frontend-dev": "npm --prefix frontend run dev"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -14,10 +18,11 @@
     "tailwindcss": "^3.3.0"
   },
   "devDependencies": {
+    "concurrently": "^7.6.0",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.0.0",
     "babel-jest": "^29.0.0",
-    "react-scripts": "5.0.1",
-    "vite-jest": "^0.0.1"
+    "vite-jest": "^0.0.1",
+    "react-scripts": "^5.0.1"
   }
 }
