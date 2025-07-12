@@ -30,12 +30,48 @@ def test_add_numbers():
 
 
 def test_register_login_flow():
-    resp = client.post("/auth/register", json={"email": "user@example.com", "password": "strongpassword", "full_name": "User One", "date_of_birth": "1990-01-01", "id_type": "ID", "id_number": "123", "kra_pin": "A", "marital_status": "Single", "employment_status": "Employed", "monthly_income_kes": 100.0, "net_worth_estimate": 1000.0, "risk_tolerance_score": 5})
+    resp = client.post(
+        "/auth/register",
+        json={
+            "email": "user@example.com",
+            "password": "strongpassword",
+            "full_name": "User One",
+            "date_of_birth": "1990-01-01",
+            "id_type": "ID",
+            "id_number": "123",
+            "kra_pin": "A",
+            "marital_status": "Single",
+            "employment_status": "Employed",
+            "monthly_income_kes": 100.0,
+            "net_worth_estimate": 1000.0,
+            "risk_tolerance_score": 5,
+            "retirement_age_goal": 65,
+            "investment_goals": "growth",
+        },
+    )
     assert resp.status_code == 201
     token = resp.json()["access_token"]
 
     # Duplicate registration
-    resp_dup = client.post("/auth/register", json={"email": "user@example.com", "password": "strongpassword", "full_name": "User One", "date_of_birth": "1990-01-01", "id_type": "ID", "id_number": "123", "kra_pin": "A", "marital_status": "Single", "employment_status": "Employed", "monthly_income_kes": 100.0, "net_worth_estimate": 1000.0, "risk_tolerance_score": 5})
+    resp_dup = client.post(
+        "/auth/register",
+        json={
+            "email": "user@example.com",
+            "password": "strongpassword",
+            "full_name": "User One",
+            "date_of_birth": "1990-01-01",
+            "id_type": "ID",
+            "id_number": "123",
+            "kra_pin": "A",
+            "marital_status": "Single",
+            "employment_status": "Employed",
+            "monthly_income_kes": 100.0,
+            "net_worth_estimate": 1000.0,
+            "risk_tolerance_score": 5,
+            "retirement_age_goal": 65,
+            "investment_goals": "growth",
+        },
+    )
     assert resp_dup.status_code == 409
 
     # Login
@@ -51,7 +87,8 @@ def test_register_login_flow():
     # Access profile
     headers = {"Authorization": f"Bearer {token_login}"}
     resp_profile = client.get("/profile", headers=headers)
-    assert resp_profile.status_code == 404  # no profile yet
+    assert resp_profile.status_code == 200
+    assert resp_profile.json().get("risk_score") is not None
 
     # unauthorized
     resp_unauth = client.get("/profile")
