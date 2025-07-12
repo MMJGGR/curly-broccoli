@@ -1,4 +1,5 @@
 import { render, fireEvent, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import Onboarding from './Onboarding';
 
 test('shows next step on Next click', () => {

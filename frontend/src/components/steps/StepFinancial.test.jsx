@@ -1,4 +1,5 @@
 import { render, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import StepFinancial from './StepFinancial';
 
 test('updates annual income', () => {

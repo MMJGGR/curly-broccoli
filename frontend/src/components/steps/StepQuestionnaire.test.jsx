@@ -1,4 +1,5 @@
 import { render, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import StepQuestionnaire from './StepQuestionnaire';
 
 test('updates questionnaire answers', () => {

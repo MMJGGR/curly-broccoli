@@ -1,4 +1,5 @@
 import { render, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import StepAccount from './StepAccount';
 
 test('updates email and password fields', () => {

@@ -1,4 +1,5 @@
 import { render, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import StepPersonal from './StepPersonal';
 
 test('updates first and last name', () => {
