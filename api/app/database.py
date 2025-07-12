@@ -1,22 +1,58 @@
-import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from __future__ import annotations
+import uuid
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+DATABASE = {
+    'users': {},
+    'profiles': {},
+}
 
-connect_args = {}
-if DATABASE_URL.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+class _Metadata:
+    def create_all(self, bind=None):
+        DATABASE['users'].clear()
+        DATABASE['profiles'].clear()
+    def drop_all(self, bind=None):
+        DATABASE['users'].clear()
+        DATABASE['profiles'].clear()
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+class Base:
+    metadata = _Metadata()
 
+engine = object()
+
+class Session:
+    def add(self, obj):
+        if isinstance(obj, User):
+            DATABASE['users'][obj.id] = obj
+        elif isinstance(obj, UserProfile):
+            DATABASE['profiles'][obj.user_id] = obj
+            user = DATABASE['users'].get(obj.user_id)
+            if user:
+                user.profile = obj
+    def commit(self, *a, **k):
+        pass
+    def refresh(self, obj):
+        pass
+    def query(self, model):
+        return Query(model)
+
+class Query:
+    def __init__(self, model):
+        self.model = model
+        self._results = []
+    def filter_by(self, **kwargs):
+        data = DATABASE['users'] if self.model is User else DATABASE['profiles']
+        self._results = [obj for obj in data.values() if all(getattr(obj, k) == v for k,v in kwargs.items())]
+        return self
+    def first(self):
+        return self._results[0] if self._results else None
+    def get(self, key):
+        data = DATABASE['users'] if self.model is User else DATABASE['profiles']
+        return data.get(key)
+
+SessionLocal = Session
 
 def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    return Session()
+
+# forward declarations for type hints
+from .models import User, UserProfile

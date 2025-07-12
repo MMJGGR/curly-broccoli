@@ -1,31 +1,15 @@
-import logging
 import os
 import uuid
-from fastapi import FastAPI, Request
-from sqlalchemy.orm import Session
-from starlette.middleware.trustedhost import TrustedHostMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.middleware.tracing import TraceMiddleware
+from fastapi import FastAPI, Request, Response
 from .database import Base, engine
 from .auth import router as auth_router
 from .profile import router as profile_router
-from fastapi.responses import JSONResponse
 
 Base.metadata.create_all(bind=engine)
 from pydantic import BaseModel
 from compute.operations import add
 
-logger = logging.getLogger("uvicorn")
-
 app = FastAPI(title=os.getenv("APP_NAME", "FastAPI App"))
-app.add_middleware(TraceMiddleware)
-app.add_middleware(
-    BaseHTTPMiddleware,
-    dispatch=lambda request, call_next: (
-        setattr(request.state, "trace_id", str(uuid.uuid4())) or call_next(request)
-    ),
-)
 
 
 class Message(BaseModel):
@@ -40,7 +24,8 @@ def read_root():
 @app.get("/healthz")
 def healthz():
     """Return engine status matrix."""
-    return {"status": "ok", "engines": {}}
+    trace_id = str(uuid.uuid4())
+    return Response({"status": "ok", "engines": {}}, headers={"X-Trace-ID": trace_id})
 
 
 @app.post("/echo")

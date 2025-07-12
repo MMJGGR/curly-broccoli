@@ -1,9 +1,8 @@
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request, Response
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
 import jwt
 
 from .database import get_db
@@ -20,7 +19,9 @@ def calculate_age(dob: date) -> int:
     return (date.today() - dob).days // 365
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(request: Request) -> User:
+    token = oauth2_scheme(request)
+    db = get_db()
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except jwt.PyJWTError:
@@ -32,14 +33,17 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 
 @router.get("/profile", response_model=ProfileOut)
-def read_profile(current: User = Depends(get_current_user)):
+def read_profile(request: Request):
+    current = get_current_user(request)
     if not current.profile:
         raise HTTPException(status_code=404, detail="Profile not found")
-    return ProfileOut.from_orm(current.profile)
+    return Response(ProfileOut.from_orm(current.profile).dict(), status_code=200)
 
 
 @router.put("/profile", response_model=ProfileOut)
-def update_profile(profile_in: ProfileOut, current: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def update_profile(profile_in: ProfileOut, request: Request):
+    current = get_current_user(request)
+    db = get_db()
     profile = current.profile
     if not profile:
         profile = UserProfile(user_id=current.id)
@@ -55,4 +59,4 @@ def update_profile(profile_in: ProfileOut, current: User = Depends(get_current_u
     )
     db.commit()
     db.refresh(profile)
-    return ProfileOut.from_orm(profile)
+    return Response(ProfileOut.from_orm(profile).dict(), status_code=200)

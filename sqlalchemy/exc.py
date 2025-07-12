@@ -1,0 +1,2 @@
+class SAWarning(Warning):
+    pass
