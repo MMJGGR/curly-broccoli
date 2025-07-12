@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "react-scripts start",
+    "dev": "react-scripts start",
     "build": "react-scripts build",
     "test": "jest --coverage"
   },
@@ -16,7 +17,7 @@
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^14.0.0",
     "babel-jest": "^29.0.0",
-    "react-scripts": "^0.0.0",
+    "react-scripts": "5.0.1",
     "vite-jest": "^0.0.1"
   }
 }
