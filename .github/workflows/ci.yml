@@ -42,8 +42,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - name: Install all JS dependencies
-        run: npm ci
+      - name: Install frontend deps only
+        run: npm ci --workspace=frontend
 
       - name: Run frontend tests
         working-directory: frontend
