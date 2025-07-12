@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  api:
+    build: ./api
+    env_file: ./api/.env
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+  frontend:
+    build: ./frontend
+    ports:
+      - '3000:3000'
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: finance_app
+    volumes:
+      - db_data:/var/lib/postgresql/data
+volumes:
+  db_data:
