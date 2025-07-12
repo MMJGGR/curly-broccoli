@@ -22,6 +22,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Create test database
+        run: |
+          until pg_isready -h localhost -U user; do sleep 1; done
+          psql -h localhost -U postgres -c "CREATE DATABASE \"user\";"
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
