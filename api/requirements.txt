@@ -2,6 +2,7 @@ fastapi
 uvicorn[standard]
 python-dotenv
 pytest
+pytest-cov
 flake8
 opentelemetry-api
 opentelemetry-sdk
