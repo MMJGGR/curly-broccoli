@@ -1,4 +1,4 @@
-import OnboardingWizard from './components/OnboardingWizard';
+import OnboardingWizard from "./components/OnboardingWizard";
 
 function App() {
   return (

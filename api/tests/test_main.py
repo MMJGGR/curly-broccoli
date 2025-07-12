@@ -1,4 +1,5 @@
 import os
+
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 
 from fastapi.testclient import TestClient
@@ -9,6 +10,7 @@ Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 client = TestClient(app)
+
 
 def test_read_root():
     response = client.get("/")
@@ -75,13 +77,18 @@ def test_register_login_flow():
     assert resp_dup.status_code == 409
 
     # Login
-    resp_login = client.post("/auth/login", data={"username": "user@example.com", "password": "strongpassword"})
+    resp_login = client.post(
+        "/auth/login",
+        data={"username": "user@example.com", "password": "strongpassword"},
+    )
     assert resp_login.status_code == 200
     token_login = resp_login.json()["access_token"]
     assert token_login
 
     # Wrong password
-    resp_bad = client.post("/auth/login", data={"username": "user@example.com", "password": "wrong"})
+    resp_bad = client.post(
+        "/auth/login", data={"username": "user@example.com", "password": "wrong"}
+    )
     assert resp_bad.status_code == 401
 
     # Access profile
@@ -105,4 +112,3 @@ def test_profile_invalid_token():
     headers = {"Authorization": "Bearer badtoken"}
     resp = client.get("/profile", headers=headers)
     assert resp.status_code == 401
-

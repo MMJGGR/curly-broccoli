@@ -13,6 +13,7 @@ else:
     key = AESGCM.generate_key(bit_length=256)
     os.environ["ENCRYPTION_KEY"] = base64.urlsafe_b64encode(key).decode()
 
+
 class EncryptedString(TypeDecorator):
     impl = String
 

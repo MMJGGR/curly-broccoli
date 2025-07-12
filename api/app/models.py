@@ -1,10 +1,20 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime, Enum, Integer, Numeric, ForeignKey
+from sqlalchemy import (
+    Column,
+    String,
+    Boolean,
+    DateTime,
+    Enum,
+    Integer,
+    Numeric,
+    ForeignKey,
+)
 from .encryption import EncryptedString
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from .database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -29,8 +39,20 @@ class UserProfile(Base):
     id_type = Column(Enum("ID", "Passport", name="id_type"), nullable=False)
     id_number = Column(EncryptedString(64), nullable=False)
     kra_pin = Column(EncryptedString(20), nullable=False)
-    marital_status = Column(Enum("Single", "Married", "Divorced", "Widowed", name="marital_status"))
-    employment_status = Column(Enum("Employed", "Self-employed", "Unemployed", "Student", "Retired", name="employment_status"), nullable=False)
+    marital_status = Column(
+        Enum("Single", "Married", "Divorced", "Widowed", name="marital_status")
+    )
+    employment_status = Column(
+        Enum(
+            "Employed",
+            "Self-employed",
+            "Unemployed",
+            "Student",
+            "Retired",
+            name="employment_status",
+        ),
+        nullable=False,
+    )
     # Store amounts as strings to preserve decimal precision in SQLite
     monthly_income_kes = Column(String, nullable=False)
     net_worth_estimate = Column(String)
@@ -48,7 +70,9 @@ class Dependent(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     name = Column(String(255), nullable=False)
-    relation_type = Column(Enum("Spouse", "Child", "Parent", "Other", name="relationship"), nullable=False)
+    relation_type = Column(
+        Enum("Spouse", "Child", "Parent", "Other", name="relationship"), nullable=False
+    )
     date_of_birth = Column(String, nullable=False)
 
     user = relationship("User", back_populates="dependents")

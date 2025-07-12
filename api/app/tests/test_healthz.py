@@ -1,0 +1,14 @@
+import os
+from fastapi.testclient import TestClient
+from app.main import app, Base, engine
+
+os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+Base.metadata.drop_all(bind=engine)
+Base.metadata.create_all(bind=engine)
+client = TestClient(app)
+
+
+def test_healthz():
+    resp = client.get("/healthz")
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ok", "engines": {}}
