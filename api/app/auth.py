@@ -12,7 +12,7 @@ from compute.risk_engine import compute_risk_score
 router = APIRouter(prefix="/auth")
 
 
-@router.post('/register', response_model=Token, status_code=201)
+@router.post("/register", response_model=Token, status_code=201)
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
     existing = db.query(User).filter_by(email=data.email).first()
     if existing:
@@ -32,7 +32,11 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
         marital_status=data.marital_status,
         employment_status=data.employment_status,
         monthly_income_kes=str(data.monthly_income_kes),
-        net_worth_estimate=str(data.net_worth_estimate) if data.net_worth_estimate is not None else None,
+        net_worth_estimate=(
+            str(data.net_worth_estimate)
+            if data.net_worth_estimate is not None
+            else None
+        ),
         risk_tolerance_score=data.risk_tolerance_score,
         retirement_age_goal=data.retirement_age_goal,
         investment_goals=data.investment_goals,
@@ -40,7 +44,14 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 
     # Compute risk score
     today = date.today()
-    age = today.year - data.date_of_birth.year - ((today.month, today.day) < (data.date_of_birth.month, data.date_of_birth.day))
+    age = (
+        today.year
+        - data.date_of_birth.year
+        - (
+            (today.month, today.day)
+            < (data.date_of_birth.month, data.date_of_birth.day)
+        )
+    )
     profile.risk_score = compute_risk_score(
         age=age,
         income=float(data.monthly_income_kes),
@@ -57,10 +68,14 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     return Token(access_token=token)
 
 
-@router.post('/login', response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@router.post("/login", response_model=Token)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+):
     user = db.query(User).filter_by(email=form_data.username).first()
     if not user or not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+        )
     token = create_access_token(str(user.id))
     return Token(access_token=token)

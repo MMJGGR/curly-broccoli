@@ -1,9 +1,3 @@
-name: CI
-
-on:
-  push:
-  pull_request:
-
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -14,42 +8,46 @@ jobs:
           POSTGRES_USER: user
           POSTGRES_PASSWORD: pass
           POSTGRES_DB: finance_app
-        ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U user"
-          --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-interval 10s --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
+      # Python tests
+      - name: Setup Python
         uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install API dependencies
+        with: python-version: '3.11'
+      - name: Install API deps
         run: |
           cd api
-          python -m pip install --upgrade pip
+          pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
-        - name: Run API tests with coverage
-          run: |
-            pytest --cov-report=xml
-      - name: Enforce API coverage ≥ 90 %
+      - name: Run API tests
         run: |
+          cd api
+          pytest --cov=app --cov=compute --cov-report=xml
+      - name: Enforce API coverage
+        run: |
+          cd api
           coverage report --fail-under=90
 
-      - name: Set up Node.js
+      # Node.js tests
+      - name: Setup Node.js
         uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - name: Install frontend deps only
-        run: npm ci --workspace=frontend
-
-      - name: Run frontend tests
-        working-directory: frontend
-        run: npm test -- --coverage --watchAll=false
-
-      - name: Build Docker images
+        with: node-version: '18'
+      - name: Install Frontend deps
         run: |
-          docker build -t finance-api:pr-${{ github.sha }} -f api/Dockerfile api
-          docker build -t finance-frontend:pr-${{ github.sha }} -f frontend/Dockerfile frontend
+          cd frontend
+          npm ci
+      - name: Run Frontend tests
+        run: |
+          cd frontend
+          npm test -- --coverage
+
+      # Docker build
+      - name: Build API image
+        run: docker build -t finance-api:ci -f api/Dockerfile api
+      - name: Build Frontend image
+        run: docker build -t finance-frontend:ci -f frontend/Dockerfile frontend

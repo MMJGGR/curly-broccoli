@@ -1,6 +1,12 @@
 import jwt
 
-from app.security import hash_password, verify_password, create_access_token, SECRET_KEY, ALGORITHM
+from app.security import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    SECRET_KEY,
+    ALGORITHM,
+)
 
 
 def test_password_hash_and_verify():

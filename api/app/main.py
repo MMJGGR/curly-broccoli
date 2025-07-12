@@ -26,8 +26,10 @@ async def add_trace_id(request: Request, call_next):
     logger.info("%s %s %s", request.method, request.url.path, trace_id)
     return response
 
+
 class Message(BaseModel):
     message: str
+
 
 @app.get("/")
 def read_root():
@@ -38,6 +40,7 @@ def read_root():
 def healthz():
     """Return engine status matrix."""
     return {"status": "ok", "engines": {}}
+
 
 @app.post("/echo")
 def echo(msg: Message):
