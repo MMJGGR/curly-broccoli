@@ -7,7 +7,6 @@ import StepGoals from "./steps/StepGoals";
 import StepQuestionnaire from "./steps/StepQuestionnaire";
 import StepSummary from "./steps/StepSummary";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "";
 
 const steps = [
   { label: "Account", component: StepAccount },
@@ -30,12 +29,16 @@ export default function OnboardingWizard() {
   const prev = () => setCurrent((c) => Math.max(c - 1, 0));
 
   const handleFinish = async () => {
-    const res = await fetch(`${API_BASE}/auth/register`, {
+    const res = await fetch(`${process.env.REACT_APP_API_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Registration failed");
+    if (!res.ok) {
+      const err = await res.json();
+      alert("Registration error: " + err.detail);
+      return;
+    }
     const { access_token } = await res.json();
     localStorage.setItem("jwt", access_token);
     navigate("/dashboard");

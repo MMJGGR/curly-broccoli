@@ -3,6 +3,9 @@ import os
 import uuid
 from fastapi import FastAPI, Request
 from sqlalchemy.orm import Session
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from starlette.middleware.tracing import TraceMiddleware
 from .database import Base, engine
 from .auth import router as auth_router
@@ -17,16 +20,12 @@ logger = logging.getLogger("uvicorn")
 
 app = FastAPI(title=os.getenv("APP_NAME", "FastAPI App"))
 app.add_middleware(TraceMiddleware)
-
-
-@app.middleware("http")
-async def add_trace_id(request: Request, call_next):
-    trace_id = str(uuid.uuid4())
-    request.state.trace_id = trace_id
-    response = await call_next(request)
-    response.headers["X-Trace-ID"] = trace_id
-    logger.info("%s %s %s", request.method, request.url.path, trace_id)
-    return response
+app.add_middleware(
+    BaseHTTPMiddleware,
+    dispatch=lambda request, call_next: (
+        setattr(request.state, "trace_id", str(uuid.uuid4())) or call_next(request)
+    ),
+)
 
 
 class Message(BaseModel):
