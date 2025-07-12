@@ -12,5 +12,15 @@
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "tailwindcss": "^3.3.0"
+  },
+  "jest": {
+    "coverageThreshold": {
+      "global": {
+        "branches": 90,
+        "functions": 90,
+        "lines": 90,
+        "statements": 90
+      }
+    }
   }
 }
