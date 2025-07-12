@@ -18,6 +18,8 @@ class EncryptedString(TypeDecorator):
     def process_bind_param(self, value: Optional[str], dialect):
         if value is None:
             return value
+        if not isinstance(value, str):
+            value = str(value)
         aes = AESGCM(key)
         nonce = os.urandom(12)
         ct = aes.encrypt(nonce, value.encode(), None)
