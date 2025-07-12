@@ -7,7 +7,7 @@ import jwt
 
 from .database import get_db
 from .models import User, UserProfile
-from .schemas import ProfileOut
+from .schemas import ProfileOut, Dependents
 from .security import SECRET_KEY, ALGORITHM
 from compute.risk_engine import compute_risk_score
 
@@ -60,3 +60,51 @@ def update_profile(profile_in: ProfileOut, request: Request):
     db.commit()
     db.refresh(profile)
     return Response(ProfileOut.from_orm(profile).dict(), status_code=200)
+
+
+@router.get("/dependents")
+def get_dependents(request: Request):
+    current = get_current_user(request)
+    if not current.profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    return {"dependents": current.profile.dependents}
+
+
+@router.post("/dependents")
+def set_dependents(data: Dependents, request: Request):
+    current = get_current_user(request)
+    db = get_db()
+    profile = current.profile
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    profile.dependents = data.dependents
+    profile.risk_score = compute_risk_score(
+        age=calculate_age(profile.dob),
+        income=profile.annual_income,
+        dependents=profile.dependents,
+        goals=profile.goals,
+        questionnaire={},
+    )
+    db.commit()
+    db.refresh(profile)
+    return {"dependents": profile.dependents}
+
+
+@router.delete("/dependents")
+def clear_dependents(request: Request):
+    current = get_current_user(request)
+    db = get_db()
+    profile = current.profile
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    profile.dependents = 0
+    profile.risk_score = compute_risk_score(
+        age=calculate_age(profile.dob),
+        income=profile.annual_income,
+        dependents=profile.dependents,
+        goals=profile.goals,
+        questionnaire={},
+    )
+    db.commit()
+    db.refresh(profile)
+    return {"dependents": profile.dependents}
