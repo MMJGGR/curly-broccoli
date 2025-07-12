@@ -1,4 +1,11 @@
 {
   "private": true,
-  "workspaces": ["frontend", "api", "compute"]
+  "workspaces": [
+    "frontend",
+    "api",
+    "compute"
+  ],
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
 }
