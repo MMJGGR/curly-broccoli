@@ -42,6 +42,7 @@ def test_profile_get_and_update():
     resp = client.get("/profile", headers=headers)
     assert resp.status_code == 200
     assert resp.json()["risk_score"] is not None
+    assert 1 <= resp.json()["risk_level"] <= 5
 
     update = {
         "dob": USER_DATA["dob"],
@@ -74,3 +75,11 @@ def test_dependents_crud():
     resp = client.delete("/dependents", headers=headers)
     assert resp.status_code == 200
     assert resp.json()["dependents"] == 0
+
+
+def test_profile_risk_level_field():
+    _, token = register()
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.get("/profile", headers=headers)
+    assert resp.status_code == 200
+    assert 1 <= resp.json()["risk_level"] <= 5

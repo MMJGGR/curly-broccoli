@@ -36,6 +36,7 @@ export default function OnboardingWizard() {
     questionnaire: RISK_QUESTIONS.map(() => 3),
   });
   const [valid, setValid] = useState({});
+  const [profile, setUserProfile] = useState(null);
   const last = steps.length - 1;
 
   const update = (values) => setData((prev) => ({ ...prev, ...values }));
@@ -69,7 +70,12 @@ export default function OnboardingWizard() {
       }
       const { access_token } = await res.json();
       localStorage.setItem("jwt", access_token);
-      navigate("/dashboard");
+      const profileRes = await fetch(
+        `${process.env.REACT_APP_API_URL}/profile`,
+        { headers: { Authorization: `Bearer ${access_token}` } }
+      );
+      const profile = await profileRes.json();
+      setUserProfile(profile);
     } catch (err) {
       console.error("Registration request failed", err);
       alert(
@@ -184,8 +190,21 @@ export default function OnboardingWizard() {
           <div>
             <strong>Qualitative Risk Score:</strong> Will be calculated from your responses and shown on your dashboard.
           </div>
+          {profile && (
+            <div className="mt-4 p-4 bg-amber-50 rounded-lg">
+              <strong>Your Risk Tolerance Level:</strong>
+              <span className="ml-2 text-2xl text-amber-600">
+                {profile.risk_level} / 5
+              </span>
+              <p className="text-sm text-gray-600 mt-1">
+                1 = Very Conservative → 5 = Aggressive
+              </p>
+            </div>
+          )}
           <button
-            onClick={handleFinish}
+            onClick={async () => {
+              await handleFinish();
+            }}
             className="mt-6 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl py-2 px-6"
           >
             Finish & Create Account

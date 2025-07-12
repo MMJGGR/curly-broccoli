@@ -20,4 +20,5 @@ class UserProfile:
     dependents: int = 0
     goals: Dict[str, Any] = field(default_factory=dict)
     risk_score: Optional[float] = None
+    risk_level: int = 0
     user: User | None = None

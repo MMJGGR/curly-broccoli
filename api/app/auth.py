@@ -6,7 +6,7 @@ from .database import get_db
 from .models import User, UserProfile
 from .schemas import RegisterRequest, Token
 from .security import hash_password, verify_password, create_access_token
-from compute.risk_engine import compute_risk_score
+from compute.risk_engine import compute_risk_score, compute_risk_level
 
 # simple age calculator
 calculate_age = lambda dob: (date.today() - dob).days // 365
@@ -57,12 +57,20 @@ def register(data: RegisterRequest):
         time_horizon=horizon,
         questionnaire=data.questionnaire,
     )
+    profile.risk_level = compute_risk_level(profile.risk_score)
     db.add(profile)
     db.commit()
 
     # 6. Return JWT token
     token = create_access_token(str(user.id))
-    return Response(Token(access_token=token).dict(), status_code=201)
+    return Response(
+        {
+            **Token(access_token=token).dict(),
+            "risk_score": profile.risk_score,
+            "risk_level": profile.risk_level,
+        },
+        status_code=201,
+    )
 
 
 @router.post("/login", response_model=Token)
