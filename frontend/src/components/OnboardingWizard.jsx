@@ -43,29 +43,39 @@ export default function OnboardingWizard() {
   const prev = () => setCurrent((c) => Math.max(c - 1, 0));
 
   const handleFinish = async () => {
-    const res = await fetch(`${process.env.REACT_APP_API_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: data.email,
-        password: data.password,
-        dob: data.dob,
-        nationalId: data.nationalId,
-        kra_pin: data.kraPin,
-        annual_income: Number(data.annualIncome),
-        dependents: Number(data.dependents),
-        goals: data.goals,
-        questionnaire: data.questionnaire,
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      alert("Registration error: " + err.detail);
-      return;
+    try {
+      const res = await fetch(
+        `${process.env.REACT_APP_API_URL}/auth/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+            dob: data.dob,
+            nationalId: data.nationalId,
+            kra_pin: data.kraPin,
+            annual_income: Number(data.annualIncome),
+            dependents: Number(data.dependents),
+            goals: data.goals,
+            questionnaire: data.questionnaire,
+          }),
+        },
+      );
+      if (!res.ok) {
+        const err = await res.json();
+        alert("Registration error: " + err.detail);
+        return;
+      }
+      const { access_token } = await res.json();
+      localStorage.setItem("jwt", access_token);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Registration request failed", err);
+      alert(
+        "Unable to complete registration. Please check your connection and try again.",
+      );
     }
-    const { access_token } = await res.json();
-    localStorage.setItem("jwt", access_token);
-    navigate("/dashboard");
   };
 
   const Step = steps[current].component;
