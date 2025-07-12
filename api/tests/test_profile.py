@@ -1,19 +1,27 @@
 import os
+import uuid
+
+import pytest
 from fastapi.testclient import TestClient
 from app.main import app, Base, engine
 
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
 
 client = TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def reset_db():
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
+
 def register_and_login():
+    email = f"{uuid.uuid4()}@example.com"
     client.post(
         "/auth/register",
         json={
-            "email": "dep@example.com",
+            "email": email,
             "password": "strongpassword",
             "full_name": "User Dep",
             "date_of_birth": "1990-01-01",
@@ -30,7 +38,7 @@ def register_and_login():
         },
     )
     resp_login = client.post(
-        "/auth/login", data={"username": "dep@example.com", "password": "strongpassword"}
+        "/auth/login", data={"username": email, "password": "strongpassword"}
     )
     return resp_login.json()["access_token"]
 
