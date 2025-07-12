@@ -28,6 +28,7 @@ class UserProfileCreate(UserProfileBase):
     pass
 
 class UserProfileOut(UserProfileBase):
+    risk_score: Optional[float] = None
     model_config = ConfigDict(from_attributes=True)
 
 class DependentBase(BaseModel):
@@ -47,3 +48,10 @@ class DependentOut(DependentBase):
 
 class ProfileOut(UserProfileOut):
     dependents: List[DependentOut] = []
+
+
+class RegisterRequest(UserProfileCreate):
+    email: EmailStr
+    password: constr(min_length=8)
+    dependents: Optional[int] = 0
+    questionnaire: Optional[dict] = None

@@ -4,7 +4,7 @@ import uuid
 from fastapi import FastAPI, Request
 from sqlalchemy.orm import Session
 from .database import Base, engine
-from .users import router as users_router
+from .auth import router as auth_router
 from .profile import router as profile_router
 from fastapi.responses import JSONResponse
 
@@ -55,5 +55,5 @@ def add_numbers(nums: Numbers):
     return {"result": result}
 
 
-app.include_router(users_router)
+app.include_router(auth_router)
 app.include_router(profile_router)
