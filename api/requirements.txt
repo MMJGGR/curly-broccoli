@@ -11,5 +11,6 @@ bcrypt
 PyJWT
 cryptography
 httpx
+python-multipart
 
 email-validator
