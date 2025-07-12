@@ -42,14 +42,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - name: Install Frontend dependencies
-        run: |
-          cd frontend
-          npm install
-      - name: Run Frontend tests with coverage
-        run: |
-          cd frontend
-          npm test -- --coverage
+      - name: Install all JS dependencies
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test -- --coverage --watchAll=false
 
       - name: Build Docker images
         run: |
