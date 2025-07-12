@@ -94,3 +94,15 @@ def test_register_login_flow():
     resp_unauth = client.get("/profile")
     assert resp_unauth.status_code == 403
 
+
+def test_echo_endpoint():
+    response = client.post("/echo", json={"message": "hi"})
+    assert response.status_code == 200
+    assert response.json() == {"message": "hi"}
+
+
+def test_profile_invalid_token():
+    headers = {"Authorization": "Bearer badtoken"}
+    resp = client.get("/profile", headers=headers)
+    assert resp.status_code == 401
+
