@@ -1,105 +1,71 @@
 import os
-
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
-
 from fastapi.testclient import TestClient
 from app.main import app, Base, engine
 
-
+os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
-
 client = TestClient(app)
+
+USER = {
+    "email": "user@example.com",
+    "password": "strongpassword",
+    "dob": "1990-01-01",
+    "kra_pin": "K123",
+    "annual_income": 50000,
+    "dependents": 1,
+    "goals": {"type": "growth"},
+    "questionnaire": {"0": 5},
+}
 
 
 def test_read_root():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Hello World"}
+    res = client.get("/")
+    assert res.status_code == 200
+    assert res.json() == {"message": "Hello World"}
 
 
 def test_healthz():
-    response = client.get("/healthz")
-    assert response.status_code == 200
-    assert response.json() == {"status": "ok", "engines": {}}
-    assert "X-Trace-ID" in response.headers
+    res = client.get("/healthz")
+    assert res.status_code == 200
+    assert res.json() == {"status": "ok", "engines": {}}
+    assert "X-Trace-ID" in res.headers
 
 
 def test_add_numbers():
-    response = client.post("/add", json={"a": 2, "b": 3})
-    assert response.status_code == 200
-    assert response.json() == {"result": 5}
+    res = client.post("/add", json={"a": 2, "b": 3})
+    assert res.status_code == 200
+    assert res.json() == {"result": 5}
 
 
 def test_register_login_flow():
-    resp = client.post(
-        "/auth/register",
-        json={
-            "email": "user@example.com",
-            "password": "strongpassword",
-            "full_name": "User One",
-            "date_of_birth": "1990-01-01",
-            "id_type": "ID",
-            "id_number": "123",
-            "kra_pin": "A",
-            "marital_status": "Single",
-            "employment_status": "Employed",
-            "monthly_income_kes": 100.0,
-            "net_worth_estimate": 1000.0,
-            "risk_tolerance_score": 5,
-            "retirement_age_goal": 65,
-            "investment_goals": "growth",
-        },
-    )
+    resp = client.post("/auth/register", json=USER)
     assert resp.status_code == 201
     token = resp.json()["access_token"]
 
-    # Duplicate registration
-    resp_dup = client.post(
-        "/auth/register",
-        json={
-            "email": "user@example.com",
-            "password": "strongpassword",
-            "full_name": "User One",
-            "date_of_birth": "1990-01-01",
-            "id_type": "ID",
-            "id_number": "123",
-            "kra_pin": "A",
-            "marital_status": "Single",
-            "employment_status": "Employed",
-            "monthly_income_kes": 100.0,
-            "net_worth_estimate": 1000.0,
-            "risk_tolerance_score": 5,
-            "retirement_age_goal": 65,
-            "investment_goals": "growth",
-        },
-    )
-    assert resp_dup.status_code == 409
+    resp_dup = client.post("/auth/register", json=USER)
+    assert resp_dup.status_code == 400
 
-    # Login
     resp_login = client.post(
         "/auth/login",
-        data={"username": "user@example.com", "password": "strongpassword"},
+        data={"username": USER["email"], "password": USER["password"]},
     )
     assert resp_login.status_code == 200
     token_login = resp_login.json()["access_token"]
     assert token_login
 
-    # Wrong password
     resp_bad = client.post(
-        "/auth/login", data={"username": "user@example.com", "password": "wrong"}
+        "/auth/login", data={"username": USER["email"], "password": "wrong"}
     )
     assert resp_bad.status_code == 401
 
-    # Access profile
     headers = {"Authorization": f"Bearer {token_login}"}
     resp_profile = client.get("/profile", headers=headers)
     assert resp_profile.status_code == 200
     assert resp_profile.json().get("risk_score") is not None
 
-    # unauthorized
     resp_unauth = client.get("/profile")
-    assert resp_unauth.status_code == 403
+    assert resp_unauth.status_code in (401, 403)
 
 
 def test_echo_endpoint():

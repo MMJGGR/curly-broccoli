@@ -7,5 +7,8 @@
   ],
   "devDependencies": {
     "concurrently": "^9.2.0"
+  },
+  "scripts": {
+    "dev": "concurrently \"uvicorn api.app.main:app --app-dir api --reload\" \"npm run start --workspace frontend\""
   }
 }

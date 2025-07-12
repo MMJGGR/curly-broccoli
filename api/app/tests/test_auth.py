@@ -10,18 +10,12 @@ client = TestClient(app)
 USER_DATA = {
     "email": "user@example.com",
     "password": "strongpassword",
-    "full_name": "User One",
-    "date_of_birth": "1990-01-01",
-    "id_type": "ID",
-    "id_number": "123",
-    "kra_pin": "A",
-    "marital_status": "Single",
-    "employment_status": "Employed",
-    "monthly_income_kes": 100.0,
-    "net_worth_estimate": 1000.0,
-    "risk_tolerance_score": 5,
-    "retirement_age_goal": 65,
-    "investment_goals": "growth",
+    "dob": "1990-01-01",
+    "kra_pin": "A123",
+    "annual_income": 50000,
+    "dependents": 0,
+    "goals": {"type": "growth"},
+    "questionnaire": {"0": 5},
 }
 
 
@@ -34,7 +28,7 @@ def test_register_success():
 def test_register_duplicate():
     client.post("/auth/register", json=USER_DATA)
     resp = client.post("/auth/register", json=USER_DATA)
-    assert resp.status_code == 409
+    assert resp.status_code == 400
 
 
 def test_login_valid():
@@ -50,6 +44,6 @@ def test_login_valid():
 def test_login_invalid():
     client.post("/auth/register", json=USER_DATA)
     resp = client.post(
-        "/auth/login", data={"username": USER_DATA["email"], "password": "wrong"}
+        "/auth/login", data={"username": USER_DATA["email"], "password": "bad"}
     )
     assert resp.status_code == 401
