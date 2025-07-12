@@ -1,6 +1,19 @@
 import os
 import uuid
 from fastapi import FastAPI, Request, Response
+
+
+class TraceMiddleware:
+    """Simple middleware adding a unique trace ID to each response."""
+
+    def __call__(self, request: Request, call_next):
+        trace_id = str(uuid.uuid4())
+        request.state.trace_id = trace_id
+        response = call_next(request)
+        if isinstance(response, Response):
+            response.headers["X-Trace-ID"] = trace_id
+            return response
+        return Response(response, headers={"X-Trace-ID": trace_id})
 from .database import Base, engine
 from .auth import router as auth_router
 from .profile import router as profile_router
@@ -10,6 +23,7 @@ from pydantic import BaseModel
 from compute.operations import add
 
 app = FastAPI(title=os.getenv("APP_NAME", "FastAPI App"))
+app.add_middleware(TraceMiddleware)
 
 
 class Message(BaseModel):
@@ -24,8 +38,7 @@ def read_root():
 @app.get("/healthz")
 def healthz():
     """Return engine status matrix."""
-    trace_id = str(uuid.uuid4())
-    return Response({"status": "ok", "engines": {}}, headers={"X-Trace-ID": trace_id})
+    return {"status": "ok", "engines": {}}
 
 
 @app.post("/echo")

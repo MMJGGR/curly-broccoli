@@ -59,7 +59,11 @@ class FastAPI(APIRouter):
     def __init__(self, title: str = ""):
         super().__init__(prefix="")
         self.title = title
+        self._middleware: list[Any] = []
+
     def include_router(self, router: APIRouter):
         self.routes.update(router.routes)
-    def add_middleware(self, *a, **kw):
-        pass
+
+    def add_middleware(self, middleware_class: Type, **kwargs):
+        """Register a middleware instance to run on each request."""
+        self._middleware.append(middleware_class(**kwargs))
