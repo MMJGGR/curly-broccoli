@@ -1,12 +1,35 @@
 """Risk score computation engine."""
 
+from typing import List
 
-def compute_risk_score(age, income, dependents, goals, questionnaire: dict) -> float:
-    """Compute a simplistic risk score based on profile inputs."""
-    age_weight = 1 - ((age - 18) / 82)
-    income_weight = min(income / 100_000, 1)
-    questionnaire_score = (
-        sum(questionnaire.values()) / (len(questionnaire) * 5) if questionnaire else 0
+
+def compute_risk_score(
+    age: int,
+    income: float,
+    dependents: int,
+    time_horizon: int,
+    questionnaire: List[int],
+) -> float:
+    """Compute a CFA-aligned risk score scaled 0-100."""
+
+    # Questionnaire average normalized 0-1 and weighted 0.5
+    q_avg = sum(questionnaire) / len(questionnaire)
+    q_score = (q_avg - 1) / 4
+
+    # Age: younger investors typically tolerate more risk
+    age_score = max(0, min(1, (60 - age) / 60))
+
+    # Income: higher income implies greater capacity
+    income_score = max(0, min(1, income / 200_000))
+
+    # Horizon: longer horizons support more risk
+    horizon_score = max(0, min(1, time_horizon / 30))
+
+    total = (
+        q_score * 0.5
+        + age_score * 0.2
+        + income_score * 0.2
+        + horizon_score * 0.1
     )
-    score = (age_weight + income_weight + questionnaire_score * 2) / 4
-    return round(score, 2)
+
+    return round(total * 100, 0)

@@ -14,8 +14,8 @@ USER = {
     "kra_pin": "K123",
     "annual_income": 50000,
     "dependents": 1,
-    "goals": {"type": "growth"},
-    "questionnaire": {"0": 5},
+    "goals": {"type": "growth", "targetAmount": 100000, "timeHorizon": 10},
+    "questionnaire": [3, 3, 3, 3, 3, 3, 3, 3],
 }
 
 
