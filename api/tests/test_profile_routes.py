@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from app.main import app, Base, engine
 from compute.risk_engine import compute_risk_score
 
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 client = TestClient(app)

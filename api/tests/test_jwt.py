@@ -1,6 +1,6 @@
 import os
 
-os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 from app.security import create_access_token, SECRET_KEY, ALGORITHM
 import jwt
 
