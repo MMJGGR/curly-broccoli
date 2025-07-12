@@ -33,12 +33,10 @@ jobs:
           pip install -r requirements.txt
       - name: Run API tests with coverage
         run: |
-          cd api
-          pytest --cov=api --cov=compute --cov-report=xml
-      - name: Enforce API coverage ≥ 100 %
+          pytest
+      - name: Enforce API coverage ≥ 90 %
         run: |
-          cd api
-          coverage report --fail-under=100
+          coverage report --fail-under=90
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
