@@ -15,3 +15,4 @@ python-multipart
 
 email-validator
 pytest-cov
+jsonschema>=4.0.0
