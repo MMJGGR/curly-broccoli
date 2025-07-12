@@ -18,9 +18,13 @@ def test_sample_payload_validates_against_schema():
         "id_type": "ID",
         "id_number": "123",
         "kra_pin": "A",
+        "marital_status": "Single",
         "employment_status": "Employed",
         "monthly_income_kes": 100.0,
+        "net_worth_estimate": 1000.0,
         "risk_tolerance_score": 5,
+        "retirement_age_goal": 65,
+        "investment_goals": "growth",
     }
     schema = RegisterRequest.model_json_schema()
     jsonschema.validate(payload, schema)
