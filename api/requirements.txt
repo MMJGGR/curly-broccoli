@@ -11,3 +11,5 @@ bcrypt
 PyJWT
 cryptography
 httpx
+
+email-validator
