@@ -31,9 +31,10 @@ jobs:
           cd api
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-        - name: Run API tests with coverage
-          run: |
-            pytest --cov-report=xml
+
+      - name: Run API tests with coverage
+        run: |
+          pytest --cov-report=xml
       - name: Enforce API coverage ≥ 90 %
         run: |
           coverage report --fail-under=90
@@ -50,6 +51,16 @@ jobs:
         run: |
           cd frontend
           npm test -- --coverage
+
+      - name: Run Playwright e2e tests
+        run: |
+          cd frontend
+          npx playwright install --with-deps
+          npx playwright test
+
+      - name: Run contract tests
+        run: |
+          pytest frontend/tests/contract
 
       - name: Build Docker images
         run: |
