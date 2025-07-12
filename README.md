@@ -24,12 +24,12 @@ This repository contains a basic setup for a FastAPI API service and a React fro
 
 - **API**
   - Install dependencies: `pip install -r api/requirements.txt` (includes `httpx` for HTTP requests)
-  - Run tests from the repository root with `pytest`
+  - Run tests from the repository root with `pytest --cov=api --cov=compute --cov-report=xml`
   - Lint code: `flake8 api`
 - **Frontend**
   - Install dependencies: `npm install`
   - Start the dev server: `npm start`
-  - Run tests: `npm test`
+  - Run tests: `npm test -- --coverage`
 
 ## Deployment
 The Docker setup is designed so you can deploy to services like Heroku or a cloud provider with minimal changes.

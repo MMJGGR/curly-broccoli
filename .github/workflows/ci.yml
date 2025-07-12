@@ -1,48 +1,59 @@
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
 
 jobs:
-  lint:
+  build-and-test:
     runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:15
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: finance_app
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U user"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Setup Python
+
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - name: Install frontend deps
+      - name: Install API dependencies
         run: |
-          cd frontend && npm install
-      - name: ESLint
+          cd api
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run API tests with coverage
         run: |
-          cd frontend && npx eslint . || true
-      - name: Install api deps
+          cd api
+          pytest --cov=api --cov=compute --cov-report=xml
+      - name: Enforce API coverage ≥ 90 %
         run: |
-          cd api && pip install -r requirements.txt
-      - name: Flake8
-        run: |
-          cd api && flake8 . || true
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node
+          cd api
+          coverage report --fail-under=90
+
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install deps
+          node-version: '18'
+      - name: Install Frontend dependencies
         run: |
-          cd frontend && npm install
-          cd ../api && pip install -r requirements.txt
-      - name: Run tests
+          cd frontend
+          npm ci
+      - name: Run Frontend tests with coverage
         run: |
-          cd api && pytest
-          cd ../frontend && npm test -- --watchAll=false
+          cd frontend
+          npm test -- --coverage
+
+      - name: Build Docker images
+        run: |
+          docker build -t finance-api:pr-${{ github.sha }} -f api/Dockerfile api
+          docker build -t finance-frontend:pr-${{ github.sha }} -f frontend/Dockerfile frontend
