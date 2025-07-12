@@ -43,24 +43,20 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - name: Install Frontend dependencies
-        run: |
-          cd frontend
-          npm install
-      - name: Run Frontend tests with coverage
-        run: |
-          cd frontend
-          npm test -- --coverage
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Run frontend tests with coverage
+        working-directory: frontend
+        run: npm test -- --coverage --watchAll=false
 
       - name: Run Playwright e2e tests
+        working-directory: frontend
         run: |
-          cd frontend
           npx playwright install --with-deps
           npx playwright test
 
       - name: Run contract tests
-        run: |
-          pytest frontend/tests/contract
+        run: pytest frontend/tests/contract
 
       - name: Build Docker images
         run: |

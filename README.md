@@ -29,7 +29,7 @@ This repository contains a basic setup for a FastAPI API service and a React fro
     above **90%** (CI enforces this)
   - Lint code: `flake8 api`
 - **Frontend**
-  - Install dependencies: `npm install`
+  - Install dependencies: `npm ci`
   - Start the dev server: `npm run dev`
   - Run tests: `npm test -- --coverage` (coverage must remain above 90%)
 
