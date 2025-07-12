@@ -41,15 +41,21 @@ def register(data: RegisterRequest):
         kra_pin=data.kra_pin,
         annual_income=data.annual_income,
         dependents=data.dependents,
-        goals=data.goals
-    )
-    # 5. Compute and assign risk score
-    profile.risk_score = compute_risk_score(
-        age=calculate_age(data.dob),
-        income=data.annual_income,
-        dependents=data.dependents,
         goals=data.goals,
-        questionnaire=data.questionnaire
+    )
+
+    # Compute CFA-aligned risk score
+    age = calculate_age(data.dob)
+    income = data.annual_income
+    dependents = data.dependents
+    horizon = data.goals["timeHorizon"]
+
+    profile.risk_score = compute_risk_score(
+        age=age,
+        income=income,
+        dependents=dependents,
+        time_horizon=horizon,
+        questionnaire=data.questionnaire,
     )
     db.add(profile)
     db.commit()

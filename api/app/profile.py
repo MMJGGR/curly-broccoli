@@ -54,8 +54,8 @@ def update_profile(profile_in: ProfileOut, request: Request):
         age=calculate_age(profile.dob),
         income=profile.annual_income,
         dependents=profile.dependents,
-        goals=profile.goals,
-        questionnaire=profile_in.dict().get("questionnaire", {}),
+        time_horizon=profile.goals.get("timeHorizon", 0),
+        questionnaire=profile_in.dict().get("questionnaire", [3] * 8),
     )
     db.commit()
     db.refresh(profile)
@@ -82,8 +82,8 @@ def set_dependents(data: Dependents, request: Request):
         age=calculate_age(profile.dob),
         income=profile.annual_income,
         dependents=profile.dependents,
-        goals=profile.goals,
-        questionnaire={},
+        time_horizon=profile.goals.get("timeHorizon", 0),
+        questionnaire=[3] * 8,
     )
     db.commit()
     db.refresh(profile)
@@ -102,8 +102,8 @@ def clear_dependents(request: Request):
         age=calculate_age(profile.dob),
         income=profile.annual_income,
         dependents=profile.dependents,
-        goals=profile.goals,
-        questionnaire={},
+        time_horizon=profile.goals.get("timeHorizon", 0),
+        questionnaire=[3] * 8,
     )
     db.commit()
     db.refresh(profile)

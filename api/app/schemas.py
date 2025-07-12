@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional, Dict, Any
+from typing import Dict, Any, List
 from pydantic import BaseModel, EmailStr, constr
 
 class Token(BaseModel):
@@ -14,7 +14,7 @@ class RegisterRequest(BaseModel):
     annual_income: float
     dependents: int = 0
     goals: Dict[str, Any]
-    questionnaire: Optional[Dict[str, int]] = None
+    questionnaire: List[int]
 
 class ProfileOut(BaseModel):
     dob: date
@@ -22,7 +22,7 @@ class ProfileOut(BaseModel):
     annual_income: float
     dependents: int
     goals: Dict[str, Any]
-    risk_score: Optional[float] = None
+    risk_score: int
     class Config:
         orm_mode = True
 

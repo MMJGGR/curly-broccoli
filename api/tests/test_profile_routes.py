@@ -16,8 +16,8 @@ USER_DATA = {
     "kra_pin": "P123",
     "annual_income": 10000,
     "dependents": 1,
-    "goals": {"type": "wealth"},
-    "questionnaire": {"0": 4},
+    "goals": {"type": "wealth", "targetAmount": 50000, "timeHorizon": 5},
+    "questionnaire": [3, 3, 3, 3, 3, 3, 3, 3],
 }
 
 
@@ -51,7 +51,7 @@ def test_profile_update_recomputes_risk_score():
         "kra_pin": USER_DATA["kra_pin"],
         "annual_income": 20000,
         "dependents": 2,
-        "goals": {"type": "growth"},
+        "goals": {"type": "growth", "targetAmount": 80000, "timeHorizon": 10},
     }
     resp = client.request("PUT", "/profile", json=update, headers=headers)
     assert resp.status_code == 200
@@ -63,8 +63,8 @@ def test_profile_update_recomputes_risk_score():
         age=age,
         income=update["annual_income"],
         dependents=update["dependents"],
-        goals=update["goals"],
-        questionnaire={},
+        time_horizon=update["goals"]["timeHorizon"],
+        questionnaire=USER_DATA["questionnaire"],
     )
     assert updated["risk_score"] == expected_score
     assert updated["risk_score"] != original

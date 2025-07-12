@@ -5,18 +5,18 @@ export default function StepGoals({ data, update, validate }) {
 
   useEffect(() => {
     const errs = {};
-    if (!data.goalType) errs.goalType = "Goal type is required";
+    if (!data.goals?.type) errs.goalType = "Goal type is required";
     if (
-      data.targetAmount === undefined ||
-      data.targetAmount === "" ||
-      Number(data.targetAmount) <= 0
+      data.goals?.targetAmount === undefined ||
+      data.goals?.targetAmount === "" ||
+      Number(data.goals?.targetAmount) <= 0
     ) {
       errs.targetAmount = "Amount must be greater than 0";
     }
     if (
-      data.timeHorizon === undefined ||
-      data.timeHorizon === "" ||
-      Number(data.timeHorizon) <= 0
+      data.goals?.timeHorizon === undefined ||
+      data.goals?.timeHorizon === "" ||
+      Number(data.goals?.timeHorizon) <= 0
     ) {
       errs.timeHorizon = "Time horizon must be greater than 0";
     }
@@ -29,8 +29,8 @@ export default function StepGoals({ data, update, validate }) {
       <div>
         <select
           name="goalType"
-          value={data.goalType || ""}
-          onChange={(e) => update({ goalType: e.target.value })}
+          value={data.goals?.type || ""}
+          onChange={(e) => update({ goals: { ...(data.goals || {}), type: e.target.value } })}
           className="border-gray-200 focus:ring-amber-500 focus:border-amber-500 rounded-lg p-2 w-full"
         >
           <option value="">Goal Type</option>
@@ -46,8 +46,8 @@ export default function StepGoals({ data, update, validate }) {
         <input
           name="targetAmount"
           type="number"
-          value={data.targetAmount || ""}
-          onChange={(e) => update({ targetAmount: e.target.value })}
+          value={data.goals?.targetAmount || ""}
+          onChange={(e) => update({ goals: { ...(data.goals || {}), targetAmount: e.target.value } })}
           placeholder="Target Amount"
           className="border-gray-200 focus:ring-amber-500 focus:border-amber-500 rounded-lg p-2 w-full"
         />
@@ -59,8 +59,8 @@ export default function StepGoals({ data, update, validate }) {
         <input
           name="timeHorizon"
           type="number"
-          value={data.timeHorizon || ""}
-          onChange={(e) => update({ timeHorizon: e.target.value })}
+          value={data.goals?.timeHorizon || ""}
+          onChange={(e) => update({ goals: { ...(data.goals || {}), timeHorizon: e.target.value } })}
           placeholder="Time Horizon (yrs)"
           className="border-gray-200 focus:ring-amber-500 focus:border-amber-500 rounded-lg p-2 w-full"
         />
