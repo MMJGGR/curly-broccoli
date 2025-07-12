@@ -77,3 +77,10 @@ def test_profile_and_dependents_flow():
     resp = client.get("/dependents", headers=headers)
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+def test_delete_nonexistent_dependent():
+    token = register_and_login()
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.delete("/dependents/bad-id", headers=headers)
+    assert resp.status_code == 404
