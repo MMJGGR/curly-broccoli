@@ -18,6 +18,7 @@ const steps = [
 export default function OnboardingWizard() {
   const [current, setCurrent] = useState(0);
   const [data, setData] = useState({});
+  const [valid, setValid] = useState({});
   const last = steps.length - 1;
 
   const update = values => setData(prev => ({ ...prev, ...values }));
@@ -47,13 +48,13 @@ export default function OnboardingWizard() {
           </div>
         ))}
       </div>
-      <Step data={data} update={update} />
+      <Step data={data} update={update} validate={v => setValid(prev => ({ ...prev, [current]: v }))} />
       <div className="flex justify-between mt-6">
         <button disabled={current===0} onClick={prev} className="bg-amber-500 hover:bg-amber-600 text-white rounded-2xl py-2 px-4 disabled:opacity-50">Back</button>
         {current===last ? (
-          <button onClick={finish} className="bg-amber-500 hover:bg-amber-600 text-white rounded-2xl py-2 px-4">Finish</button>
+          <button onClick={finish} className="bg-amber-500 hover:bg-amber-600 text-white rounded-2xl py-2 px-4" disabled={!valid[current]}>Finish</button>
         ) : (
-          <button onClick={next} className="bg-amber-500 hover:bg-amber-600 text-white rounded-2xl py-2 px-4">Next</button>
+          <button onClick={next} className="bg-amber-500 hover:bg-amber-600 text-white rounded-2xl py-2 px-4" disabled={!valid[current]}>Next</button>
         )}
       </div>
     </div>
