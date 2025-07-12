@@ -1,39 +1,23 @@
+from __future__ import annotations
 import uuid
-from sqlalchemy import (
-    Column,
-    String,
-    Date,
-    Integer,
-    Numeric,
-    JSON,
-    ForeignKey,
-)
-from sqlalchemy.orm import relationship
+from dataclasses import dataclass, field
+from datetime import date
+from typing import Dict, Any, Optional
 
-from .database import Base
+@dataclass
+class User:
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    email: str = ""
+    password_hash: str = ""
+    profile: 'UserProfile' | None = None
 
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    email = Column(String(255), unique=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
-
-    profile = relationship("UserProfile", back_populates="user")
-
-
-class UserProfile(Base):
-    __tablename__ = "profiles"
-
-    user_id = Column(String(36), ForeignKey("users.id"), primary_key=True)
-    dob = Column(Date, nullable=False)
-    kra_pin = Column(String(20), nullable=False)
-    annual_income = Column(Numeric(12, 2), nullable=False)
-    dependents = Column(Integer, default=0, nullable=False)
-    goals = Column(JSON, nullable=False)
-    risk_score = Column(Numeric(4, 2), nullable=True)
-
-    user = relationship("User", back_populates="profile")
-
-
+@dataclass
+class UserProfile:
+    user_id: str
+    dob: date
+    kra_pin: str
+    annual_income: float
+    dependents: int = 0
+    goals: Dict[str, Any] = field(default_factory=dict)
+    risk_score: Optional[float] = None
+    user: User | None = None

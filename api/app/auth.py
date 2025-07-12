@@ -1,7 +1,6 @@
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
 
 from .database import get_db
 from .models import User, UserProfile
@@ -16,7 +15,8 @@ router = APIRouter(prefix="/auth")
 
 
 @router.post("/register", response_model=Token, status_code=201)
-def register(data: RegisterRequest, db: Session = Depends(get_db)):
+def register(data: RegisterRequest):
+    db = get_db()
     # 1. Check if email already exists
     existing = db.query(User).filter_by(email=data.email).first()
     if existing:
@@ -56,17 +56,16 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 
     # 6. Return JWT token
     token = create_access_token(str(user.id))
-    return Token(access_token=token)
+    return Response(Token(access_token=token).dict(), status_code=201)
 
 
 @router.post("/login", response_model=Token)
-def login(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
-):
+def login(form_data: OAuth2PasswordRequestForm):
+    db = get_db()
     user = db.query(User).filter_by(email=form_data.username).first()
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
     token = create_access_token(str(user.id))
-    return Token(access_token=token)
+    return Response(Token(access_token=token).dict(), status_code=200)
