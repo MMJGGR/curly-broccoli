@@ -1,5 +1,6 @@
 import base64
 import os
+import datetime
 
 import pytest
 
@@ -21,3 +22,12 @@ def test_none_roundtrip():
     field = EncryptedString()
     assert field.process_bind_param(None, None) is None
     assert field.process_result_value(None, None) is None
+
+
+def test_date_encodes_as_str():
+    field = EncryptedString()
+    dt = datetime.date(2020, 1, 1)
+    encrypted = field.process_bind_param(dt, None)
+    assert encrypted != dt.isoformat()
+    decrypted = field.process_result_value(encrypted, None)
+    assert decrypted == dt.isoformat()
