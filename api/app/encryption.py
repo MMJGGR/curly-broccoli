@@ -2,7 +2,22 @@ import base64
 import os
 import datetime
 from typing import Optional, Any
-from sqlalchemy.types import TypeDecorator, String
+try:
+    from sqlalchemy.types import TypeDecorator, String  # type: ignore
+except Exception:  # pragma: no cover - SQLAlchemy not installed
+    class TypeDecorator:
+        """Minimal stub of SQLAlchemy's TypeDecorator used in tests."""
+
+        impl = None
+
+        def process_bind_param(self, value, dialect):  # pragma: no cover - stub
+            raise NotImplementedError
+
+        def process_result_value(self, value, dialect):  # pragma: no cover - stub
+            raise NotImplementedError
+
+    class String:  # pragma: no cover - stub
+        pass
 
 _key_env = os.getenv("ENCRYPTION_KEY")
 if _key_env:
