@@ -23,6 +23,8 @@ def test_register_success():
     resp = client.post("/auth/register", json=USER_DATA)
     assert resp.status_code == 201
     assert "access_token" in resp.json()
+    assert 0 <= resp.json()["risk_score"] <= 100
+    assert 1 <= resp.json()["risk_level"] <= 5
 
 
 def test_register_duplicate():

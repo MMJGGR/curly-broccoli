@@ -3,9 +3,10 @@ import userEvent from "@testing-library/user-event";
 import OnboardingWizard from "./components/OnboardingWizard";
 
 beforeEach(() => {
-  global.fetch = jest.fn(() =>
-    Promise.resolve({ ok: true, json: () => Promise.resolve({ access_token: "tok" }) })
-  );
+  global.fetch = jest
+    .fn()
+    .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ access_token: "tok" }) })
+    .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ risk_level: 4 }) });
   localStorage.clear();
 });
 
@@ -51,4 +52,5 @@ test("complete onboarding flow", async () => {
 
   expect(global.fetch).toHaveBeenCalled();
   expect(localStorage.getItem("jwt")).toBe("tok");
+  expect(await screen.findByText("4 / 5")).toBeInTheDocument();
 });

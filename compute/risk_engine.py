@@ -33,3 +33,16 @@ def compute_risk_score(
     )
 
     return round(total * 100, 0)
+
+
+def compute_risk_level(percent_score: float) -> int:
+    """Map a 0–100% risk score into a 1–5 CFA risk level."""
+    if percent_score < 20:
+        return 1
+    if percent_score < 40:
+        return 2
+    if percent_score < 60:
+        return 3
+    if percent_score < 80:
+        return 4
+    return 5

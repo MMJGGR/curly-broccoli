@@ -9,7 +9,7 @@ from .database import get_db
 from .models import User, UserProfile
 from .schemas import ProfileOut, Dependents
 from .security import SECRET_KEY, ALGORITHM
-from compute.risk_engine import compute_risk_score
+from compute.risk_engine import compute_risk_score, compute_risk_level
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -57,6 +57,7 @@ def update_profile(profile_in: ProfileOut, request: Request):
         time_horizon=profile.goals.get("timeHorizon", 0),
         questionnaire=profile_in.dict().get("questionnaire", [3] * 8),
     )
+    profile.risk_level = compute_risk_level(profile.risk_score)
     db.commit()
     db.refresh(profile)
     return Response(ProfileOut.from_orm(profile).dict(), status_code=200)
@@ -85,6 +86,7 @@ def set_dependents(data: Dependents, request: Request):
         time_horizon=profile.goals.get("timeHorizon", 0),
         questionnaire=[3] * 8,
     )
+    profile.risk_level = compute_risk_level(profile.risk_score)
     db.commit()
     db.refresh(profile)
     return {"dependents": profile.dependents}
@@ -105,6 +107,7 @@ def clear_dependents(request: Request):
         time_horizon=profile.goals.get("timeHorizon", 0),
         questionnaire=[3] * 8,
     )
+    profile.risk_level = compute_risk_level(profile.risk_score)
     db.commit()
     db.refresh(profile)
     return {"dependents": profile.dependents}

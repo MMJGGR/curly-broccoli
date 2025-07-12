@@ -23,6 +23,7 @@ class ProfileOut(BaseModel):
     dependents: int
     goals: Dict[str, Any]
     risk_score: int
+    risk_level: int
     class Config:
         orm_mode = True
 
