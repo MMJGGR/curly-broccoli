@@ -25,6 +25,7 @@ jobs:
       - name: Create test database
         env:
           PGPASSWORD: pass
+          PGDATABASE: postgres
         run: |
           until pg_isready -h localhost -U user; do sleep 1; done
           psql -h localhost -U user -c "CREATE DATABASE \"user\";"
