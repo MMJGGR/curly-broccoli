@@ -30,6 +30,9 @@ def register():
 def test_profile_unauthorized():
     assert client.get("/profile").status_code == 401
     assert client.put("/profile", json={}).status_code == 401
+    assert client.get("/dependents").status_code == 401
+    assert client.post("/dependents", json={"dependents": 1}).status_code == 401
+    assert client.delete("/dependents").status_code == 401
 
 
 def test_profile_get_and_update():
@@ -50,3 +53,24 @@ def test_profile_get_and_update():
     resp = client.put("/profile", json=update, headers=headers)
     assert resp.status_code == 200
     assert resp.json()["annual_income"] == 20000
+
+
+def test_dependents_crud():
+    _, token = register()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = client.get("/dependents", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["dependents"] == USER_DATA["dependents"]
+
+    resp = client.post("/dependents", json={"dependents": 3}, headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["dependents"] == 3
+
+    resp = client.get("/dependents", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["dependents"] == 3
+
+    resp = client.delete("/dependents", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["dependents"] == 0

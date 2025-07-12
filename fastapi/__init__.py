@@ -55,6 +55,12 @@ class APIRouter:
             return func
         return decorator
 
+    def delete(self, path: str, **kwargs):
+        def decorator(func: Callable):
+            self.routes[("DELETE", self.prefix + path)] = func
+            return func
+        return decorator
+
 class FastAPI(APIRouter):
     def __init__(self, title: str = ""):
         super().__init__(prefix="")

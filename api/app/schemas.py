@@ -25,3 +25,7 @@ class ProfileOut(BaseModel):
     risk_score: Optional[float] = None
     class Config:
         orm_mode = True
+
+
+class Dependents(BaseModel):
+    dependents: int
