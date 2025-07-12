@@ -30,22 +30,22 @@ def test_add_numbers():
 
 
 def test_register_login_flow():
-    resp = client.post("/register", json={"email": "user@example.com", "password": "strongpassword"})
+    resp = client.post("/auth/register", json={"email": "user@example.com", "password": "strongpassword", "full_name": "User One", "date_of_birth": "1990-01-01", "id_type": "ID", "id_number": "123", "kra_pin": "A", "marital_status": "Single", "employment_status": "Employed", "monthly_income_kes": 100.0, "net_worth_estimate": 1000.0, "risk_tolerance_score": 5})
     assert resp.status_code == 201
     token = resp.json()["access_token"]
 
     # Duplicate registration
-    resp_dup = client.post("/register", json={"email": "user@example.com", "password": "strongpassword"})
+    resp_dup = client.post("/auth/register", json={"email": "user@example.com", "password": "strongpassword", "full_name": "User One", "date_of_birth": "1990-01-01", "id_type": "ID", "id_number": "123", "kra_pin": "A", "marital_status": "Single", "employment_status": "Employed", "monthly_income_kes": 100.0, "net_worth_estimate": 1000.0, "risk_tolerance_score": 5})
     assert resp_dup.status_code == 409
 
     # Login
-    resp_login = client.post("/login", data={"username": "user@example.com", "password": "strongpassword"})
+    resp_login = client.post("/auth/login", data={"username": "user@example.com", "password": "strongpassword"})
     assert resp_login.status_code == 200
     token_login = resp_login.json()["access_token"]
     assert token_login
 
     # Wrong password
-    resp_bad = client.post("/login", data={"username": "user@example.com", "password": "wrong"})
+    resp_bad = client.post("/auth/login", data={"username": "user@example.com", "password": "wrong"})
     assert resp_bad.status_code == 401
 
     # Access profile

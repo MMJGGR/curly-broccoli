@@ -35,6 +35,7 @@ class UserProfile(Base):
     monthly_income_kes = Column(String, nullable=False)
     net_worth_estimate = Column(String)
     risk_tolerance_score = Column(Integer, nullable=False)
+    risk_score = Column(Numeric(5, 2))
     retirement_age_goal = Column(Integer)
     investment_goals = Column(String)
 
