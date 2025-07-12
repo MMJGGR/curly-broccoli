@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from fastapi.security import OAuth2PasswordBearer
 import jwt
+from datetime import date
 
 from .database import get_db
 from .models import User, UserProfile, Dependent
@@ -14,9 +15,31 @@ from .schemas import (
     ProfileOut,
 )
 from .security import SECRET_KEY, ALGORITHM
+from compute.risk_engine import compute_risk_score
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 router = APIRouter()
+
+
+def _recalculate_risk(user: User, db: Session) -> None:
+    """Recompute and persist the user's risk score."""
+    profile = user.profile
+    if not profile:
+        return
+    today = date.today()
+    age = today.year - int(profile.date_of_birth.split("-")[0]) - (
+        (today.month, today.day)
+        < tuple(int(x) for x in profile.date_of_birth.split("-")[1:])
+    )
+    profile.risk_score = compute_risk_score(
+        age=age,
+        income=float(profile.monthly_income_kes),
+        dependents=len(user.dependents),
+        goals=profile.investment_goals,
+        questionnaire={},
+    )
+    db.commit()
+    db.refresh(profile)
 
 
 def get_current_user(
@@ -58,7 +81,7 @@ def update_profile(
     for field, value in profile_in.dict().items():
         setattr(profile, field, value)
     db.commit()
-    db.refresh(profile)
+    _recalculate_risk(current, db)
     deps = [DependentOut.from_orm(d) for d in current.dependents]
     data = ProfileOut.from_orm(profile).dict()
     data["dependents"] = deps
@@ -80,6 +103,7 @@ def add_dependent(
     db.add(dep)
     db.commit()
     db.refresh(dep)
+    _recalculate_risk(current, db)
     return DependentOut.from_orm(dep)
 
 
@@ -94,4 +118,5 @@ def remove_dependent(
         raise HTTPException(status_code=404, detail="Not found")
     db.delete(dep)
     db.commit()
+    _recalculate_risk(current, db)
     return

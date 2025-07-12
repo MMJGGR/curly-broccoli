@@ -3,6 +3,7 @@ import os
 import uuid
 from fastapi import FastAPI, Request
 from sqlalchemy.orm import Session
+from starlette.middleware.tracing import TraceMiddleware
 from .database import Base, engine
 from .auth import router as auth_router
 from .profile import router as profile_router
@@ -15,6 +16,7 @@ from compute.operations import add
 logger = logging.getLogger("uvicorn")
 
 app = FastAPI(title=os.getenv("APP_NAME", "FastAPI App"))
+app.add_middleware(TraceMiddleware)
 
 
 @app.middleware("http")
