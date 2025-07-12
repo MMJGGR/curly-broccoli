@@ -34,7 +34,7 @@ jobs:
 
       - name: Run API tests with coverage
         run: |
-          pytest --cov-report=xml
+          coverage run -m pytest --maxfail=1 --disable-warnings -q
       - name: Enforce API coverage ≥ 90 %
         run: |
           coverage report --fail-under=90
