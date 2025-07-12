@@ -33,7 +33,7 @@ jobs:
           pip install -r requirements.txt
       - name: Run API tests with coverage
         run: |
-          pytest
+          pytest --cov=app --cov=compute --cov-report=xml
       - name: Enforce API coverage ≥ 90 %
         run: |
           coverage report --fail-under=90
@@ -45,7 +45,7 @@ jobs:
       - name: Install Frontend dependencies
         run: |
           cd frontend
-          npm ci
+          npm install
       - name: Run Frontend tests with coverage
         run: |
           cd frontend
