@@ -32,32 +32,41 @@ class Response:
         self.status_code = status_code
         self.headers = headers or {}
     def json(self):
+        import dataclasses
+        if dataclasses.is_dataclass(self.content):
+            return dataclasses.asdict(self.content)
+        if hasattr(self.content, "__dict__"):
+            return {k: v for k, v in self.content.__dict__.items() if not k.startswith("_")}
         return self.content
 
 class APIRouter:
-    def __init__(self, prefix: str = ""):
+    def __init__(self, prefix: str = "", tags: list[str] | None = None):
         self.prefix = prefix
-        self.routes: Dict[Tuple[str, str], Callable] = {}
+        self.routes: Dict[Tuple[str, str], Tuple[Callable, int]] = {}
     def get(self, path: str, **kwargs):
         def decorator(func: Callable):
-            self.routes[("GET", self.prefix + path)] = func
+            status_code = kwargs.get("status_code", 200)
+            self.routes[("GET", self.prefix + path)] = (func, status_code)
             return func
         return decorator
     def post(self, path: str, **kwargs):
         def decorator(func: Callable):
-            self.routes[("POST", self.prefix + path)] = func
+            status_code = kwargs.get("status_code", 200)
+            self.routes[("POST", self.prefix + path)] = (func, status_code)
             return func
         return decorator
 
     def put(self, path: str, **kwargs):
         def decorator(func: Callable):
-            self.routes[("PUT", self.prefix + path)] = func
+            status_code = kwargs.get("status_code", 200)
+            self.routes[("PUT", self.prefix + path)] = (func, status_code)
             return func
         return decorator
 
     def delete(self, path: str, **kwargs):
         def decorator(func: Callable):
-            self.routes[("DELETE", self.prefix + path)] = func
+            status_code = kwargs.get("status_code", 200)
+            self.routes[("DELETE", self.prefix + path)] = (func, status_code)
             return func
         return decorator
 

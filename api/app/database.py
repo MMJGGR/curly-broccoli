@@ -1,5 +1,7 @@
 from __future__ import annotations
 import uuid
+import dataclasses
+import copy
 
 DATABASE = {
     'users': {},
