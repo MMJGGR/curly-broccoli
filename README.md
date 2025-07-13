@@ -34,3 +34,10 @@ This repository contains a basic setup for a FastAPI API service and a React fro
 
 ## Deployment
 The Docker setup is designed so you can deploy to services like Heroku or a cloud provider with minimal changes.
+
+## API Tips
+
+The `/auth/register` endpoint accepts the `questionnaire` field as either a list
+of integers or a dictionary mapping question numbers to answers. Responses are
+normalized automatically and the computed risk score and risk level are returned
+in the registration response.
