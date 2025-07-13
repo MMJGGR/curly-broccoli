@@ -13,7 +13,12 @@ export default function StepGoals({ data, update, validate }) {
 
     setErrors(errs);
     validate(Object.keys(errs).length === 0);
-  }, [data, validate]);
+  }, [
+    data.goals?.type,
+    data.goals?.targetAmount,
+    data.goals?.timeHorizon,
+    validate,
+  ]);
 
   return (
     <div className="space-y-2">

@@ -23,7 +23,7 @@ export default function StepFinancial({ data, update, validate }) {
     }
     setErrors(errs);
     validate(Object.keys(errs).length === 0);
-  }, [data, validate]);
+  }, [data.annualIncome, data.employmentStatus, data.dependents, validate]);
 
   return (
     <div className="space-y-2">
