@@ -15,8 +15,10 @@ services:
     image: postgres:15
     environment:
       POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: finance_app
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app
+    ports:
+      - '5432:5432'
     volumes:
       - db_data:/var/lib/postgresql/data
 volumes:

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import StepAccount from "./steps/StepAccount";
 import StepPersonal from "./steps/StepPersonal";
@@ -6,19 +6,7 @@ import StepFinancial from "./steps/StepFinancial";
 import StepGoals from "./steps/StepGoals";
 import StepQuestionnaire from "./steps/StepQuestionnaire";
 import StepSummary from "./steps/StepSummary";
-
-// CFA-aligned risk profile questions
-const RISK_QUESTIONS = [
-  "1. How would you describe your investment experience?",
-  "2. What is your primary investment goal?",
-  "3. How long do you plan to stay invested?",
-  "4. How would you react if your portfolio fell 10% in one month?",
-  "5. How important is liquidity (access to cash) for you?",
-  "6. What is your comfort level with market volatility?",
-  "7. How significant would a loss of 20% affect your goals?",
-  "8. How do you prioritize capital preservation vs. growth?",
-];
-
+import { RISK_QUESTIONS } from "./steps/risk-config";
 
 const steps = [
   { label: "Account", component: StepAccount },
@@ -33,6 +21,7 @@ export default function OnboardingWizard() {
   const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
   const [data, setData] = useState({
+    // default questionnaire responses set to neutral '3'
     questionnaire: RISK_QUESTIONS.map(() => 3),
   });
   const [valid, setValid] = useState({});
@@ -61,38 +50,46 @@ export default function OnboardingWizard() {
             goals: data.goals,
             questionnaire: data.questionnaire,
           }),
-        },
+        }
       );
       if (!res.ok) {
         const err = await res.json();
-        alert("Registration error: " + err.detail);
+        alert("Registration error: " + (err.detail || err.message));
         return;
       }
       const { access_token } = await res.json();
       localStorage.setItem("jwt", access_token);
+      // fetch profile after registration
       const profileRes = await fetch(
         `${process.env.REACT_APP_API_URL}/profile`,
         { headers: { Authorization: `Bearer ${access_token}` } }
       );
-      const profile = await profileRes.json();
-      setUserProfile(profile);
+      const userProfile = await profileRes.json();
+      setUserProfile(userProfile);
+      // navigate to dashboard once profile is set
+      navigate("/dashboard");
     } catch (err) {
       console.error("Registration request failed", err);
       alert(
-        "Unable to complete registration. Please check your connection and try again.",
+        "Unable to complete registration. Please check your connection and try again."
       );
     }
   };
 
-  const Step = steps[current].component;
+  const StepComponent = steps[current].component;
 
   return (
     <div className="mx-auto max-w-xl bg-white rounded-2xl shadow-lg p-6 text-gray-800">
+      {/* Stepper Header */}
       <div className="flex justify-between mb-8">
         {steps.map((step, i) => (
           <div key={i} className="flex-1 text-center">
             <div
-              className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center ${current === i ? "bg-amber-500 text-white" : "border-2 border-gray-200 text-gray-800"}`}
+              className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center ${
+                current === i
+                  ? "bg-amber-500 text-white"
+                  : "border-2 border-gray-200 text-gray-800"
+              }`}
             >
               {i + 1}
             </div>
@@ -101,117 +98,30 @@ export default function OnboardingWizard() {
         ))}
       </div>
 
+      {/* Render steps 0–3 with validation */}
       {current <= 3 && (
-        <Step
+        <StepComponent
           data={data}
           update={update}
           validate={(v) => setValid((prev) => ({ ...prev, [current]: v }))}
         />
       )}
 
+      {/* Step 4: Questionnaire */}
       {current === 4 && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-semibold">Risk Questionnaire</h2>
-          {RISK_QUESTIONS.map((qText, idx) => (
-            <div key={idx} className="flex items-center">
-              <span className="flex-1">{qText}</span>
-              {[1, 2, 3, 4, 5].map((val) => (
-                <label key={val} className="mx-1">
-                  <input
-                    type="radio"
-                    name={`q${idx}`}
-                    value={val}
-                    checked={data.questionnaire[idx] === val}
-                    onChange={() =>
-                      setData({
-                        ...data,
-                        questionnaire: data.questionnaire.map((v, i) =>
-                          i === idx ? val : v
-                        ),
-                      })
-                    }
-                    className="mr-1"
-                  />
-                  {val}
-                </label>
-              ))}
-            </div>
-          ))}
-          <button
-            onClick={() => {
-              if (data.questionnaire.some((v) => v < 1 || v > 5)) {
-                alert("Please answer all risk questions (1–5).");
-                return;
-              }
-              next();
-            }}
-            className="mt-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl py-2 px-4"
-          >
-            Next
-          </button>
-        </div>
+        <StepQuestionnaire data={data} update={update} next={next} />
       )}
 
+      {/* Step 5: Summary & Finish */}
       {current === 5 && (
-        <div className="space-y-4 text-gray-800">
-          <h2 className="text-xl font-semibold">Review Your Information</h2>
-          <div>
-            <strong>Email:</strong> {data.email}
-          </div>
-          <div>
-            <strong>Name:</strong> {data.firstName} {data.lastName}
-          </div>
-          <div>
-            <strong>DOB:</strong> {data.dob}
-          </div>
-          <div>
-            <strong>National ID:</strong> {data.nationalId}
-          </div>
-          <div>
-            <strong>KRA PIN:</strong> {data.kraPin}
-          </div>
-          <div>
-            <strong>Annual Income:</strong> KES {Number(data.annualIncome).toLocaleString()}
-          </div>
-          <div>
-            <strong>Dependents:</strong> {data.dependents}
-          </div>
-          <div>
-            <strong>Goal:</strong> {data.goals.type} – KES {Number(data.goals.targetAmount).toLocaleString()} in {data.goals.timeHorizon} yrs
-          </div>
-          <div>
-            <strong>Risk Responses:</strong>
-            <ul className="list-disc list-inside">
-              {RISK_QUESTIONS.map((q, i) => (
-                <li key={i}>{q.replace(/^\d+\.\s/, "")}: {data.questionnaire[i]}/5</li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <strong>Qualitative Risk Score:</strong> Will be calculated from your responses and shown on your dashboard.
-          </div>
-          {profile && (
-            <div className="mt-4 p-4 bg-amber-50 rounded-lg">
-              <strong>Your Risk Tolerance Level:</strong>
-              <span className="ml-2 text-2xl text-amber-600">
-                {profile.risk_level} / 5
-              </span>
-              <p className="text-sm text-gray-600 mt-1">
-                1 = Very Conservative → 5 = Aggressive
-              </p>
-            </div>
-          )}
-          <button
-            onClick={async () => {
-              await handleFinish();
-            }}
-            className="mt-6 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl py-2 px-6"
-          >
-            Finish & Create Account
-          </button>
-        </div>
+        <StepSummary
+          data={data}
+          profile={profile}
+          handleFinish={handleFinish}
+        />
       )}
 
+      {/* Navigation Buttons for steps 0–3 */}
       {current <= 3 && (
         <div className="flex justify-between mt-6">
           <button
@@ -223,8 +133,8 @@ export default function OnboardingWizard() {
           </button>
           <button
             onClick={next}
-            className="bg-amber-500 hover:bg-amber-600 text-white rounded-2xl py-2 px-4"
             disabled={!valid[current]}
+            className="bg-amber-500 hover:bg-amber-600 text-white rounded-2xl py-2 px-4"
           >
             Next
           </button>

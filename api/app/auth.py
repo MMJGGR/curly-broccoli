@@ -44,20 +44,19 @@ def register(data: RegisterRequest):
         goals=data.goals,
     )
 
-    # Compute CFA-aligned risk score
+    # 5. Compute CFA-aligned risk score
     age = calculate_age(data.dob)
-    income = data.annual_income
-    dependents = data.dependents
-    horizon = data.goals["timeHorizon"]
-
-    profile.risk_score = compute_risk_score(
+    score = compute_risk_score(
         age=age,
-        income=income,
-        dependents=dependents,
-        time_horizon=horizon,
+        income=data.annual_income,
+        dependents=data.dependents,
+        time_horizon=data.goals["timeHorizon"],
         questionnaire=data.questionnaire,
     )
-    profile.risk_level = compute_risk_level(profile.risk_score)
+    
+    profile.risk_score = score
+    profile.risk_level = compute_risk_level(score)   
+    
     db.add(profile)
     db.commit()
 
