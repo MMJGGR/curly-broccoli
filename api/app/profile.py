@@ -13,6 +13,7 @@ from app.models       import UserProfile, User
 from app.schemas      import ProfileOut, Dependents
 from app.security     import SECRET_KEY, ALGORITHM
 from compute.risk_engine import compute_risk_score, compute_risk_level
+from app.utils import normalize_questionnaire
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -61,12 +62,14 @@ def update_profile(
         setattr(profile, field, value)
 
     # Compute risk based on updated fields
+    questionnaire = profile_in.dict().get("questionnaire", [3] * 8)
+    questionnaire = normalize_questionnaire(questionnaire)
     profile.risk_score = compute_risk_score(
         age         = calculate_age(profile.dob),
         income      = profile.annual_income,
         dependents  = profile.dependents,
         time_horizon= profile.goals.get("timeHorizon", 0),
-        questionnaire= profile_in.dict().get("questionnaire", [3] * 8),
+        questionnaire= questionnaire,
     )
     profile.risk_level = compute_risk_level(profile.risk_score)
 
@@ -95,12 +98,13 @@ def set_dependents(
 
     profile = current.profile
     profile.dependents = data.dependents
+    questionnaire = normalize_questionnaire(profile.questionnaire or [3] * 8)
     profile.risk_score = compute_risk_score(
         age         = calculate_age(profile.dob),
         income      = profile.annual_income,
         dependents  = profile.dependents,
         time_horizon= profile.goals.get("timeHorizon", 0),
-        questionnaire= [3] * 8,
+        questionnaire= questionnaire,
     )
     profile.risk_level = compute_risk_level(profile.risk_score)
 
@@ -119,12 +123,13 @@ def clear_dependents(
 
     profile = current.profile
     profile.dependents = 0
+    questionnaire = normalize_questionnaire(profile.questionnaire or [3] * 8)
     profile.risk_score = compute_risk_score(
         age         = calculate_age(profile.dob),
         income      = profile.annual_income,
         dependents  = profile.dependents,
         time_horizon= profile.goals.get("timeHorizon", 0),
-        questionnaire= [3] * 8,
+        questionnaire= questionnaire,
     )
     profile.risk_level = compute_risk_level(profile.risk_score)
 

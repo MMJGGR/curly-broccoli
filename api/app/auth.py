@@ -10,6 +10,7 @@ from app.models import User, UserProfile
 from app.schemas import RegisterRequest, Token
 from app.security import hash_password, verify_password, create_access_token
 from compute.risk_engine import compute_risk_score, compute_risk_level
+from app.utils import normalize_questionnaire
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -41,6 +42,7 @@ def register(
     db.refresh(user)
 
     # 4. Create Profile
+    questionnaire = normalize_questionnaire(data.questionnaire)
     profile = UserProfile(
         user_id=user.id,
         dob=data.dob,
@@ -48,6 +50,7 @@ def register(
         annual_income=data.annual_income,
         dependents=data.dependents,
         goals=data.goals,
+        questionnaire=questionnaire,
     )
 
     # 5. Compute CFA-aligned risk score
@@ -57,7 +60,7 @@ def register(
         income=data.annual_income,
         dependents=data.dependents,
         time_horizon=data.goals.get("timeHorizon", 0),
-        questionnaire=data.questionnaire,
+        questionnaire=questionnaire,
     )
     profile.risk_score = score
     profile.risk_level = compute_risk_level(score)
@@ -71,6 +74,8 @@ def register(
     return {
         "access_token": access_token,
         "token_type":   "bearer",
+        "risk_score":  profile.risk_score,
+        "risk_level":  profile.risk_level,
     }
 
 
