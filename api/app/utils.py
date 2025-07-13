@@ -1,7 +1,7 @@
-from typing import Any
+from typing import Any, List
 
 
-def normalize_questionnaire(raw: Any) -> list[int]:
+def normalize_questionnaire(raw: Any) -> List[int]:
     """Return a list of int responses regardless of input format."""
     if isinstance(raw, dict):
         try:
