@@ -4,6 +4,7 @@ SQLAlchemy>=1.4
 python-dotenv
 passlib[bcrypt]
 PyJWT
+python-multipart
 pytest
 pytest-cov
 email-validator>=1.3.0
