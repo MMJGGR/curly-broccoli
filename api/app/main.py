@@ -1,6 +1,7 @@
 import os
 import uuid
 from fastapi import FastAPI, Request, Response, Depends
+from fastapi.middleware.cors import CORSMiddleware
 
 class TraceMiddleware:
     """Simple middleware adding a unique trace ID to each response."""
@@ -26,6 +27,13 @@ from compute.operations import add
 
 app = FastAPI(title=os.getenv("APP_NAME", "FastAPI App"))
 app.add_middleware(TraceMiddleware)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():
