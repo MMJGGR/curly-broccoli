@@ -47,15 +47,19 @@ export default function OnboardingWizard() {
             kra_pin: data.kraPin,
             annual_income: Number(data.annualIncome),
             dependents: Number(data.dependents),
-            goals: data.goals,
-            questionnaire: data.questionnaire,
+            goals: {
+              ...data.goals,
+              targetAmount: Number(data.goals?.targetAmount),
+              timeHorizon: Number(data.goals?.timeHorizon),
+            },
+            questionnaire: data.questionnaire.map((q) => Number(q)),
           }),
         }
       );
       if (!res.ok) {
         const err = await res.json();
         alert("Registration error: " + (err.detail || err.message));
-        return;
+        return false;
       }
       const { access_token } = await res.json();
       localStorage.setItem("jwt", access_token);
@@ -66,13 +70,13 @@ export default function OnboardingWizard() {
       );
       const userProfile = await profileRes.json();
       setUserProfile(userProfile);
-      // navigate to dashboard once profile is set
-      navigate("/dashboard");
+      return true;
     } catch (err) {
       console.error("Registration request failed", err);
       alert(
         "Unable to complete registration. Please check your connection and try again."
       );
+      return false;
     }
   };
 

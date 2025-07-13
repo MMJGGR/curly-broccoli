@@ -37,8 +37,10 @@ export default function StepSummary({ data, profile, handleFinish }) {
       )}
       <button
         onClick={async () => {
-          await handleFinish();
-          navigate("/dashboard");
+          const ok = await handleFinish();
+          if (ok) {
+            navigate("/dashboard");
+          }
         }}
         className="mt-6 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl py-2 px-6"
       >
