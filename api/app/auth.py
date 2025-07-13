@@ -1,22 +1,28 @@
+# File: api/app/auth.py
+
 from datetime import date
-from fastapi import APIRouter, HTTPException, status, Response
+from fastapi import APIRouter, HTTPException, status, Depends
+from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 
-from .database import get_db
-from .models import User, UserProfile
-from .schemas import RegisterRequest, Token
-from .security import hash_password, verify_password, create_access_token
+from app.database import get_db
+from app.models import User, UserProfile
+from app.schemas import RegisterRequest, Token
+from app.security import hash_password, verify_password, create_access_token
 from compute.risk_engine import compute_risk_score, compute_risk_level
 
+router = APIRouter(prefix="/auth", tags=["auth"])
+
 # simple age calculator
-calculate_age = lambda dob: (date.today() - dob).days // 365
+def calculate_age(dob: date) -> int:
+    return (date.today() - dob).days // 365
 
-router = APIRouter(prefix="/auth")
 
-
-@router.post("/register", response_model=Token, status_code=201)
-def register(data: RegisterRequest):
-    db = get_db()
+@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
+def register(
+    data: RegisterRequest,
+    db:   Session = Depends(get_db),
+):
     # 1. Check if email already exists
     existing = db.query(User).filter_by(email=data.email).first()
     if existing:
@@ -45,40 +51,43 @@ def register(data: RegisterRequest):
     )
 
     # 5. Compute CFA-aligned risk score
-    age = calculate_age(data.dob)
+    age   = calculate_age(data.dob)
     score = compute_risk_score(
         age=age,
         income=data.annual_income,
         dependents=data.dependents,
-        time_horizon=data.goals["timeHorizon"],
+        time_horizon=data.goals.get("timeHorizon", 0),
         questionnaire=data.questionnaire,
     )
-    
     profile.risk_score = score
-    profile.risk_level = compute_risk_level(score)   
-    
+    profile.risk_level = compute_risk_level(score)
+
     db.add(profile)
     db.commit()
+    db.refresh(profile)
 
-    # 6. Return JWT token
-    token = create_access_token(str(user.id))
-    return Response(
-        {
-            **Token(access_token=token).dict(),
-            "risk_score": profile.risk_score,
-            "risk_level": profile.risk_level,
-        },
-        status_code=201,
-    )
+    # 6. Issue JWT
+    access_token = create_access_token(data={"sub": str(user.id)})
+    return {
+        "access_token": access_token,
+        "token_type":   "bearer",
+    }
 
 
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm):
-    db = get_db()
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db:        Session                = Depends(get_db),
+):
     user = db.query(User).filter_by(email=form_data.username).first()
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
         )
-    token = create_access_token(str(user.id))
-    return Response(Token(access_token=token).dict(), status_code=200)
+
+    access_token = create_access_token(data={"sub": str(user.id)})
+    return {
+        "access_token": access_token,
+        "token_type":   "bearer",
+    }

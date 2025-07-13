@@ -29,31 +29,9 @@ class Session:
             if user:
                 user.profile = obj
     def commit(self, *a, **k):
-        """Persist detached objects by storing deep copies in ``DATABASE``."""
-        import copy
-
-        DATABASE['users'] = {uid: copy.deepcopy(u) for uid, u in DATABASE['users'].items()}
-        DATABASE['profiles'] = {uid: copy.deepcopy(p) for uid, p in DATABASE['profiles'].items()}
-
-        # reconnect relationships on the stored copies
-        for uid, profile in DATABASE['profiles'].items():
-            user = DATABASE['users'].get(uid)
-            if user:
-                user.profile = profile
-                profile.user = user
-
+        pass
     def refresh(self, obj):
-        """Reload ``obj`` from ``DATABASE`` to reflect persisted state."""
-        import dataclasses, copy
-
-        if isinstance(obj, User):
-            stored = DATABASE['users'].get(obj.id)
-        elif isinstance(obj, UserProfile):
-            stored = DATABASE['profiles'].get(obj.user_id)
-        else:
-            stored = None
-        if not stored:
-            return
+        stored = DATABASE['users'].get(obj.id) if isinstance(obj, User) else DATABASE['profiles'].get(obj.user_id)
         for field in dataclasses.fields(stored):
             setattr(obj, field.name, copy.deepcopy(getattr(stored, field.name)))
     def query(self, model):
@@ -65,7 +43,10 @@ class Query:
         self._results = []
     def filter_by(self, **kwargs):
         data = DATABASE['users'] if self.model is User else DATABASE['profiles']
-        self._results = [obj for obj in data.values() if all(getattr(obj, k) == v for k,v in kwargs.items())]
+        self._results = [
+            obj for obj in data.values()
+            if all(getattr(obj, k) == v for k, v in kwargs.items())
+        ]
         return self
     def first(self):
         return self._results[0] if self._results else None
