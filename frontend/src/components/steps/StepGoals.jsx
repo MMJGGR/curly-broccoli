@@ -6,20 +6,11 @@ export default function StepGoals({ data, update, validate }) {
   useEffect(() => {
     const errs = {};
     if (!data.goals?.type) errs.goalType = "Goal type is required";
-    if (
-      data.goals?.targetAmount === undefined ||
-      data.goals?.targetAmount === "" ||
-      Number(data.goals?.targetAmount) <= 0
-    ) {
+    if (!data.goals?.targetAmount || Number(data.goals.targetAmount) <= 0)
       errs.targetAmount = "Amount must be greater than 0";
-    }
-    if (
-      data.goals?.timeHorizon === undefined ||
-      data.goals?.timeHorizon === "" ||
-      Number(data.goals?.timeHorizon) <= 0
-    ) {
+    if (!data.goals?.timeHorizon || Number(data.goals.timeHorizon) <= 0)
       errs.timeHorizon = "Time horizon must be greater than 0";
-    }
+
     setErrors(errs);
     validate(Object.keys(errs).length === 0);
   }, [data, validate]);

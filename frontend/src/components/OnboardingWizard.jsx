@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import StepAccount from "./steps/StepAccount";
 import StepPersonal from "./steps/StepPersonal";
@@ -27,15 +27,20 @@ export default function OnboardingWizard() {
   const [valid, setValid] = useState({});
   const [profile, setUserProfile] = useState(null);
   const last = steps.length - 1;
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
   const update = (values) => setData((prev) => ({ ...prev, ...values }));
+  const validateStep = useCallback(
+    (v) => setValid((prev) => ({ ...prev, [current]: v })),
+    [current]
+  );
   const next = () => setCurrent((c) => Math.min(c + 1, last));
   const prev = () => setCurrent((c) => Math.max(c - 1, 0));
 
   const handleFinish = async () => {
     try {
       const res = await fetch(
-        `${process.env.REACT_APP_API_URL}/auth/register`,
+        `${API_BASE}/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -65,7 +70,7 @@ export default function OnboardingWizard() {
       localStorage.setItem("jwt", access_token);
       // fetch profile after registration
       const profileRes = await fetch(
-        `${process.env.REACT_APP_API_URL}/profile`,
+        `${API_BASE}/profile`,
         { headers: { Authorization: `Bearer ${access_token}` } }
       );
       const userProfile = await profileRes.json();
@@ -107,7 +112,7 @@ export default function OnboardingWizard() {
         <StepComponent
           data={data}
           update={update}
-          validate={(v) => setValid((prev) => ({ ...prev, [current]: v }))}
+          validate={validateStep}
         />
       )}
 
