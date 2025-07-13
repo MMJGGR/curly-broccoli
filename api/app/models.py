@@ -3,7 +3,6 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Dict, Any, Optional
-from sqlalchemy import Column, String, Integer, Date, Numeric, JSON, ForeignKey
 from .database import Base
 
 @dataclass
@@ -16,12 +15,12 @@ class User:
 @dataclass
 class UserProfile:
     __tablename__ = 'profiles'
-    user_id = Column(String(36), ForeignKey("users.id"), primary_key=True)
-    dob = Column(Date, nullable=False)
-    kra_pin        = Column(String(20), nullable=False)
-    annual_income  = Column(Numeric(12,2), nullable=False)
-    dependents     = Column(Integer,      nullable=False, default=0)
-    goals          = Column(JSON,         nullable=False)
-    questionnaire  = Column(JSON,         nullable=False)  # store [1,2,3...]
-    risk_score     = Column(Integer,      nullable=True)
-    risk_level     = Column(Integer,      nullable=True)
+    user_id: str = ""
+    dob: date | None = None
+    kra_pin: str = ""
+    annual_income: float = 0.0
+    dependents: int = 0
+    goals: Dict[str, Any] = field(default_factory=dict)
+    questionnaire: Any = field(default_factory=list)
+    risk_score: Optional[int] = None
+    risk_level: Optional[int] = None

@@ -11,6 +11,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 3) Copy your entire repo (api/, compute/, alembic/, etc)
 COPY . .
 
+# Remove lightweight Pydantic stub so the real library installed above is used
+RUN rm -rf /app/pydantic /app/fastapi
+
 # 4) Tell Python where to find both app/ and compute/
 ENV PYTHONPATH=/app:/app/api
 
