@@ -38,54 +38,70 @@ export default function OnboardingWizard() {
   const update = (values) => setData((prev) => ({ ...prev, ...values }));
   const validateStep = useCallback(
     (v) => setValid((prev) => ({ ...prev, [current]: v })),
-    [current]
+    [current],
   );
   const next = () => setCurrent((c) => Math.min(c + 1, last));
   const prev = () => setCurrent((c) => Math.max(c - 1, 0));
 
   const handleFinish = async () => {
     try {
-      const res = await fetch(
-        `${API_BASE}/auth/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: data.email,
-            password: data.password,
-            dob: data.dob,
-            nationalId: data.nationalId,
-            kra_pin: data.kraPin,
-            annual_income: Number(data.annualIncome),
-            dependents: Number(data.dependents),
-            goals: {
-              ...data.goals,
-              targetAmount: Number(data.goals?.targetAmount),
-              timeHorizon: Number(data.goals?.timeHorizon),
-            },
-            questionnaire: data.questionnaire.map((q) => Number(q)),
-          }),
-        }
-      );
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          dob: data.dob,
+          nationalId: data.nationalId,
+          kra_pin: data.kraPin,
+          annual_income: Number(data.annualIncome),
+          dependents: Number(data.dependents),
+          goals: {
+            ...data.goals,
+            targetAmount: Number(data.goals?.targetAmount),
+            timeHorizon: Number(data.goals?.timeHorizon),
+          },
+          questionnaire: data.questionnaire.map((q) => Number(q)),
+        }),
+      });
       if (!res.ok) {
-        const err = await res.json();
-        alert("Registration error: " + (err.detail || err.message));
+        let message = res.statusText;
+        try {
+          const err = await res.json();
+          message = err.detail || err.message || message;
+        } catch {
+          // non-JSON error response
+        }
+        alert("Registration error: " + message);
         return false;
       }
-      const { access_token } = await res.json();
+      let access_token;
+      try {
+        ({ access_token } = await res.json());
+      } catch {
+        console.error("Registration response was not JSON");
+        alert("Unexpected server response. Please try again later.");
+        return false;
+      }
       localStorage.setItem("jwt", access_token);
       // fetch profile after registration
-      const profileRes = await fetch(
-        `${API_BASE}/profile`,
-        { headers: { Authorization: `Bearer ${access_token}` } }
-      );
-      const userProfile = await profileRes.json();
+      const profileRes = await fetch(`${API_BASE}/profile`, {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      let userProfile;
+      try {
+        userProfile = await profileRes.json();
+      } catch {
+        console.error("Profile response was not JSON");
+        alert("Unable to load profile. Please try again later.");
+        return false;
+      }
       setUserProfile(userProfile);
       return true;
     } catch (err) {
       console.error("Registration request failed", err);
       alert(
-        "Unable to complete registration. Please check your connection and try again."
+        "Unable to complete registration. Please check your connection and try again.",
       );
       return false;
     }
@@ -115,11 +131,7 @@ export default function OnboardingWizard() {
 
       {/* Render steps 0–3 with validation */}
       {current <= 3 && (
-        <StepComponent
-          data={data}
-          update={update}
-          validate={validateStep}
-        />
+        <StepComponent data={data} update={update} validate={validateStep} />
       )}
 
       {/* Step 4: Questionnaire */}
