@@ -1,14 +1,20 @@
 import os
 import uuid
+import asyncio
+import inspect
 from fastapi import FastAPI, Request, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 class TraceMiddleware:
     """Simple middleware adding a unique trace ID to each response."""
+
     def __call__(self, request: Request, call_next):
         trace_id = str(uuid.uuid4())
         request.state.trace_id = trace_id
         response = call_next(request)
+        if inspect.isawaitable(response):
+            response = asyncio.run(response)
         if isinstance(response, Response):
             response.headers["X-Trace-ID"] = trace_id
             return response
