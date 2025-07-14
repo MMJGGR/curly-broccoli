@@ -27,10 +27,14 @@ jobs:
       - name: Install backend deps & migrate
         run: |
           pip install -r api/requirements.txt
-          alembic upgrade head
+          alembic -c api/alembic.ini upgrade head
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
 
       - name: Start backend
         run: uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
 
       - name: Setup Node
         uses: actions/setup-node@v3
