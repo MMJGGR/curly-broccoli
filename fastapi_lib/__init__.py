@@ -2,6 +2,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Callable, Dict, Tuple, Any, Type
 import inspect
+import asyncio
 
 class HTTPException(Exception):
     def __init__(self, status_code: int, detail: str = ""):
@@ -83,6 +84,14 @@ class FastAPI(APIRouter):
         """Register a middleware instance to run on each request."""
         self._middleware.append(middleware_class(**kwargs))
 
+    def middleware(self, type_: str):
+        if type_ != "http":
+            raise NotImplementedError("Only 'http' middleware supported")
+        def decorator(func: Callable[[Request, Callable[[Request], Response]], Any]):
+            self.add_middleware(FunctionMiddleware, func=func)
+            return func
+        return decorator
+
 
 class CORSMiddleware:
     """Very small stub of FastAPI's CORSMiddleware for tests."""
@@ -106,3 +115,16 @@ class CORSMiddleware:
             if self.allow_credentials:
                 response.headers["access-control-allow-credentials"] = "true"
         return response
+
+
+class FunctionMiddleware:
+    """Wrap a function-style middleware for the TestClient."""
+
+    def __init__(self, func: Callable[[Request, Callable[[Request], Response]], Any]):
+        self.func = func
+
+    def __call__(self, request: Request, call_next: Callable[[Request], Response]):
+        result = self.func(request, call_next)
+        if inspect.isawaitable(result):
+            result = asyncio.run(result)
+        return result
