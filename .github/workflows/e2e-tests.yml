@@ -40,9 +40,18 @@ jobs:
         uses: actions/setup-node@v3
         with: { node-version: "18" }
 
-      - name: Install & test frontend
+      - name: Install frontend deps
         working-directory: frontend
-        run: |
-          npm ci
-          npm run e2e
+        run: npm ci
+
+      - name: Start frontend
+        working-directory: frontend
+        run: npm start &
+
+      - name: Wait for frontend
+        run: timeout 60s bash -c 'until curl -fs http://localhost:3000; do sleep 5; done'
+
+      - name: Run e2e tests
+        working-directory: frontend
+        run: npm run e2e
 
