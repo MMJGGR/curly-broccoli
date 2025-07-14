@@ -20,6 +20,9 @@ This repository contains a basic setup for a FastAPI API service and a React fro
    docker compose up --build
    ```
 3. Access the API at `http://localhost:8000` and the frontend at `http://localhost:3000`.
+   The Create React App dev server is configured to proxy `/auth` and other
+   API paths to the FastAPI backend running on port `8000`, so API calls from
+   the frontend during development will work out of the box.
 
 ## Development
 
