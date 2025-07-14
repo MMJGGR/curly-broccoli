@@ -27,7 +27,7 @@ export default function OnboardingWizard() {
   const [valid, setValid] = useState({});
   const [profile, setUserProfile] = useState(null);
   const last = steps.length - 1;
-  const rawBase = import.meta.env.VITE_API_BASE_URL;
+  const rawBase = process.env.VITE_API_BASE_URL;
   const API_BASE = rawBase && rawBase !== "undefined" ? rawBase : "";
 
   const update = (values) => setData((prev) => ({ ...prev, ...values }));

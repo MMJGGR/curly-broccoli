@@ -11,6 +11,7 @@ This repository contains a basic setup for a FastAPI API service and a React fro
 
 1. Copy environment variable samples:
    ```bash
+   cp .env.example .env
    cp api/.env.example api/.env
    cp frontend/.env.example frontend/.env
    ```
