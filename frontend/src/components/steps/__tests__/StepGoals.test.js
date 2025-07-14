@@ -4,6 +4,6 @@ import StepGoals from "../StepGoals";
 test("renders goal dropdown", () => {
   const validate = jest.fn();
   render(<StepGoals data={{}} update={() => {}} validate={validate} />);
-  expect(screen.getByText(/goal type/i)).toBeInTheDocument();
+  expect(screen.getByRole("combobox")).toBeInTheDocument();
   expect(validate).toHaveBeenCalledWith(false);
 });

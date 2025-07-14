@@ -2,8 +2,10 @@ import React from "react";
 import { RISK_QUESTIONS, RISK_SCALE } from "./risk-config";
 
 export default function StepQuestionnaire({ data, update, next }) {
+  const questionnaire = data.questionnaire || [];
+
   const updateQuestion = (idx, score) => {
-    const arr = [...data.questionnaire];
+    const arr = [...questionnaire];
     arr[idx] = score;
     update({ questionnaire: arr });
   };
@@ -20,7 +22,7 @@ export default function StepQuestionnaire({ data, update, next }) {
                 type="radio"
                 name={`q${i}`}
                 value={score}
-                checked={data.questionnaire[i] === score}
+                checked={questionnaire[i] === score}
                 onChange={() => updateQuestion(i, score)}
                 className="mb-1"
               />
@@ -38,7 +40,7 @@ export default function StepQuestionnaire({ data, update, next }) {
       </div>
       <button
         onClick={() => {
-          if (data.questionnaire.some(v => v < 1 || v > 5)) {
+          if (questionnaire.some((v) => v < 1 || v > 5)) {
             alert("Please answer every question on a 1–5 scale.");
             return;
           }
