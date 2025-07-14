@@ -26,7 +26,9 @@ export default function StepGoals({ data, update, validate }) {
         <select
           name="goalType"
           value={data.goals?.type || ""}
-          onChange={(e) => update({ goals: { ...(data.goals || {}), type: e.target.value } })}
+          onChange={(e) =>
+            update({ goals: { ...(data.goals || {}), type: e.target.value } })
+          }
           className="border-gray-200 focus:ring-amber-500 focus:border-amber-500 rounded-lg p-2 w-full"
         >
           <option value="">Goal Type</option>
@@ -43,7 +45,11 @@ export default function StepGoals({ data, update, validate }) {
           name="targetAmount"
           type="number"
           value={data.goals?.targetAmount || ""}
-          onChange={(e) => update({ goals: { ...(data.goals || {}), targetAmount: e.target.value } })}
+          onChange={(e) =>
+            update({
+              goals: { ...(data.goals || {}), targetAmount: e.target.value },
+            })
+          }
           placeholder="Target Amount"
           className="border-gray-200 focus:ring-amber-500 focus:border-amber-500 rounded-lg p-2 w-full"
         />
@@ -56,7 +62,11 @@ export default function StepGoals({ data, update, validate }) {
           name="timeHorizon"
           type="number"
           value={data.goals?.timeHorizon || ""}
-          onChange={(e) => update({ goals: { ...(data.goals || {}), timeHorizon: e.target.value } })}
+          onChange={(e) =>
+            update({
+              goals: { ...(data.goals || {}), timeHorizon: e.target.value },
+            })
+          }
           placeholder="Time Horizon (yrs)"
           className="border-gray-200 focus:ring-amber-500 focus:border-amber-500 rounded-lg p-2 w-full"
         />
