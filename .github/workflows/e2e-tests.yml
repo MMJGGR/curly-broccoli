@@ -33,7 +33,8 @@ jobs:
           DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
 
       - name: Start backend
-        run: uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+        working-directory: api
+        run: uvicorn app.main:app --host 0.0.0.0 --port 8000 &
         env:
           DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
 
