@@ -28,13 +28,17 @@ jobs:
         working-directory: api
         run: |
           pip install -r requirements.txt
+          SITE=$(python -c "import site;print(site.getsitepackages()[0])")
+          export PYTHONPATH="$SITE:.."
           alembic upgrade head
         env:
           DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
 
       - name: Start backend
         working-directory: api
-        run: uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        run: |
+          SITE=$(python -c "import site;print(site.getsitepackages()[0])")
+          PYTHONPATH="$SITE:.." uvicorn app.main:app --host 0.0.0.0 --port 8000 &
         env:
           DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
 

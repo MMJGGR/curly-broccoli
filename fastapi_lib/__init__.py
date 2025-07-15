@@ -81,7 +81,10 @@ class FastAPI(APIRouter):
 
     def add_middleware(self, middleware_class: Type, **kwargs):
         """Register a middleware instance to run on each request."""
-        self._middleware.append(middleware_class(**kwargs))
+        try:
+            self._middleware.append(middleware_class(self, **kwargs))
+        except TypeError:
+            self._middleware.append(middleware_class(**kwargs))
 
 
 class CORSMiddleware:
