@@ -1,0 +1,66 @@
+name: End-to-End Tests
+
+on: [push, pull_request]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: pass
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U user -d test_db"
+          --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with: { python-version: "3.10" }
+
+      - name: Install backend deps & migrate
+        working-directory: api
+        run: |
+          pip install -r requirements.txt
+          SITE=$(python -c "import site;print(site.getsitepackages()[0])")
+          export PYTHONPATH="$SITE:.."
+          alembic upgrade head
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
+
+      - name: Start backend
+        working-directory: api
+        run: |
+          SITE=$(python -c "import site;print(site.getsitepackages()[0])")
+          PYTHONPATH="$SITE:.." uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
+
+      - name: Wait for API
+        run: timeout 60s bash -c 'until curl -fs http://localhost:8000/healthz; do sleep 5; done'
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with: { node-version: "18" }
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Start frontend
+        working-directory: frontend
+        run: npm start &
+
+      - name: Wait for frontend
+        run: timeout 60s bash -c 'until curl -fs http://localhost:3000; do sleep 5; done'
+
+      - name: Run e2e tests
+        working-directory: frontend
+        run: xvfb-run -a npm run e2e
+
