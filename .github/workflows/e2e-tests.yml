@@ -22,45 +22,25 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v4
-        with: { python-version: "3.10" }
+        with:
+          python-version: "3.10"
 
       - name: Install backend deps & migrate
-        working-directory: api
         run: |
-          pip install -r requirements.txt
-          SITE=$(python -c "import site;print(site.getsitepackages()[0])")
-          export PYTHONPATH="$SITE:.."
-          alembic upgrade head
-        env:
-          DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
+          pip install -r api/requirements.txt
+          DATABASE_URL=postgresql://user:pass@localhost:5432/test_db alembic -c api/alembic.ini upgrade head
 
       - name: Start backend
-        working-directory: api
         run: |
-          SITE=$(python -c "import site;print(site.getsitepackages()[0])")
-          PYTHONPATH="$SITE:.." uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-        env:
-          DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
-
-      - name: Wait for API
-        run: timeout 60s bash -c 'until curl -fs http://localhost:8000/healthz; do sleep 5; done'
+          DATABASE_URL=postgresql://user:pass@localhost:5432/test_db uvicorn api.app.main:app --host 0.0.0.0 --port 8000 &
 
       - name: Setup Node
         uses: actions/setup-node@v3
-        with: { node-version: "18" }
+        with:
+          node-version: "18"
 
-      - name: Install frontend deps
+      - name: Install & test frontend
         working-directory: frontend
-        run: npm ci
-
-      - name: Start frontend
-        working-directory: frontend
-        run: npm start &
-
-      - name: Wait for frontend
-        run: timeout 60s bash -c 'until curl -fs http://localhost:3000; do sleep 5; done'
-
-      - name: Run e2e tests
-        working-directory: frontend
-        run: xvfb-run -a npm run e2e
-
+        run: |
+          npm ci
+          npm run e2e
