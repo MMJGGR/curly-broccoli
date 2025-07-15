@@ -1,0 +1,57 @@
+name: End-to-End Tests
+
+on: [push, pull_request]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: pass
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U user -d test_db"
+          --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install backend deps & migrate
+        run: |
+          pip install -r api/requirements.txt
+          export DATABASE_URL=postgresql://user:pass@localhost:5432/test_db
+          alembic upgrade head
+
+      - name: Start backend
+        run: |
+          uvicorn api.app.main:app --host 0.0.0.0 --port 8000 &
+        env:
+          DATABASE_URL: postgresql://user:pass@localhost:5432/test_db
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install
+
+      - name: Test frontend
+        working-directory: frontend
+        run: npm test -- --coverage || true
+
+      - name: Run e2e tests
+        working-directory: frontend
+        run: xvfb-run -a npm run e2e
+        env:
+          BROWSER: none
