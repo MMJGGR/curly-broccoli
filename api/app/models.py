@@ -1,26 +1,31 @@
-from __future__ import annotations
-import uuid
-from dataclasses import dataclass, field
-from datetime import date
-from typing import Dict, Any, Optional
+from sqlalchemy import Column, Integer, String, Float, Date, JSON
+from sqlalchemy.orm import relationship
 from .database import Base
 
-@dataclass
-class User:
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    email: str = ""
-    password_hash: str = ""
-    profile: 'UserProfile' | None = None
+class User(Base):
+    __tablename__ = "users"
 
-@dataclass
-class UserProfile:
-    __tablename__ = 'profiles'
-    user_id: str = ""
-    dob: date | None = None
-    kra_pin: str = ""
-    annual_income: float = 0.0
-    dependents: int = 0
-    goals: Dict[str, Any] = field(default_factory=dict)
-    questionnaire: Any = field(default_factory=list)
-    risk_score: Optional[int] = None
-    risk_level: Optional[int] = None
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    email = Column(String, unique=True, index=True)
+    password_hash = Column(String)
+
+    profile = relationship("UserProfile", back_populates="user", uselist=False)
+
+class UserProfile(Base):
+    __tablename__ = "profiles"
+
+    user_id = Column(String, sa.ForeignKey('users.id'), primary_key=True, index=True)
+    dob = Column(Date)
+    kra_pin = Column(String)
+    annual_income = Column(Float)
+    dependents = Column(Integer)
+    goals = Column(JSON)
+    questionnaire = Column(JSON)
+    risk_score = Column(Integer)
+    risk_level = Column(Integer)
+
+    user = relationship("User", back_populates="profile")
+
+import uuid
+from datetime import date
+from typing import Dict, Any, Optional

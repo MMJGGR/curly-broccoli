@@ -4,7 +4,7 @@ import inspect
 from fastapi import FastAPI, Request, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import Base, engine, get_db, Session
+from .database import Base, engine, get_db
 from .auth import router as auth_router
 from .profile import router as profile_router
 from .models import User
@@ -78,9 +78,9 @@ def get_deps(current: User = Depends(get_current_user)):
     return get_dependents(current)
 
 @app.post("/dependents", response_model=Dependents)
-def set_deps(data: Dependents, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+def set_deps(data: Dependents, db = Depends(get_db), current: User = Depends(get_current_user)):
     return set_dependents(data, db, current)
 
 @app.delete("/dependents", response_model=Dependents)
-def del_deps(db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+def del_deps(db = Depends(get_db), current: User = Depends(get_current_user)):
     return clear_dependents(db, current)

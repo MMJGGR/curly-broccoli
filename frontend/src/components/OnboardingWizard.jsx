@@ -75,28 +75,16 @@ export default function OnboardingWizard() {
         alert("Registration error: " + message);
         return false;
       }
-      let access_token;
+      let access_token, risk_score, risk_level;
       try {
-        ({ access_token } = await res.json());
+        ({ access_token, risk_score, risk_level } = await res.json());
       } catch {
         console.error("Registration response was not JSON");
         alert("Unexpected server response. Please try again later.");
         return false;
       }
       localStorage.setItem("jwt", access_token);
-      // fetch profile after registration
-      const profileRes = await fetch(`${API_BASE}/profile`, {
-        headers: { Authorization: `Bearer ${access_token}` },
-      });
-      let userProfile;
-      try {
-        userProfile = await profileRes.json();
-      } catch {
-        console.error("Profile response was not JSON");
-        alert("Unable to load profile. Please try again later.");
-        return false;
-      }
-      setUserProfile(userProfile);
+      setUserProfile({ risk_score, risk_level });
       return true;
     } catch (err) {
       console.error("Registration request failed", err);

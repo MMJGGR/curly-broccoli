@@ -4,10 +4,10 @@ import userEvent from "@testing-library/user-event";
 import OnboardingWizard from "./components/OnboardingWizard";
 
 beforeEach(() => {
-  global.fetch = jest
-    .fn()
-    .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ access_token: "tok" }) })
-    .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ risk_level: 4 }) });
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ access_token: "tok", risk_level: 4, risk_score: 80 }),
+  });
   localStorage.clear();
 });
 

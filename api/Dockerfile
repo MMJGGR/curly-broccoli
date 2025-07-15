@@ -6,13 +6,15 @@ WORKDIR /app
 
 # 2) Install dependencies
 COPY api/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt     && pip install --no-cache-dir sqlalchemy alembic     && apt-get update && apt-get install -y netcat-traditional iputils-ping
 
 # 3) Copy your entire repo (api/, compute/, alembic/, etc)
 COPY . .
+COPY wait-for-it.sh /app/
+RUN chmod +x /app/wait-for-it.sh
 
 # Remove lightweight Pydantic stub so the real library installed above is used
-RUN rm -rf /app/pydantic /app/fastapi
+RUN rm -rf /app/pydantic /app/fastapi /app/sqlalchemy
 
 # 4) Tell Python where to find both app/ and compute/
 ENV PYTHONPATH=/app:/app/api
