@@ -1,3 +1,7 @@
+import uuid
+from datetime import date
+from typing import Dict, Any, Optional
+import sqlalchemy as sa
 from sqlalchemy import Column, Integer, String, Float, Date, JSON
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -26,6 +30,3 @@ class UserProfile(Base):
 
     user = relationship("User", back_populates="profile")
 
-import uuid
-from datetime import date
-from typing import Dict, Any, Optional
