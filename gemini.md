@@ -1,44 +1,372 @@
-CFA-Compliant Personal Finance App (Kenya) – Development Roadmap
-Milestone 1: Foundation & Architecture Setup
-Monorepo and Workspace Initialization: Goal: Establish a unified codebase structure (e.g. frontend/, api/, compute/) for front-end (React + Vite) and back-end (FastAPI) per the reference architecture. Dependencies: Node.js, Python 3.10+, pnpm for workspaces. Deliverables: Repository with React 19 + Tailwind CSS app and FastAPI scaffold, both runnable. Testing: Basic linting and unit test frameworks (Jest for JS/TS, Pytest for Python) configured; require >90% coverage for any new module.
-Docker Environment: Goal: Containerize services for dev/prod parity. Dependencies: Docker & docker-compose. Deliverables: Dockerfile for FastAPI, Node (if used), and React; a docker-compose.yml to run app, DB, Redis locally. Testing: docker-compose up brings up the stack and health endpoints respond.
-Core Architecture Alignment: Goal: Adhere to guiding principles – pure-function compute core, thin React UI, stateless API. Dependencies: Team knowledge of functional design. Deliverables: Documentation of architecture decisions (e.g. no business logic in React, all logic in FastAPI endpoints). Testing: Code review check that React only renders data (no financial calculations in components), and FastAPI endpoints are side-effect free and idempotent.
-Observability Setup (Initial): Goal: Implement baseline observability tools. Dependencies: FastAPI middleware for logging, OpenTelemetry libraries. Deliverables: A /healthz endpoint in FastAPI returning engine status matrix, request logging with trace IDs, and stub integration for metrics (to be expanded later). Testing: Hitting /healthz returns OK status for all engines (since none implemented yet), each response contains a trace ID header.
-Milestone 2: User Authentication & Profile (KYC) System
-User Accounts & JWT Auth: Goal: Provide secure user registration and login with JSON Web Tokens (stateless auth). Dependencies: FastAPI OAuth2 password flow (later upgradeable to OAuth2 social login), PyJWT; PostgreSQL for user store. Deliverables: Auth API endpoints (/register, /login) that issue JWTs on successful auth. Testing: Unit tests for login (valid credentials get token, invalid get 401), ensure JWTs contain correct claims and expiration; future-proof for MFA and OAuth2 extension.
-Profile Data Model & KYC: Goal: Design a comprehensive user profile to capture KYC-level info needed for retirement/brokerage planning. Dependencies: PostgreSQL (with SQLAlchemy or similar ORM), encryption library (for PII). Deliverables: User Profile schema – fields for personal details (DOB, ID/Passport, KRA PIN, income, dependents, etc.), risk tolerance questionnaire scores, financial goals. Encrypt sensitive PII in the database (AES-256, keys in KMS). Testing: Database migration applied and verified; create a test user with full profile (e.g. Hadi’s data) and ensure data can be saved/retrieved (check encryption at rest).
-Profile Management API: Goal: CRUD endpoints for profile & dependents info. Dependencies: JWT auth implemented; pydantic schemas for request/response. Deliverables: Endpoints like /profile GET/PUT (update profile), /dependents POST/GET etc. Testing: Integration tests simulating a user updating their profile (e.g., adding a spouse or child dependent) and retrieving it. Verify that unauthorized requests are rejected (stateless JWT enforcement).
-Front-End User Onboarding Flow: Goal: Implement intuitive UI screens for onboarding and profile setup. Dependencies: React (Tailwind UI forms), form management library (if needed). Deliverables: Onboarding Component – multi-step form capturing personal info, financial status, goals (e.g. “Retire by age 60 with KES X” or “Start a business in 1 year”). Use the provided color scheme (main orange #FF9933 for call-to-action buttons, white #FFFFFF background, text #333333, subtle grays #CCCCCC/#DDDDDD for inputs, and #CC0000 for delete/remove actions). Testing: UX review with a non-tech persona (like Hadi) to ensure form is understandable; validate required fields and data formats (e.g. KRA PIN structure). Snapshot tests for React components and form state.
-Future Security Prep: Goal: Lay groundwork for later OAuth2 login and MFA. Dependencies: None (planning task). Deliverables: Design doc outlining how Google OAuth or SMS/email MFA would integrate (token scopes, refresh tokens, etc.) without breaking stateless design. Testing: (Documentation) Review by security engineer; ensure JWT payload can accommodate MFA claims or OAuth scopes (no coding yet, just planning).
-Milestone 3: Core Financial Engines – Part I (Income, Expenses, Loans, Tax)
-MasterEngine Orchestration: Goal: Create the MasterEngine service in FastAPI that orchestrates sub-engines and compiles results. Dependencies: None (new module). Deliverables: /v1/calculate endpoint accepting a JSON payload (containing profile, assets, liabilities, etc.) and returning a consolidated report.json of computed projections. MasterEngine should hash-check the input and use a Redis cache for 24h cached results to improve performance on unchanged inputs. Testing: Unit test MasterEngine with a dummy sub-engine that returns a known value; test that repeated calls with identical payload hit cache (e.g., track a cache hit metric).
-Income Engine: Goal: Compute yearly income projections and net income after taxes for the user’s working life. Dependencies: Profile data (current salary, salary growth rate, other income streams), Kenyan tax config. Deliverables: incomeEngine() pure function that, given user profile and timeline events, returns an array of yearly income values (gross and net) plus present value of future income. Include logic for PAYE tax brackets, personal relief, NSSF contributions (deductible), NHIF, and new levies (e.g. 1.5% housing levy if applicable). Use a static table for PAYE rates and reliefs loaded from config (updateable annually). Testing: Create tests for a few scenarios – e.g., a simple case of a fixed salary vs. known PAYE outcome (ensure computed PAYE matches official tables), a scenario where salary increases or a new income source starts at a future date (event simulation), and edge cases like income below taxable threshold. Verify that marking pension contributions as pre-tax reduces taxable income.
-Expense Engine: Goal: Project annual expenses throughout the timeline. Dependencies: User’s current expense breakdown, inflation assumptions. Deliverables: expenseEngine() that returns yearly expense estimates (categorized if needed) plus present value of future expenses. Incorporate life events: for example, increase expenses on marriage or birth of a child, include one-time goal expenses (like buying a house) in the respective year. Testing: Unit test that expenses grow with inflation rate; if an event “Childbirth” is in year 3, ensure engine adds child-related costs from that year onward. Test that optional large goals (from profile’s goals list) are included at correct timeline points.
-Loan Engine: Goal: Integrate liabilities (loans/mortgages) into the financial projection. Dependencies: Current loans (principal, interest rate, term) from profile. Deliverables: loanEngine() that produces amortization schedules for each loan and aggregates yearly loan payments (and remaining balances). It should flag the payoff date and monthly payment for each loan. Testing: Given a sample loan (e.g. KES 1M at 10% over 5 years), verify the engine returns correct annual interest vs principal breakdown and that loan balance hits zero by maturity. Test edge cases like interest-only loans or balloon payments if any. Ensure that if a “buy house” event adds a new mortgage, the engine can incorporate that new loan dynamically.
-Tax Calculation Integration: Goal: Ensure accurate Kenyan tax and deduction calculations are applied across engines. Dependencies: Tax rules (config tables), outputs from incomeEngine & others. Deliverables: Tax module (could be part of income engine or a shared utility) that computes PAYE, NHIF, NSSF, and levies. If early pension withdrawal occurs, apply PAYE on withdrawal amount per tax rules. Testing: Use known tax scenarios – e.g., a salary that spans multiple PAYE brackets to confirm each bracket’s tax is applied correctly; ensure personal relief is applied once; test NSSF new rates (Tier I/II) and that the taxable income is reduced by pension contributions when flagged. These tests should mirror official PAYE examples to validate accuracy.
-Deliverable & Integration: The /v1/calculate endpoint now returns a partial financial report covering incomes, expenses, and loan payments year-by-year. This should feed into a front-end dashboard (stub). Testing: End-to-end call using a test payload (with dummy data) returns a JSON with expected keys (income, expenses, etc.) and plausible values. Use a persona (e.g. Hadi’s current finances) to manually verify the output: e.g., ensure Hadi’s net income after tax matches what a Kenyan payslip calculator would show, and loan payoff aligns with schedule.
-Milestone 4: Core Financial Engines – Part II (Investments, Retirement, Insurance, Alerts)
-Investment Engine: Goal: Project growth of investments and asset allocation over time, aligned with user goals and risk profile. Dependencies: Current assets from profile (savings, stocks, etc.), user’s risk tolerance (from KYC questionnaire), market return assumptions. Deliverables: investmentEngine() that simulates portfolio value year-by-year. Incorporate contributions (e.g., regular savings or one-time investments), withdrawals for goals, and an asset allocation strategy (e.g., more equity when young, shift to bonds as user ages or as per risk profile). If the user plans to “start a business next year” (event), allow for a withdrawal of capital in that year. Testing: Financial scenario tests – e.g., if user invests KES 100k/year with 5% return, does the engine’s output match compound growth expectations? Test risk-profile adjustments: a risk-averse profile should simulate more conservative growth vs. an aggressive profile (verify asset allocation shifts accordingly).
-Retirement Engine: Goal: Determine retirement readiness and simulate pension outcomes. Dependencies: Retirement age goal from profile, current retirement savings (provident fund, pension schemes), Kenyan pension rules. Deliverables: retirementEngine() that evaluates when the user can retire given their projected finances. This engine should calculate the future value of retirement assets, apply annuity or drawdown models to see if they can sustain desired retirement income, and incorporate state pension (NSSF payouts or any govt social security) and employer schemes. Critically, handle early retirement cases: apply PAYE taxes on any early pension withdrawals and enforce minimum retirement age rules. Testing: Scenario tests – e.g., if the user’s goal is to retire at 60 with KES 100k/month need, verify the engine can determine if assets suffice or how many years short they are. Test early withdrawal: simulate user taking out pension at 50; engine should compute tax per PAYE table on that withdrawal. Ensure pension contributions in the simulation reduced taxable income as expected.
-Insurance Engine: Goal: Evaluate insurance needs and outcomes for events like disability, death, medical emergencies. Dependencies: Profile data on dependents, current insurance coverage, income (for life insurance need). Deliverables: insuranceEngine() covering key personal risk areas – e.g., calculates recommended emergency fund size (e.g., 6 months of expenses), life insurance coverage needed (e.g., to replace income for X years for dependents), disability income coverage, and medical insurance gaps. It may integrate local insurance cost data (e.g., premium rates from Kenyan insurers) or use average factors if exact product data not available. Testing: Check outputs against known rules of thumb: if user has 2 dependents and KES Y income, life cover suggested might be ~10-15× Y; ensure emergency fund recommendation equals a few months of expenses. If the user profile already has some insurance, ensure the engine only flags shortfall.
-Alert Engine: Goal: Provide users with actionable insights and warnings based on the combined financial plan. Dependencies: Outputs of all other engines (income, expense, loan, investment, retirement, insurance). Deliverables: alertEngine() that analyzes the consolidated report for any issues. Examples: “⚠️ Shortfall: You cannot afford to start the business in 1 year without depleting savings” or “✅ On track: Retirement goal at 60 is achievable.” Alerts can be of type info, warning, or error (echoing the observability principle that each engine returns ok/warning/error). Testing: Simulate various personas: one with too high expenses vs income (expect a warning about budgeting), one with insufficient retirement savings (alert suggesting increased saving or delayed retirement), and one meeting all goals (perhaps only informational alerts). Each scenario should trigger the correct alert severity. Confirm that all engine outputs are considered in generating alerts.
-Integrate & Validate Full Compute Pipeline: With all sub-engines implemented, the MasterEngine now produces a complete financial report for a user’s life timeline, combining incomes, expenses, loan balances, investment growth, insurance needs, and retirement outlook. Dependencies: All engines above integrated in MasterEngine flow. Deliverables: Updated /v1/calculate that returns the full report (e.g., JSON structure with yearly projections up to, say, age 90 or a set horizon). Also, an export function to save a snapshot of the report (e.g., to cloud storage) with a timestamp. Testing: Regression-test with a known complex profile (like Hadi’s profile data in the system) – verify that the outputs make sense compared to that user’s manual financial plan. For example, ensure net worth projection matches within ±5% of a reference calculation and all key metrics (retirement age feasible, insurance recommended) align with professional expectations. Each engine should also have near 100% unit test coverage (pure functions), and a integration test ensures that changes in one engine (e.g., increased expense) reflect appropriately in the final combined output.
-Milestone 5: User Interface & Experience (Planning & Visualization)
-Dashboard & Timeline View: Goal: Create a modern, intuitive dashboard for users to visualize their life financial timeline. Dependencies: Completed backend /calculate report JSON, charting library (e.g., D3.js or Chart.js) for timeline. Deliverables: Dashboard Page – shows a high-level summary (current net worth, projected net worth over time, financial independence age, etc.), and an interactive timeline (e.g., a chart of cash flow or net worth by year). Users should see milestones (e.g., “🏠 Bought House”, “🧑‍🎓 Child to University”, “💼 Business Start”, “🎂 Retirement”) plotted on the timeline. Implement color scheme thoroughly: e.g., use Main Orange (#FF9933) for highlights or progress bars, Primary Text (#333333) for text, Subtle Grey (#CCCCCC) for gridlines or secondary info. Testing: Usability testing with a sample user – can they understand the timeline chart? Ensure that hovering on a year shows details (income vs expense vs investment balance for that year). Automated front-end tests for rendering with a sample report JSON.
-Life Event Management UI: Goal: Allow users to input and manage life events and see their impact. Dependencies: Timeline data model in backend, state management in frontend (could use Redux or React Context for events before submission). Deliverables: Planning/Timeline Editor – UI form or drag-and-drop interface to add events (marriage, home purchase, new child, business start, etc.) with a year or age. These events should instantly reflect in the projected outcomes (either by re-calling the API or locally simulating until API confirmation). Testing: Verify adding an event updates the plan: e.g., user adds an event “Start Business in 2026 costing KES X investment” – after API recompute, the dashboard updates showing a dip in assets in 2026 and perhaps an alert if cash goes negative. Use integration test to add and remove events and assert that results change accordingly (the test could use a controlled backend stub if needed).
-Profile & Goals UI: Goal: Front-end screens for viewing/editing the detailed profile (from Milestone 2) and long-term goals. Dependencies: Profile API, maybe a state management solution for form state. Deliverables: Profile Page – shows personal info and financial details with edit capability; Goals Section – allows setting goals (retirement age, target home purchase, children education funding, etc.). These goals feed into the timeline and engines. Testing: Ensure that updating profile data (like salary or adding a dependent) triggers a re-calculation or prompts user to recalc plan, and the UI updates accordingly. Use React testing library to test form input and that new data is reflected in the store.
-Reports & Exporting: Goal: Provide a way for users to get a summary report of their financial plan. Dependencies: Back-end snapshot/ report data, a PDF generation library (or front-end print styles). Deliverables: Export Functionality – e.g., a “Download Plan” button that generates a PDF report or CSV of key projections. The report should be based on the JSON output (which is identical to front-end schema by design). Testing: If PDF, generate for a test profile and visually verify layout (contains timeline chart, list of events, key metrics, and recommendations). If just data export, verify that all fields map correctly from JSON to exported format.
-UX Review and Iteration: Goal: Refine the UI/UX to be human-centered and approachable. Dependencies: Initial user feedback (could be internal testers acting as end-users). Deliverables: Collect feedback from at least 3 users (developers or target users) using the app without developer help. Summarize pain points or confusions. Implement UI changes such as better tooltips, help modals explaining financial concepts (e.g., what “Present Value” means), etc. Ensure the color scheme and design are consistent and accessible (check contrast for text #333333 on white, etc.). Testing: Conduct a moderated user test scenario: e.g., ask a tester to “See if you can figure out when you can retire given your profile” and observe if the app effectively guides them. Address any issues (like unclear labels or navigation).
-Milestone 6: Infrastructure, Security & Deployment
-Backend Hardening & Observability: Goal: Make the backend production-ready with robust observability and security. Dependencies: FastAPI middleware, logging, monitoring tools. Deliverables: Integrate a structured logging solution (e.g., JSON logs with user ID and trace IDs for each request). Set up application metrics (e.g., engine execution time, cache hits) and distributed tracing (OpenTelemetry) exporting to a monitoring stack. Implement feature flag support (e.g., LaunchDarkly client) to toggle new features gradually. Testing: Intentionally trigger an error in one engine (e.g., divide by zero) and ensure the error is logged with trace info and returned as part of the health status matrix. Verify a sample feature flag can disable one engine’s output for testing. Security test: run dependency scans (SBOM) and vulnerability scans as part of CI.
-Docker & CI/CD Pipeline: Goal: Streamline build, test, and deployment processes. Dependencies: Docker (images already defined), GitHub Actions (or similar CI). Deliverables: CI pipeline that lints, tests, builds Docker images for frontend and backend, and generates a Software Bill of Materials (SBOM) for compliance. On success, push images to container registry. CD setup using ArgoCD with a Helm chart for the app. Configure blue-green deployment strategy so new versions roll out with minimal downtime. Testing: Simulate a commit – ensure the CI runs tests and builds images. For CD, deploy to a staging environment: check ArgoCD picks up the new image and deploys pods. Write a basic smoke test that runs after deploy (hitting health endpoint and maybe a test calculation) to confirm the app is live.
-GCP Infrastructure (Nairobi region): Goal: Prepare cloud infrastructure in the Nairobi (africa-east1) region for production deployment. Dependencies: GCP account, Terraform or gcloud for provisioning. Deliverables: Create a GKE cluster in Nairobi (or closest available region if not GA), a Cloud SQL PostgreSQL instance (for user data) and configure VPC connectivity, and a Redis (MemoryStore or VM) for caching. Set up a Cloud Storage bucket for storing immutable report snapshots. Testing: Deployment to a dev namespace in GKE: ensure app can connect to Cloud SQL (run migrations, then verify data operations), Redis cache, and save a file to Cloud Storage. Perform a load test for a few concurrent calculations to ensure the cluster auto-scales and responses remain <2s.
-Data Security & Compliance: Goal: Enforce data residency and security requirements for enterprise compliance. Dependencies: KMS for encryption keys, compliance policies. Deliverables: All personal data storage to reside in-country (Kenya) as required – confirm GCP resources (DB, storage) are in Nairobi region. Encrypt PII at rest in the database (already done via KMS) and in transit (enforce TLS everywhere). Implement regular data backup and an audit log of data access. Testing: Audit that no PII (e.g. ID numbers) is stored in plaintext in logs or DB. Penetration test (or at least run OWASP ZAP on the API) to catch common vulnerabilities (XSS, SQL injection – use ORM parameterization to prevent these). Compliance review: ensure the architecture aligns with any relevant financial data regulations in Kenya and CFA ethics (e.g., confidentiality of client data).
-Go-Live Checklist: Goal: Finalize the production readiness of the system. Dependencies: All prior tasks complete, domain name for the service. Deliverables: Documentation and scripts for deploying to production: environment variables, secrets in GCP Secret Manager, domain and TLS cert (maybe behind API Gateway or GKE Ingress with certs). Set up monitoring alerts (PagerDuty or Cloud Monitoring) for errors or resource usage. Define an incident response plan. Testing: Run a final full-system test in a staging environment with multiple personas (Hadi and at least two other sample users with different scenarios). Have non-developers go through their scenarios as a UAT. Only proceed when all critical issues are resolved and performance is acceptable.
-Milestone 7: Continuous Testing & User Validation
-Scenario Testing with Persona Data: Goal: Validate the system against real-life inspired scenarios on an ongoing basis. Dependencies: Persona profiles (like Hadi’s detailed financial data from provided spreadsheets). Deliverables: A test suite of scenario files – e.g., JSON profiles for Hadi (mid-career professional), a fresh graduate, a near-retiree – to run through /v1/calculate. Use expected outcomes (from manual calculations or expert-provided benchmarks) to assert the engines’ results are reasonable (within an acceptable error margin). Testing: Automate this test suite to run in CI. For Hadi’s profile, for instance, ensure the projected retirement age and cash flows align with his IPS (Investment Policy Statement) assumptions. Discrepancies beyond ±5% in key metrics should fail tests, prompting investigation.
-End-to-End Behavioral Tests: Goal: Ensure the entire user journey works as intended with no regression. Dependencies: Cypress or Playwright for end-to-end testing. Deliverables: Automated browser tests simulating a user’s flow: sign up → complete profile → add life events → view dashboard → adjust a goal → log out. Include variations like returning user login and checking that data persists correctly. Testing: These E2E tests should run on each deployment (maybe in staging) and must all pass. Also include an accessibility testing step (using Lighthouse or axe) to ensure the UI meets a11y standards (color contrast, keyboard navigation, etc.).
-Continuous Feedback Loop: Goal: Continuously improve based on user feedback and new data. Dependencies: Feedback channels (in-app feedback form or surveys). Deliverables: Set up a mechanism for users to report issues or suggestions. Schedule periodic (e.g., bi-weekly) reviews of incoming feedback and incorporate into backlog. As part of Kanban process, every new feature or bug fix card should include how it was tested and validated by a user persona scenario. Testing: Not applicable as a code test, but perform retrospective on each sprint/milestone: did the features delivered actually solve the user questions like “Can I afford X?” effectively? If not, refine requirements for next iteration.
-Performance and Load Testing: Goal: Ensure the app remains performant for enterprise scale usage. Dependencies: Locust or JMeter for load test, profiling tools. Deliverables: Simulate high usage (e.g., 100 concurrent users calculating plans) to evaluate system throughput and latency. Identify bottlenecks in engines (e.g., if investment simulation is too slow, consider optimization or caching). Testing: Define performance budgets (e.g., each calculation < 2 seconds for typical profile). Automate a load test in CI that runs nightly or on-demand. If performance degrades beyond threshold, flag it to the team.
-Final User Acceptance & Launch: Goal: Get a final go/no-go from a user-perspective test and launch the product. Dependencies: All features complete, no high-severity bugs. Deliverables: Conduct a user acceptance testing session with a small group of target users (including a financial advisor if available for CFA compliance check). Have them go through key tasks: set up profile, simulate an event, check recommendations. Gather any last-minute issues. Prepare a launch document highlighting the app’s capabilities, how it adheres to CFA ethical standards (e.g., transparency, accuracy), and areas for future expansion (such as integrating actual bank data or advisor chat). Testing: Verify that all acceptance criteria from the project kickoff are met. This includes cross-checking that each requirement (dynamic timeline, tax integration, KYC, etc.) is demonstrated in the final product. Once signed off, proceed to production deployment and announce the launch.
-Each of these milestones is structured to be Kanban-friendly, with tasks broken down into actionable subtasks that have clear goals, dependencies, and deliverables. Developers of all skill levels should be able to pick up a subtask (e.g., Implement Income Engine or Design Profile UI Form) and understand exactly what is needed. By following this roadmap, the team ensures that the resulting application is robust, user-centric, and compliant with both Kenyan regulations and professional financial planning standards. All tasks are interwoven with continuous testing and validation, ensuring that by the time of launch, the app has been rigorously vetted against realistic user scenarios and strict quality benchmarks. The end result will be a modern personal finance platform that helps Kenyan users answer life’s big financial questions with confidence, like “Can I afford to start a business next year?” or “When can I comfortably retire?”, backed by solid calculations and an intuitive, supportive user experience.
+**Product Requirements Document (PRD): Personal Finance App**
+
+---
+
+## 1. Overview
+
+The Personal Finance App helps Kenyan users and financial advisors track, manage, and plan financial goals across life stages. Its centerpiece is the **Lifetime Timeline**, which contextualizes a user’s assets, liabilities, and advice modules according to four CFA-aligned life phases: Accumulation, Family & Property, Pre-Retirement Consolidation, and Decumulation & Legacy.
+
+## 2. Objectives & Success Metrics
+
+* **Empower Users**: Provide clear, actionable insights to improve saving, investing, debt management, and retirement planning.
+* **Advisor Efficiency**: Streamline advisor-client workflows with shared dashboards, scenario modeling, and compliance automation.
+* **Engagement**: 70% of active users reach at least one major milestone (e.g., emergency fund, debt payoff) within 6 months.
+* **Adoption**: Onboard 10 financial advisors and 500 end-users in the first quarter post-launch.
+
+## 3. Personas
+
+| Persona                     | Description                               | Key Needs                                                      |
+| --------------------------- | ----------------------------------------- | -------------------------------------------------------------- |
+| **Jamal Mwangi** (User)     | 27, Early-Career Accumulator              | Emergency fund, debt payoff, automated transaction ingestion   |
+| **Aisha Otieno** (User)     | 36, Family & Property                     | Education savings, mortgage management, insurance gap analysis |
+| **Samuel Kariuki** (User)   | 54, Pre-Retirement Consolidation          | Portfolio rebalance, decumulation planning, LTC provisions     |
+| **Emily Njeri** (Advisor)   | Fee-only CFP® for HNW clients             | Monte Carlo simulations, tax-efficient planning, audit trail   |
+| **Daniel Mwangi** (Advisor) | Bank-affiliated planner for mass-affluent | Rapid KYC, product recommendations, compliance memos           |
+
+## 4. Key Features
+
+### 4.1 Onboarding Screens
+
+* **Data Connection**: Interactive SMS/Email permission flow with secure modals and overlay (MessageBox component) to guide users through granting access
+* **Cash-Flow Setup**: Multi-step form (Progress Bar) for entering income sources and expense categories, with “+ Add” actions and real-time goal recommendation (Emergency Fund target)
+* **Manual Entry Fallback**: One-click switch to manual entry for any step, ensuring accessibility for all users
+
+### 4.2 Lifetime Timeline & Advice
+
+* **Visual Timeline Component**: Age-indexed milestone bubbles and alternating left/right layout
+* **Event Cards**: Each milestone shows event title, phase, snapshot (Assets/Liabilities/Net Worth), and contextual CFA advice
+* **Action CTAs**: “Take Action on this Advice” buttons trigger modals for step-by-step guidance
+* **Custom Milestone**: “+ Add Custom Milestone” for personalized planning
+
+### 4.3 Lifetime Balance Sheet & Accounts
+
+* **Balance Sheet**: Register views for Assets and Liabilities with calculations (Total Assets, Total Liabilities, Net Worth) and embedded Net Worth Trend chart placeholder
+* **Accounts & Transactions**: Filterable, searchable transaction table; dynamic linking of new accounts; category editing inline
+
+### 4.4 Dashboard & Widgets
+
+* **Snapshot Cards**: Reusable card components for Net Worth Snapshot, Net Worth Projection, Monthly Cash-Flow, Top Advice carousel, Goal Progress bars
+* **Interactive Charts**: Mini line and bar charts with “Explore” buttons to deep-dive into projections
+
+### 4.5 Tools Suite
+
+* **Goals Overview**: Grid of goal cards with progress bars, “View Details” and “Adjust” actions
+* **FIRE Calculator**: Form inputs for savings, expenses, returns, and SWR, with instant projection
+* **Monte Carlo Simulator**: Parameterized inputs and results summary (Success Probability, Median, Worst Outcomes)
+* **Debt Repayment Planner**: Loan entry form and amortization output (Payoff time, Interest saved)
+
+### 4.6 Navigation & UX Patterns
+
+* **BottomNavBar**: Fixed tab bar with icons for Cashflows, Balance Sheet, Dashboard, Tools, Profile
+* **MessageBox Component**: Centralized overlay/dialog for all wireframe actions
+
+### 4.7 Advisor Portal Screens
+
+* **Advisor Login**: Simple form with “Forgot Password” and MessageBox feedback
+* **Advisor Dashboard**: KPI cards (Total Clients, Pending Reviews, New Sign-ups) and Recent Activity list
+* **Client List**: Status badges, search/filter controls, “View Profile” actions
+* **Client Profile**: Overview, Goals Progress, Recent Activity, Advice History, and actionable buttons (Scenario, Report, Meeting)
+
+## 5. User Journeys User Journeys
+
+* **Jamal**: Onboard → ingest SMS → reach 6mo fund → pay off student loan → adjust investments → timeline updates
+* **Aisha**: Onboard → set education goal → purchase insurance → refinance mortgage → rebalance portfolio
+* **Samuel**: Onboard → rebalance for income → launch SWP → purchase annuity → secure LTC cover → estate planning
+* **Emily**: Login → select client → run Monte Carlo → adjust allocation → generate report → schedule follow-up
+* **Daniel**: Quick KYC → risk profile → product carousel → compliance memo → SMS reminders → quarterly review
+
+## 6. Functional Requirements
+
+1. **Authentication & Security**: OAuth for SMS/Email ingestion; MFA for advisors.
+2. **Data Processing**: Natural language parsing of SMS/email; mapping to ledger entries.
+3. **Visualization**: Responsive charts (Trend, Bar, Timeline); interactive "Take Action" buttons.
+4. **Scenario Tools**: Monte Carlo engine, FIRE formula, debt amortization model.
+5. **Advisor Tools**: PDF report export; audit-trail logging; task automation scheduler.
+6. **Internationalization**: Plug-and-play jurisdiction module for local social-security schemes.
+
+## 7. Non-Functional Requirements
+
+* **Performance**: Onboarding ingestion latency < 2s; chart render < 500ms.
+* **Scalability**: Support 100k users & 5k advisors concurrently.
+* **Reliability**: 99.9% uptime; daily backups of financial data.
+* **Security**: Data encrypted at rest & in transit; compliance with Kenyan data-privacy laws.
+
+## 8. Technical Considerations
+
+* **Frontend**: Vite + React + Tailwind CSS (existing setup)
+* **Backend**: Node.js (or Python FastAPI) microservices; PostgreSQL for persistence
+* **Integrations**: M-PESA & email API connectors; NSSF/NHIF module
+* **Analytics**: Event tracking for feature usage; user milestone conversion rates
+
+## 9. MVP & Roadmap
+
+| Phase         | Deliverables                                                              | Timeline |
+| ------------- | ------------------------------------------------------------------------- | -------- |
+| **MVP**       | Onboarding, Timeline view, Balance Sheet, Dashboard, Basic Goals          | Q3 2025  |
+| **Phase II**  | Tools suite (FIRE, Monte Carlo, Debt Planner), Advisor portal v1          | Q4 2025  |
+| **Phase III** | Jurisdictional plugin, advanced estate planning, AI-driven micro-learning | Q1 2026  |
+
+---
+
+*This PRD aligns our personas, user journeys, and the wireframe into a consolidated specification for development, QA, and stakeholder review.*
+# Epics & User Stories Backlog
+
+Below is an exhaustive breakdown of Epics and associated User Stories for the Personal Finance App MVP. Each Epic corresponds to a Key Feature from the PRD.
+
+---
+
+## Epic 1: Onboarding & Data Entry
+
+**Goal:** Enable users to set up their financial profile quickly with manual and bulk options.
+
+1. **As a new user,** I want to complete a guided welcome tour so that I understand the core app features before starting.
+2. **As a user,** I want to enter my personal details (name, age, occupation) so my profile is complete for personalized advice.
+3. **As a user,** I want to input my monthly net income via a form so that my cash-flow is tracked accurately.
+4. **As a user,** I want to add multiple income sources (salary, freelance, rental) so all inflows are considered.
+5. **As a user,** I want to define my major expense categories (rent, utilities, groceries, transport) so my budget reflects reality.
+6. **As a user,** I want to import a CSV/Excel of past transactions so I can bulk-upload my financial history.
+7. **As a user,** I want the option to skip/import ingestion and proceed to manual entry so that I have full control.
+8. **As a user,** I want to set my emergency fund goal onboarding so that the app can track progress immediately.
+9. **As a user,** I want to preview my initial Lifetime Balance Sheet snapshot after onboarding so I feel confident setup is accurate.
+10. **As a user,** I want clear validation errors when I enter invalid data so I can correct mistakes instantly.
+
+---
+
+## Epic 2: Lifetime Timeline & Advice
+
+**Goal:** Provide a contextual, age-indexed view of milestones with actionable CFA-based advice.
+
+1. **As a user,** I want to see milestone bubbles plotted along a vertical timeline so I can visualize my life stages.
+2. **As a user,** I want alternating left/right event cards connected to each bubble so the UI remains scannable.
+3. **As a user,** I want each milestone to display age, event name, and phase so I know where I stand.
+4. **As a user,** I want a snapshot of assets, liabilities, and net worth with each event so I see financial context.
+5. **As a user,** I want a short CFA-styled advice line under each event so I can take the next step.
+6. **As a user,** I want a “Take Action on this Advice” button that opens a modal with step-by-step guidance so I can implement recommendations.
+7. **As a user,** I want to add a custom milestone at any point so I can personalize my journey.
+8. **As a user,** I want tooltip descriptions on timeline bubbles so I get quick hover-over context.
+9. **As a user,** I want the timeline to scroll smoothly and snap to each milestone so navigation feels fluid.
+10. **As a user,** I want the timeline to update in real-time when my financial data changes so it remains accurate.
+
+---
+
+## Epic 3: Lifetime Balance Sheet & Accounts
+
+**Goal:** Maintain a detailed register of assets, liabilities, and transactional data with drill-down capabilities.
+
+1. **As a user,** I want to view Total Assets, Total Liabilities, and Net Worth as summary cards so I get a quick snapshot.
+2. **As a user,** I want to expand the Assets register to see each account (cash, investments, property) with amounts so I know my holdings.
+3. **As a user,** I want to expand the Liabilities register to see each loan or payable with balances so I know my obligations.
+4. **As a user,** I want to see a placeholder chart area for Net Worth Trend so the UI indicates future graph integration.
+5. **As a user,** I want to add a new asset or liability via a form so I can keep the register up to date.
+6. **As a user,** I want to link a new external account (MPESA, bank) with a single click so I can track balances without manual entry.
+7. **As a user,** I want to categorize each transaction inline so I can ensure accuracy of my registers.
+8. **As a user,** I want filters (date range, category, account) on the transaction table so I can drill down to specific entries.
+9. **As a user,** I want to search transactions by keyword so I can find specific expenses quickly.
+10. **As a user,** I want pagination or infinite scroll on the transaction list so I can browse large histories.
+
+---
+
+## Epic 4: Dashboard & Widgets
+
+**Goal:** Deliver a consolidated view of key financial metrics and personalized advice.
+
+1. **As a user,** I want a reusable card component for Net Worth Snapshot so consistency is maintained across the app.
+2. **As a user,** I want a Net Worth Projection card showing the age when my net worth turns positive so I understand my trajectory.
+3. **As a user,** I want a Monthly Cash-Flow Summary card with income, expenses, and savings rate so I gauge my budgeting health.
+4. **As a user,** I want a Top Advice carousel with up to 5 personalized recommendations so I can act on high-impact items.
+5. **As a user,** I want Goal Progress bars for emergency fund, loan payoff, and asset purchases so I track multiple goals at once.
+6. **As a user,** I want “Explore” buttons on each widget to navigate to detailed views so I can deep-dive when needed.
+7. **As a user,** I want dashboard to load in under 1s with cached widget data so the experience feels snappy.
+8. **As a user,** I want widget order to be customizable so I see the metrics most relevant to me first.
+9. **As a user,** I want a refresh control to manually reload all widgets so I can get the latest data.
+10. **As a user,** I want empty-state guidance when I have no data so I know how to populate the dashboard.
+
+---
+
+## Epic 5: Tools Suite
+
+**Goal:** Provide calculation and planning tools to support user goals and testing of financial plans.
+
+### FIRE Calculator
+
+1. **As a user,** I want inputs for current savings, annual expenses, return rate, and withdrawal rate so I can calculate my FIRE number.
+2. **As a user,** I want an instant result displaying target FIRE number and years to FIRE so I get immediate feedback.
+3. **As a user,** I want explanatory text on assumptions (e.g. “This estimate assumes a 4% SWR”) so I trust the calculation.
+
+### Monte Carlo Simulator
+
+4. **As a user,** I want inputs for initial portfolio, annual contribution, return range, volatility, and runs so I can configure simulations.
+5. **As a user,** I want results showing success probability, median outcome, and worst-case so I understand risk.
+6. **As a user,** I want a chart placeholder for distribution visualization so I know where to expect graph integration.
+
+### Debt Repayment Planner
+
+7. **As a user,** I want to enter loan name, balance, rate, minimum payment, and extra payment so I can plan payoff.
+8. **As a user,** I want results showing original payoff time, new payoff time, and interest saved so I see the benefit.
+
+### Goals Overview
+
+9. **As a user,** I want cards for each active goal with progress and target so I track multiple objectives.
+10. **As a user,** I want “View Details” and “Adjust” options per goal so I can modify or drill down.
+
+---
+
+## Epic 6: Navigation & UX Patterns
+
+**Goal:** Ensure consistent, intuitive navigation and UI feedback across the app.
+
+1. **As a user,** I want a fixed BottomNavBar with clearly labeled icons so I can jump between Cashflows, Balance Sheet, Dashboard, Tools, and Profile.
+2. **As a user,** I want the active tab highlighted so I know my current location.
+3. **As a user,** I want responsive layouts that adapt to mobile and desktop so I can use the app on any device.
+4. **As a user,** I want a centralized MessageBox component that overlays with a dimmed background so I get clear feedback on all actions.
+5. **As a user,** I want smooth scroll and snap behavior for sections so navigation feels natural.
+
+---
+
+## Epic 7: Advisor Portal
+
+**Goal:** Provide advisors with streamlined client management and planning tools.
+
+### Advisor Login & Dashboard
+
+1. **As an advisor,** I want to log in with email/password and MFA so my access is secure.
+2. **As an advisor,** I want a dashboard with KPI cards (Total Clients, Pending Reviews, New Sign-ups) so I see my workload at a glance.
+3. **As an advisor,** I want a Recent Activity list so I track client actions and plan follow-ups.
+
+### Client List & Profile
+
+4. **As an advisor,** I want to search or filter my client list by name, status, or next review so I find clients quickly.
+5. **As an advisor,** I want status badges (Needs Review, On Track, Urgent) so I prioritize my outreach.
+6. **As an advisor,** I want to view a client’s profile with overview, goals progress, recent activity, and advice history so I get full context.
+7. **As an advisor,** I want buttons to run scenario modeling, generate a report, or schedule a meeting directly from the client profile so I act efficiently.
+
+---
+
+*This backlog serves as the foundation for sprint planning and development execution.*
+# Core App Features Summary
+
+This document distills the essential functionality of the Personal Finance App, aligned to user and advisor needs.
+
+---
+
+## 1. Onboarding & Data Entry
+
+* **Manual Setup**: Guided multi-step forms for personal profile, income sources, expense categories, and goal targets.
+* **Bulk Import**: CSV/Excel upload for transaction history and account statements.
+* **Fallbacks & Validation**: Switch to manual entry at any point; real-time input validation.
+
+## 2. Lifetime Timeline & Advice
+
+* **Visual Timeline**: Age-indexed milestone bubbles with alternating layout.
+* **Milestone Cards**: Event name, life phase, snapshot (Assets/Liabilities/Net Worth), plus brief CFA-based recommendation.
+* **Action Modals**: “Take Action” buttons open step-by-step guidance overlays.
+* **Customization**: Add custom milestones tailored to individual journeys.
+
+## 3. Financial Snapshot & Registers
+
+* **Balance Sheet**: Detailed registers for Assets and Liabilities with totals and Net Worth calculation.
+* **Transaction Ledger**: Filterable, searchable table; inline categorization and account linking.
+* **Trend Visualization**: Placeholder for Net Worth growth chart integrated in register.
+
+## 4. Dashboard & Key Metrics
+
+* **Snapshot Cards**: Net Worth, Net Worth Projection, Monthly Cash-Flow, Top Advice, Goal Progress.
+* **Interactive Charts**: Mini line/bar charts with “Explore” actions for deeper analysis.
+* **Personalized Advice**: Carousel of up to five priority recommendations.
+
+## 5. Planning Tools
+
+* **Goals Overview**: Progress-tracking cards with adjust/view details.
+* **FIRE Calculator**: Inputs for savings, expenses, returns, and withdrawal rate with instant projection.
+* **Monte Carlo Simulator**: Configurable runs, return ranges, result summaries (success rate, median, tail outcomes).
+* **Debt Planner**: Loan-entry form, amortization output (reduced payoff time, interest saved).
+
+## 6. Navigation & UX Components
+
+* **Bottom Navigation Bar**: Persistent tabs for Cashflows, Balance Sheet, Dashboard, Tools, Profile.
+* **MessageBox Overlay**: Centralized modal component for in-app notifications and confirmations.
+* **Responsive Design**: Mobile-first layouts that scale to desktop screens.
+
+## 7. Advisor Portal
+
+* **Secure Login**: Email/password with optional MFA and feedback modals.
+* **Advisor Dashboard**: KPI cards (Total Clients, Pending Reviews, New Sign-ups) and Recent Activity stream.
+* **Client Management**: Searchable list with status badges and next-review dates.
+* **Client Profile**: Overview, goals, activity, advice history, plus scenario modeling, report generation, and meeting scheduling actions.
+
+---
+
+*These core features form the MVP scope for Q3 2025, delivering both user-facing and advisor-centric functionality.*
+
+
+10.1 Identified Gaps in PRD/Core Features
+
+Automated Ingestion as Future Scope: While automated SMS/email parsing is marked future, define clear criteria (e.g., manual entry error rates exceed 10%) to promote it as a core feature.
+
+Reporting & Export: End-user exports (CSV/Excel of transactions, goal progress reports) are missing; add export endpoints and UI.
+
+Notifications & Reminders: No specification for push notifications, email reminders, or in-app alerts for milestones and advice follow-up.
+
+Error Handling & Edge Cases: Detailed flows needed for API errors, ingestion failures, offline mode, and data conflicts (e.g., duplicate imports).
+
+Accessibility (WCAG): ARIA roles, keyboard navigation, color-contrast compliance must be specified.
+
+Localization: Baseline multi-language support (English + Swahili) for all UI strings.
+
+10.2 Developer Instructions & Best Practices
+
+Architecture & Services
+
+Modular Service Boundaries: Separate modules/services for Onboarding, Profile, Ledger, Timeline, Dashboard, Tools, Advisor Portal.
+
+API-First Design: Define OpenAPI/Swagger specs before implementation.
+
+Database Migrations: Use Alembic (Python) or Flyway (Java/Node) to version-control DB schema.
+
+Frontend Implementation
+
+Component Library: Centralize shared components (MessageBox, Card, Button, BottomNavBar) in /src/components.
+
+Tailwind Configuration: Lock down color palette; extend with semantic tokens for financial contexts (e.g. networth-positive).
+
+State Management: Use React Context or Zustand for user session, theme, and notifications.
+
+Routing: Integrate React Router for deep-linking (e.g. /dashboard, /timeline, /advisor/client/:id).
+
+Data & Backend
+
+CRUD Endpoints: Full CRUD for User, Account, Transaction, Milestone, Goal, AdviceModule, Advisor, ClientProfile.
+
+Batch Imports: Implement streaming CSV/Excel parsing for large files to avoid memory issues.
+
+Caching: Cache expensive computations (timeline, Monte Carlo) in Redis with TTL.
+
+List APIs: All list endpoints must support pagination, filtering, and sorting.
+
+CI/CD & Quality
+
+Linting & Formatting: ESLint + Prettier (frontend), Flake8 + Black (Python) or ESLint (Node).
+
+Testing:
+
+Frontend: Jest + React Testing Library for components; Cypress for end-to-end flows.
+
+Backend: Pytest for FastAPI or Jest for Node endpoints.
+
+CI Pipeline: On PR: install, lint, test, build (Vite), Dockerize. Deploy to staging on develop; production on main with manual approval.
+
+Security & Compliance
+
+Authentication & Authorization: JWT with refresh tokens; RBAC for users vs advisors; enforce HTTPS.
+
+Data Encryption: Encrypt sensitive fields (e.g. account numbers) at rest and in transit.
+
+Regulatory Compliance: Adhere to CBK data-privacy guidelines and data retention laws.
+
+Monitoring & Observability
+
+Logging: Structured JSON logs with request IDs.
+
+Metrics: Expose Prometheus metrics for API latency, error rates, and milestone events.
+
+Alerts: Set up alerts for high error rates (>5% of requests resulting in 5xx), ingestion pipeline failures, and service health checks.
