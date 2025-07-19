@@ -10,6 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt     && pip install --no-cache
 
 # 3) Copy your entire repo (api/, compute/, alembic/, etc)
 COPY . .
+COPY alembic.ini .
+COPY alembic ./alembic
 COPY wait-for-it.sh /app/
 RUN chmod +x /app/wait-for-it.sh
 

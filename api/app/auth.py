@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.database import get_db
-from app.models import User, UserProfile
-from app.schemas import RegisterRequest, Token
+from app.models import User, Profile
+from app.schemas import RegisterRequest, Token, RegisterResponse
 from app.security import hash_password, verify_password, create_access_token
 from compute.risk_engine import compute_risk_score, compute_risk_level
 from app.utils import normalize_questionnaire
@@ -19,7 +19,7 @@ def calculate_age(dob: date) -> int:
     return (date.today() - dob).days // 365
 
 
-@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 def register(
     data: RegisterRequest,
     db:   Session = Depends(get_db),
@@ -36,16 +36,16 @@ def register(
     hashed_pw = hash_password(data.password)
 
     # 3. Create User
-    user = User(email=data.email, password_hash=hashed_pw)
+    user = User(email=data.email, hashed_password=hashed_pw)
     db.add(user)
     db.commit()
     db.refresh(user)
 
     # 4. Create Profile
     questionnaire = normalize_questionnaire(data.questionnaire)
-    profile = UserProfile(
+    profile = Profile(
         user_id=user.id,
-        dob=data.dob,
+        date_of_birth=data.dob,
         kra_pin=data.kra_pin,
         annual_income=data.annual_income,
         dependents=data.dependents,

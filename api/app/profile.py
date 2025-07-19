@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 import jwt
 
 from app.database     import get_db
-from app.models       import UserProfile, User
-from app.schemas      import ProfileOut, Dependents
+from api.app.models.__init__ import User, Profile
+from app.schemas import ProfileOut, Dependents
 from app.security     import SECRET_KEY, ALGORITHM
 from compute.risk_engine import compute_risk_score, compute_risk_level
 from app.utils import normalize_questionnaire
@@ -55,7 +55,7 @@ def update_profile(
 ):
     profile = current.profile
     if not profile:
-        profile = UserProfile(user_id=current.id)
+        profile = Profile(user_id=current.id)
         db.add(profile)
 
     for field, value in profile_in.dict(exclude_unset=True).items():
