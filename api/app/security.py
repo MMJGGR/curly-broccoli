@@ -34,13 +34,14 @@ def verify_password(password: str, hashed: str) -> bool:
     return hmac.compare_digest(digest, hashlib.sha256(salt + password.encode()).digest())
 
 
-def create_access_token(sub: str, scope: str = "user") -> str:
+def create_access_token(user: User, scope: str = "user") -> str:
     now = datetime.utcnow()
     payload = {
-        "sub": sub,
+        "sub": str(user.id),
         "iat": now.timestamp(),
         "exp": (now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp(),
         "scope": scope,
+        "role": user.role,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 

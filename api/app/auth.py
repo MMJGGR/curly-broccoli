@@ -70,7 +70,7 @@ def register(
     db.refresh(profile)
 
     # 6. Issue JWT
-    access_token = create_access_token(str(user.id))
+    access_token = create_access_token(user)
     return {
         "access_token": access_token,
         "token_type":   "bearer",
@@ -91,7 +91,7 @@ def login(
             detail="Invalid credentials"
         )
 
-    access_token = create_access_token(str(user.id))
+    access_token = create_access_token(user)
     return {
         "access_token": access_token,
         "token_type":   "bearer",
