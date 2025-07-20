@@ -4,10 +4,10 @@ import json
 url = "http://localhost:8000/auth/register"
 headers = {"Content-Type": "application/json"}
 payload = {
-    "email": "testuser9@example.com",
+    "email": "testuser10@example.com",
     "password": "testpassword",
     "dob": "1990-01-01",
-    "kra_pin": "ABC123456",
+    "kra_pin": "ABC12345",
     "annual_income": 500000,
     "dependents": 2,
     "goals": {},

@@ -1,12 +1,15 @@
 import os
 import uuid
 import inspect
-from fastapi import FastAPI, Request, Response, Depends
+from fastapi import FastAPI, Request, Response, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .database import Base, engine, get_db
 from .auth import router as auth_router
-from .profile import router as profile_router
+from api.app.api.v1.api import api_router
+from api.app.core.exceptions import UnauthorizedException, ForbiddenException, NotFoundException, ConflictException, UnprocessableEntityException
+
 from .models import User
 
 # Create any tables that don’t yet exist
@@ -36,6 +39,58 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Exception Handlers
+@app.exception_handler(UnauthorizedException)
+async def unauthorized_exception_handler(request: Request, exc: UnauthorizedException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "trace_id": request.state.trace_id},
+        headers=exc.headers
+    )
+
+@app.exception_handler(ForbiddenException)
+async def forbidden_exception_handler(request: Request, exc: ForbiddenException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "trace_id": request.state.trace_id},
+    )
+
+@app.exception_handler(NotFoundException)
+async def not_found_exception_handler(request: Request, exc: NotFoundException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "trace_id": request.state.trace_id},
+    )
+
+@app.exception_handler(ConflictException)
+async def conflict_exception_handler(request: Request, exc: ConflictException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "trace_id": request.state.trace_id},
+    )
+
+@app.exception_handler(UnprocessableEntityException)
+async def unprocessable_entity_exception_handler(request: Request, exc: UnprocessableEntityException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "trace_id": request.state.trace_id},
+    )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "trace_id": request.state.trace_id},
+        headers=exc.headers
+    )
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal Server Error", "trace_id": request.state.trace_id},
+    )
+
 @app.get("/")
 def read_root():
     return {"message": "Hello World"}
@@ -62,25 +117,4 @@ def add_numbers(nums: Numbers):
 
 # mount your routers
 app.include_router(auth_router)
-app.include_router(profile_router)
-
-# Alias dependents routes without the /profile prefix for tests
-from app.profile import (
-    get_dependents,
-    set_dependents,
-    clear_dependents,
-    get_current_user,
-)
-from app.schemas import Dependents
-
-@app.get("/dependents", response_model=Dependents)
-def get_deps(current: User = Depends(get_current_user)):
-    return get_dependents(current)
-
-@app.post("/dependents", response_model=Dependents)
-def set_deps(data: Dependents, db = Depends(get_db), current: User = Depends(get_current_user)):
-    return set_dependents(data, db, current)
-
-@app.delete("/dependents", response_model=Dependents)
-def del_deps(db = Depends(get_db), current: User = Depends(get_current_user)):
-    return clear_dependents(db, current)
+app.include_router(api_router, prefix="/api/v1")
