@@ -5,11 +5,11 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 
 import jwt
 from fastapi import Depends, status
-from api.app.core.exceptions import UnauthorizedException
+from api.app.core.exceptions import UnauthorizedException, ForbiddenException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -64,3 +64,12 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+class RoleChecker:
+    def __init__(self, allowed_roles: List[str]):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, current_user: User = Depends(get_current_user)):
+        if current_user.role not in self.allowed_roles:
+            raise ForbiddenException("Operation not permitted for this user role")
+        return current_user

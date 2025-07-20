@@ -4,14 +4,15 @@ import json
 url = "http://localhost:8000/auth/register"
 headers = {"Content-Type": "application/json"}
 payload = {
-    "email": "testuser_final2@example.com",
+    "email": "testuser_final5@example.com", # Change email for new registration
     "password": "testpassword",
     "dob": "1990-01-01",
-    "kra_pin": "A123456791Z",
+    "kra_pin": "A123456794Z",
     "annual_income": 500000,
     "dependents": 2,
     "goals": {},
-    "questionnaire": [1, 2, 3, 4, 5]
+    "questionnaire": [1, 2, 3, 4, 5],
+    "role": "advisor" # Change to "advisor" to register an advisor user
 }
 
 try:
@@ -25,5 +26,3 @@ except requests.exceptions.RequestException as e:
         print(f"Response content: {e.response.text}")
     else:
         print("No response object found.")
-        
-        

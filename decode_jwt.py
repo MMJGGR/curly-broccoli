@@ -2,7 +2,7 @@ import jwt
 import os
 
 # Replace with the access token you just obtained
-token = "eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJzdWIiOiAiMiIsICJpYXQiOiAxNzUzMDIzOTQ4LjgwMDc4OCwgImV4cCI6IDE3NTMwMjQ4NDguODAwNzg4LCAic2NvcGUiOiAidXNlciIsICJyb2xlIjogInVzZXIifQ.F0mlYdmqWa6bpmFm9IR16MzVj8G1caH3wEXqA5euWgw"
+token = "eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJzdWIiOiAiNCIsICJpYXQiOiAxNzUzMDI0NjMxLjkyNDkzNSwgImV4cCI6IDE3NTMwMjU1MzEuOTI0OTM1LCAic2NvcGUiOiAidXNlciIsICJyb2xlIjogImFkdmlzb3IifQ.E4qbv7oErGEoCX5snU18COnJPFhAX8Cx68ehZeqsJOQ"
 
 # Replace with your SECRET_KEY from api/app/core/config.py or .env
 # For development, it's often "secret"

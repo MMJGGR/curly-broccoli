@@ -36,7 +36,7 @@ def register(
     hashed_pw = hash_password(data.password)
 
     # 3. Create User
-    user = User(email=data.email, hashed_password=hashed_pw)
+    user = User(email=data.email, hashed_password=hashed_pw, role=data.role)
     db.add(user)
     db.commit()
     db.refresh(user)

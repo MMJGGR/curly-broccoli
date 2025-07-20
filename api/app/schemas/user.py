@@ -48,6 +48,7 @@ class RegisterRequest(BaseModel):
     dependents: int = 0
     goals: Dict[str, Any]
     questionnaire: List[int] # length 8, values 1–5
+    role: str = "user" # Added role field
 
 class ProfileOut(BaseModel):
     first_name: Optional[str] = None
