@@ -1,7 +1,7 @@
 import os
 import uuid
 import inspect
-from fastapi import FastAPI, Request, Response, Depends, status
+from fastapi import FastAPI, Request, Response, Depends, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 

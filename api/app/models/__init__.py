@@ -13,6 +13,7 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
+    role = Column(String, default="user")
 
     profile = relationship("Profile", back_populates="owner")
     risk_profile = relationship("RiskProfile", back_populates="owner")

@@ -8,7 +8,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, status
+from api.app.core.exceptions import UnauthorizedException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -48,7 +49,6 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     credentials_exception = UnauthorizedException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
