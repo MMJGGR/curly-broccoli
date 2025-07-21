@@ -40,10 +40,11 @@ API server by the CRA proxy configuration.
   - Install dependencies: `pip install -r api/requirements.txt` (includes `httpx` for HTTP requests)
   - Run tests from the repository root with `pytest --cov-report=xml`
     (coverage settings are in `pytest.ini`) and ensure coverage stays above **90%** (CI enforces this)
-  - Lint code: `flake8 api`
+  - Lint code: `flake8 api app compute`
 - **Frontend**
   - Install dependencies: `npm install`
   - Start the dev servers (API and frontend): `npm run dev`
+  - Lint code: `npx eslint .`
   - Run tests: `npm test -- --coverage` (coverage must remain above 90%)
 
 ## Deployment
