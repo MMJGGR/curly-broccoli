@@ -1,5 +1,7 @@
 import os
 import uuid
+import os
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 from fastapi.testclient import TestClient
 from app.main import app, Base, engine
 
@@ -14,16 +16,23 @@ USER_DATA = {
     "kra_pin": "P123",
     "annual_income": 10000,
     "dependents": 1,
-    "goals": {"type": "wealth"},
-    "questionnaire": {"0": 4},
+    "goals": {"type": "wealth", "targetAmount": 50000, "timeHorizon": 5},
+    "questionnaire": [4, 4, 4, 4, 4, 4, 4, 4],
+    "role": "user"
 }
 
 
 def register():
     email = f"{uuid.uuid4()}@example.com"
-    data = {"email": email, **USER_DATA}
+    kra_pin = str(uuid.uuid4())
+    data = USER_DATA.copy()
+    data["email"] = email
+    data["kra_pin"] = kra_pin
     resp = client.post("/auth/register", json=data)
-    token = resp.json()["access_token"]
+    resp.raise_for_status() # Raise an exception for bad status codes
+    token = resp.json().get("access_token")
+    if not token:
+        raise ValueError("Access token not found in response")
     return email, token
 
 

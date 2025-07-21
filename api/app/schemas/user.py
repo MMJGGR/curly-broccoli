@@ -24,7 +24,7 @@ class User(UserBase):
     is_superuser: bool = False
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 class Token(BaseModel):
     access_token: str
@@ -37,7 +37,7 @@ class RegisterResponse(BaseModel):
     access_token: str
     token_type: str
     risk_score: Optional[int] = None
-    risk_level: Optional[int] = None
+    risk_level: Optional[str] = None
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -61,13 +61,16 @@ class ProfileOut(BaseModel):
     questionnaire: Optional[List[int]] = None
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 class ProfileResponse(BaseModel):
     email: EmailStr
     profile: ProfileOut
     risk_score: Optional[int] = None
-    risk_level: Optional[int] = None
+    risk_level: Optional[str] = None
+
+    class Config:
+        orm_mode = True
 
 class Dependents(BaseModel):
     dependents: int
@@ -89,4 +92,4 @@ class Profile(ProfileBase):
     user_id: int
 
     class Config:
-        from_attributes = True
+        orm_mode = True

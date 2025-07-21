@@ -1,4 +1,6 @@
 import os
+import os
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 from fastapi.testclient import TestClient
 from app.main import app, Base, engine
 
@@ -8,14 +10,15 @@ Base.metadata.create_all(bind=engine)
 client = TestClient(app)
 
 USER_DATA = {
-    "email": "user@example.com",
-    "password": "strongpassword",
-    "dob": "1990-01-01",
-    "kra_pin": "A123",
+    "email": "test@example.com",
+    "password": "password123",
+    "dob": "1990-01-15",
+    "kra_pin": "A001234567Z",
     "annual_income": 50000,
-    "dependents": 0,
-    "goals": {"type": "growth"},
-    "questionnaire": {"0": 5},
+    "dependents": 2,
+    "goals": {"retirement": 1000000, "education": 500000},
+    "questionnaire": [1, 2, 3, 4, 5, 1, 2, 3],
+    "role": "user"
 }
 
 
@@ -24,7 +27,7 @@ def test_register_success():
     assert resp.status_code == 201
     assert "access_token" in resp.json()
     assert 0 <= resp.json()["risk_score"] <= 100
-    assert 1 <= resp.json()["risk_level"] <= 5
+    assert isinstance(resp.json()["risk_level"], str)
 
 
 def test_register_duplicate():

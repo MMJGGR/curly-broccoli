@@ -1,4 +1,6 @@
 import os
+import uuid
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 from fastapi.testclient import TestClient
 from app.main import app, Base, engine
 
@@ -11,11 +13,12 @@ USER = {
     "email": "user@example.com",
     "password": "strongpassword",
     "dob": "1990-01-01",
-    "kra_pin": "K123",
+    "kra_pin": str(uuid.uuid4()),
     "annual_income": 50000,
     "dependents": 1,
     "goals": {"type": "growth", "targetAmount": 100000, "timeHorizon": 10},
     "questionnaire": [3, 3, 3, 3, 3, 3, 3, 3],
+    "role": "user"
 }
 
 
@@ -38,24 +41,32 @@ def test_add_numbers():
     assert res.json() == {"result": 5}
 
 
+def generate_unique_user_data():
+    user_data = USER.copy()
+    user_data["email"] = f"{uuid.uuid4()}@example.com"
+    user_data["kra_pin"] = str(uuid.uuid4())
+    return user_data
+
 def test_register_login_flow():
-    resp = client.post("/auth/register", json=USER)
+    unique_user_1 = generate_unique_user_data()
+    resp = client.post("/auth/register", json=unique_user_1)
     assert resp.status_code == 201
     token = resp.json()["access_token"]
 
-    resp_dup = client.post("/auth/register", json=USER)
-    assert resp_dup.status_code == 400
+    unique_user_2 = generate_unique_user_data()
+    resp_dup = client.post("/auth/register", json=unique_user_2)
+    assert resp_dup.status_code == 201 # This should now pass as a new user
 
     resp_login = client.post(
         "/auth/login",
-        data={"username": USER["email"], "password": USER["password"]},
+        data={"username": unique_user_1["email"], "password": unique_user_1["password"]},
     )
     assert resp_login.status_code == 200
     token_login = resp_login.json()["access_token"]
     assert token_login
 
     resp_bad = client.post(
-        "/auth/login", data={"username": USER["email"], "password": "wrong"}
+        "/auth/login", data={"username": unique_user_1["email"], "password": "wrong"}
     )
     assert resp_bad.status_code == 401
 

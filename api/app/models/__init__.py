@@ -19,6 +19,7 @@ class User(Base):
     transactions = relationship("Transaction", back_populates="owner")
     milestones = relationship("Milestone", back_populates="owner")
     goals = relationship("Goal", back_populates="owner")
+    accounts = relationship("Account", back_populates="owner")
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -47,6 +48,19 @@ class RiskProfile(Base):
 
     owner = relationship("User", back_populates="risk_profile")
 
+
+class Account(Base):
+    __tablename__ = "accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    type = Column(String)
+    balance = Column(Float)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    owner = relationship("User", back_populates="accounts")
+    transactions = relationship("Transaction", back_populates="account_rel")
+
 class Transaction(Base):
     __tablename__ = "transactions"
 
@@ -57,8 +71,10 @@ class Transaction(Base):
     category = Column(String)
     account = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
+    account_id = Column(Integer, ForeignKey("accounts.id"))
 
     owner = relationship("User", back_populates="transactions")
+    account_rel = relationship("Account", back_populates="transactions")
 
 class Milestone(Base):
     __tablename__ = "milestones"

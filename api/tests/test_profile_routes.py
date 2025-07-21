@@ -13,21 +13,23 @@ client = TestClient(app)
 USER_DATA = {
     "password": "pass1234",
     "dob": "1990-01-01",
-    "kra_pin": "P123",
     "annual_income": 10000,
     "dependents": 1,
     "goals": {"type": "wealth", "targetAmount": 50000, "timeHorizon": 5},
     "questionnaire": [3, 3, 3, 3, 3, 3, 3, 3],
+    "role": "user"
 }
-
 
 def register_user():
     email = f"{uuid.uuid4()}@example.com"
-    data = {"email": email, **USER_DATA}
+    kra_pin = str(uuid.uuid4())
+    data = USER_DATA.copy()
+    data["email"] = email
+    data["kra_pin"] = kra_pin
     resp = client.post("/auth/register", json=data)
     assert resp.status_code == 201
     token = resp.json()["access_token"]
-    return token
+    return token, kra_pin
 
 
 def test_profile_requires_authentication():
@@ -39,7 +41,7 @@ def test_profile_requires_authentication():
 
 
 def test_profile_update_recomputes_risk_score():
-    token = register_user()
+    token, kra_pin = register_user()
     headers = {"Authorization": f"Bearer {token}"}
 
     resp = client.get("/profile", headers=headers)
@@ -48,7 +50,7 @@ def test_profile_update_recomputes_risk_score():
 
     update = {
         "dob": USER_DATA["dob"],
-        "kra_pin": USER_DATA["kra_pin"],
+        "kra_pin": kra_pin,
         "annual_income": 20000,
         "dependents": 2,
         "goals": {"type": "growth", "targetAmount": 80000, "timeHorizon": 10},

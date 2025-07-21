@@ -10,8 +10,9 @@ import jwt
 from api.app.core.exceptions import UnprocessableEntityException
 
 from app.database     import get_db
-from api.app.models.__init__ import User, Profile
-from app.schemas import ProfileOut, Dependents
+from app.models import User, Profile
+from app.schemas.user import ProfileOut, Dependents
+ProfileOut.Config.orm_mode = True
 from app.security     import SECRET_KEY, ALGORITHM
 from compute.risk_engine import compute_risk_score, compute_risk_level
 from app.utils import normalize_questionnaire
