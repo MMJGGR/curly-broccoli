@@ -49,21 +49,14 @@ def compute_risk_score(
     return int(round(pct))
 
 
-def compute_risk_level(percent_score: float) -> str:
-    """
-    Map a 0–100% risk_score into CFA 1–5 risk levels:
-      0–19  → "Very Conservative"
-      20–39 → "Conservative"
-      40–59 → "Moderate"
-      60–79 → "Growth"
-      80–100→ "Aggressive"
-    """
+def compute_risk_level(percent_score: float) -> int:
+    """Map a 0–100% risk score to a numeric CFA risk level (1–5)."""
     if percent_score < 20:
-        return "Very Conservative"
+        return 1
     if percent_score < 40:
-        return "Conservative"
+        return 2
     if percent_score < 60:
-        return "Moderate"
+        return 3
     if percent_score < 80:
-        return "Growth"
-    return "Aggressive"
+        return 4
+    return 5
