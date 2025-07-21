@@ -3,10 +3,12 @@ import uuid
 import inspect
 from fastapi import FastAPI, Request, Response, Depends, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from .database import Base, engine, get_db
 from .auth import router as auth_router
+from .profile import router as profile_router
 from api.app.api.v1.api import api_router
 from api.app.core.exceptions import UnauthorizedException, ForbiddenException, NotFoundException, ConflictException, UnprocessableEntityException
 
@@ -76,6 +78,13 @@ async def unprocessable_entity_exception_handler(request: Request, exc: Unproces
         content={"detail": exc.detail, "trace_id": request.state.trace_id},
     )
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": exc.errors(), "trace_id": request.state.trace_id},
+    )
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
@@ -117,4 +126,5 @@ def add_numbers(nums: Numbers):
 
 # mount your routers
 app.include_router(auth_router)
+app.include_router(profile_router)
 app.include_router(api_router, prefix="/api/v1")

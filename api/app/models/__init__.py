@@ -1,7 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey, Float, ARRAY
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey, Float, JSON
+from sqlalchemy.orm import relationship, declarative_base
+
 
 Base = declarative_base()
 
@@ -15,7 +14,7 @@ class User(Base):
     is_superuser = Column(Boolean, default=False)
     role = Column(String, default="user")
 
-    profile = relationship("Profile", back_populates="owner")
+    profile = relationship("Profile", back_populates="owner", uselist=False)
     risk_profile = relationship("RiskProfile", back_populates="owner")
     transactions = relationship("Transaction", back_populates="owner")
     milestones = relationship("Milestone", back_populates="owner")
@@ -31,8 +30,8 @@ class Profile(Base):
     kra_pin = Column(String, unique=True, index=True)
     annual_income = Column(Float)
     dependents = Column(Integer)
-    goals = Column(JSONB) # Stored as JSONB
-    questionnaire = Column(ARRAY(Integer)) # Stored as ARRAY of Integers
+    goals = Column(JSON)  # Stored as JSON
+    questionnaire = Column(JSON)  # Stored as JSON array
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="profile")

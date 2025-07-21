@@ -37,7 +37,7 @@ class RegisterResponse(BaseModel):
     access_token: str
     token_type: str
     risk_score: Optional[int] = None
-    risk_level: Optional[str] = None
+    risk_level: Optional[int] = None
 
 class RegisterRequest(BaseModel):
     email: EmailStr
@@ -67,7 +67,7 @@ class ProfileResponse(BaseModel):
     email: EmailStr
     profile: ProfileOut
     risk_score: Optional[int] = None
-    risk_level: Optional[str] = None
+    risk_level: Optional[int] = None
 
 class Dependents(BaseModel):
     dependents: int
