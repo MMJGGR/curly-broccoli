@@ -11,8 +11,12 @@ class GoalBase(BaseModel):
 class GoalCreate(GoalBase):
     pass
 
-class GoalUpdate(GoalBase):
-    pass
+class GoalUpdate(BaseModel):
+    name: Optional[str] = None
+    target: Optional[str] = None
+    current: Optional[str] = None
+    progress: Optional[float] = None
+    target_date: Optional[str] = None
 
 class Goal(GoalBase):
     id: int

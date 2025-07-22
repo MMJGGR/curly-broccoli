@@ -3,3 +3,4 @@ from .risk_profile import RiskProfileBase, RiskProfileCreate, RiskProfileUpdate,
 from .transaction import TransactionBase, TransactionCreate, TransactionUpdate, Transaction
 from .milestone import MilestoneBase, MilestoneCreate, MilestoneUpdate, Milestone
 from .goal import GoalBase, GoalCreate, GoalUpdate, Goal
+from .account import AccountBase, AccountCreate, AccountUpdate, Account

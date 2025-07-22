@@ -8,12 +8,18 @@ class TransactionBase(BaseModel):
     amount: float
     category: Optional[str] = None
     account: Optional[str] = None
+    account_id: Optional[int] = None
 
 class TransactionCreate(TransactionBase):
     pass
 
-class TransactionUpdate(TransactionBase):
-    pass
+class TransactionUpdate(BaseModel):
+    date: Optional[datetime] = None
+    description: Optional[str] = None
+    amount: Optional[float] = None
+    category: Optional[str] = None
+    account: Optional[str] = None
+    account_id: Optional[int] = None
 
 class Transaction(TransactionBase):
     id: int
