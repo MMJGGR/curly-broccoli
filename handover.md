@@ -32,7 +32,8 @@ This document summarizes the current state of the Personal Finance App project, 
 *   Security aspects (password hashing, JWT validation)
 **Key Learnings from Testing:**
 *   Initial database connection issues were resolved by configuring in-memory SQLite for tests.
-*   Pydantic `ConfigError` was resolved by ensuring `orm_mode=True` was correctly applied to all relevant schemas (`User`, `UserInDB`, `ProfileOut`, `ProfileResponse`, `Profile`, `Goal`, `Milestone`, `RiskProfile`, `Transaction`).
+*   Pydantic `ConfigError` was resolved by enabling `from_attributes=True` (replacing the old `orm_mode=True`) on all relevant schemas (`User`, `UserInDB`, `ProfileOut`, `ProfileResponse`, `Profile`, `Goal`, `Milestone`, `RiskProfile`, `Transaction`).
+*   Response validation errors were fixed by making `risk_level` an integer field consistently across schemas and tests.
 *   Unique constraint violations (`kra_pin`, `email`) were addressed by implementing dynamic, UUID-based generation for test data.
 
 ## 2. Architecture and Constraints
