@@ -27,7 +27,7 @@ def test_register_success():
     assert resp.status_code == 201
     assert "access_token" in resp.json()
     assert 0 <= resp.json()["risk_score"] <= 100
-    assert isinstance(resp.json()["risk_level"], str)
+    assert isinstance(resp.json()["risk_level"], int)
 
 
 def test_register_duplicate():
