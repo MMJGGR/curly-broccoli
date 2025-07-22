@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey, Float, JSON
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import relationship, declarative_base
 
 
@@ -32,7 +33,7 @@ class Profile(Base):
     annual_income = Column(Float)
     dependents = Column(Integer)
     goals = Column(JSON)  # Stored as JSON
-    questionnaire = Column(JSON)  # Stored as JSON array
+    questionnaire = Column(ARRAY(Integer))  # Stored as ARRAY of Integers
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="profile")
@@ -56,6 +57,7 @@ class Account(Base):
     name = Column(String, index=True)
     type = Column(String)
     balance = Column(Float)
+    institution_name = Column(String) # Added based on PRD review
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="accounts")

@@ -11,6 +11,7 @@ from app.schemas import RegisterRequest, Token, RegisterResponse
 from app.security import hash_password, verify_password, create_access_token
 from compute.risk_engine import compute_risk_score, compute_risk_level
 from app.utils import normalize_questionnaire
+import json
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -50,7 +51,7 @@ def register(
         annual_income=data.annual_income,
         dependents=data.dependents,
         goals=data.goals,
-        questionnaire=questionnaire,
+        questionnaire=json.dumps(questionnaire),
     )
 
     # 5. Compute CFA-aligned risk score

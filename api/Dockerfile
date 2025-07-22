@@ -13,6 +13,7 @@ COPY . .
 COPY alembic.ini .
 COPY alembic ./alembic
 COPY wait-for-it.sh /app/
+COPY api/app/tests /app/app/tests
 RUN chmod +x /app/wait-for-it.sh
 
 # Remove lightweight Pydantic stub so the real library installed above is used
