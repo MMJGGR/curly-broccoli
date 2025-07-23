@@ -1,10 +1,12 @@
 // TODO: Use listMilestones() for timeline events (Epic 2 Story 1, ~75% once connected)
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import MessageBox from './MessageBox';
+import { listMilestones, createMilestone, updateMilestone, deleteMilestone } from '../api';
 
 const LifetimeJourneyTimeline = ({ onNextScreen }) => {
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
+    const [milestones, setMilestones] = useState([]);
 
     const showActionMessage = (actionName) => {
         setMessage('Viewing details for: ' + actionName + ' (This is a wireframe action)');
@@ -16,19 +18,58 @@ const LifetimeJourneyTimeline = ({ onNextScreen }) => {
         setMessage('');
     };
 
-    // Sample data for Jamal's timeline
-    const jamalTimeline = [
-        { age: 27, phase: 'Accumulation', event: 'Onboarding: SMS/Email Intake', assets: 'KES 70 k', liabs: 'KES 300 k', netWorth: '–KES 230 k', advice: 'Set up cash-flow categories & target a 6-mo emergency fund (Cash-flow analysis)' },
-        { age: 28, phase: 'Accumulation', event: 'Emergency Fund Achieved: 6-Month Buffer', assets: 'KES 150 k', liabs: 'KES 280 k', netWorth: '–KES 130 k', advice: 'Redirect 20% of income into a growth-oriented ETF (Time-Value of Money)' },
-        { age: 29, phase: 'Accumulation', event: 'Pension Enrollment: Employer Match Started', assets: 'KES 150 k (bank) + KES 10 k (pension)', liabs: 'KES 260 k', netWorth: '–KES 100 k', advice: 'Increase NSSF contributions to 12% to capture long-term compounding (Compound Interest)' },
-        { age: 30, phase: 'Accumulation → Family', event: 'Student-Loan Paid Off: Debt-Free Milestone', assets: 'KES 200 k', liabs: '0', netWorth: 'KES 200 k', advice: 'Allocate the freed-up KES 15 k/mo to a diversified equity fund (Liability Management)' },
-        { age: 33, phase: 'Family & Property', event: 'Motorcycle Purchase: Asset Acquisition', assets: 'KES 300 k', liabs: 'KES 50 k (vehicle loan)', netWorth: 'KES 250 k', advice: 'Automate an insurance & maintenance reserve at 5% of asset value (Asset Protection)' },
-        { age: 36, phase: 'Family & Property', event: 'Education Fund Kick-off: Future College', assets: 'KES 350 k total savings', liabs: 'KES 50 k', netWorth: 'KES 300 k', advice: 'Launch a dedicated unit-trust SIP targeting 8% p.a. (Education Goals Framework)' },
-        { age: 40, phase: 'Family & Property', event: 'Home Purchase: First Mortgage', assets: 'Pre-mortgage NW KES 800 k', liabs: 'KES 1.5 M mortgage', netWorth: '–KES 700 k', advice: 'Optimize mortgage tenor & prepayment schedule (Liability Management)' },
-        { age: 55, phase: 'Pre-Retirement Consolidation', event: 'Portfolio Rebalance: Shift to Income', assets: '2 M (60% bonds/40% equities)', liabs: 'KES 100 k', netWorth: 'KES 1.9 M', advice: 'Rebalance to a 40/60 equity-bond split (Life-Cycle Asset Allocation)' },
-        { age: 65, phase: 'Decumulation & Legacy', event: 'Retirement & Drawdown Start: SWP Launch', assets: 'KES 3 M portfolio', liabs: 'KES 100 k', netWorth: 'KES 2.9 M', advice: 'Run a 4% systematic withdrawal Monte-Carlo stress test (Decumulation Planning)' },
-        { age: 75, phase: 'Decumulation & Legacy', event: 'Estate Planning: Legacy Blueprint', assets: 'Remaining portfolio KES 2.5 M', liabs: 'Estate setup costs', netWorth: 'KES 2.5 M', advice: 'Initiate trust formation & charitable bequests (Estate Planning)' },
-    ];
+    const fetchMilestones = async () => {
+        try {
+            const data = await listMilestones();
+            if (Array.isArray(data)) setMilestones(data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'test') return;
+        fetchMilestones();
+    }, []);
+
+    const addOne = async () => {
+        showActionMessage('Add Custom Milestone');
+        const newItem = { age: 0, phase: 'Custom', event: 'New Milestone', assets: '', liabs: '', netWorth: '', advice: '' };
+        setMilestones(m => [...m, newItem]);
+        try {
+            const created = await createMilestone(undefined, newItem);
+            if (created && created.id) {
+                setMilestones(m => m.map(item => item === newItem ? created : item));
+            }
+        } catch (err) {
+            console.error(err);
+            fetchMilestones();
+        }
+    };
+
+    const updateOne = async (index) => {
+        const item = milestones[index];
+        const updated = { ...item, age: item.age + 1 };
+        setMilestones(m => m.map((it, i) => i === index ? updated : it));
+        try {
+            await updateMilestone(undefined, item.id || index, updated);
+        } catch (err) {
+            console.error(err);
+            fetchMilestones();
+        }
+    };
+
+    const removeOne = async (index) => {
+        const item = milestones[index];
+        const prev = [...milestones];
+        setMilestones(m => m.filter((_, i) => i !== index));
+        try {
+            await deleteMilestone(undefined, item.id || index);
+        } catch (err) {
+            console.error(err);
+            setMilestones(prev);
+        }
+    };
 
 
     return (
@@ -41,7 +82,7 @@ const LifetimeJourneyTimeline = ({ onNextScreen }) => {
                     <div className="absolute left-1/2 transform -translate-x-1/2 w-1 bg-blue-300 h-full hidden md:block"></div>
 
                     <div className="flex flex-col items-center md:items-stretch">
-                        {jamalTimeline.map((item, index) => (
+                        {milestones.map((item, index) => (
                             <div key={index} className={`flex w-full ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} items-center mb-8`}>
                                 <div className="hidden md:block w-1/2"></div> {/* Empty div for spacing on one side */}
                                 <div className="z-10 flex items-center justify-center w-10 h-10 bg-blue-600 rounded-full shadow-lg flex-shrink-0 text-white font-bold text-sm">
@@ -58,9 +99,15 @@ const LifetimeJourneyTimeline = ({ onNextScreen }) => {
                                     <p className="text-blue-700 text-sm italic mb-4">{item.advice}</p>
                                     <button
                                         className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md text-sm"
-                                        onClick={() => showActionMessage(item.event)}
+                                        onClick={() => updateOne(index)}
                                     >
                                         Take Action on this Advice
+                                    </button>
+                                    <button
+                                        className="ml-2 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors duration-200 shadow-md text-sm"
+                                        onClick={() => removeOne(index)}
+                                    >
+                                        Delete
                                     </button>
                                 </div>
                             </div>
@@ -69,7 +116,7 @@ const LifetimeJourneyTimeline = ({ onNextScreen }) => {
                 </div>
 
                 <div className="text-center mt-8">
-                    <button className="bg-green-500 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-600 transition-all duration-300 shadow-lg" onClick={() => showActionMessage('Add Custom Milestone')}>
+                    <button className="bg-green-500 text-white py-3 px-8 rounded-lg font-semibold hover:bg-green-600 transition-all duration-300 shadow-lg" onClick={addOne}>
                         + Add Custom Milestone
                     </button>
                 </div>
