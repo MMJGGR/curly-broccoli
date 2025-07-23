@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Milestone, User
+from app.models import User
 from app.schemas import Milestone as MilestoneSchema, MilestoneCreate, MilestoneUpdate
 from app.security import get_current_user
+from app.crud import milestone as crud_milestone
 
 router = APIRouter(prefix="/milestones", tags=["milestones"])
 
@@ -15,11 +16,7 @@ def create_milestone(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    milestone = Milestone(**data.dict(), user_id=current_user.id)
-    db.add(milestone)
-    db.commit()
-    db.refresh(milestone)
-    return milestone
+    return crud_milestone.create_milestone(db=db, data=data, user_id=current_user.id)
 
 
 @router.get("/", response_model=list[MilestoneSchema])
@@ -27,7 +24,7 @@ def list_milestones(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(Milestone).filter_by(user_id=current_user.id).all()
+    return crud_milestone.get_milestones(db=db, user_id=current_user.id)
 
 
 @router.get("/{milestone_id}", response_model=MilestoneSchema)
@@ -36,8 +33,8 @@ def get_milestone(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    milestone = db.query(Milestone).filter_by(id=milestone_id, user_id=current_user.id).first()
-    if not milestone:
+    milestone = crud_milestone.get_milestone(db=db, milestone_id=milestone_id, user_id=current_user.id)
+    if milestone is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
     return milestone
 
@@ -49,13 +46,9 @@ def update_milestone(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    milestone = db.query(Milestone).filter_by(id=milestone_id, user_id=current_user.id).first()
-    if not milestone:
+    milestone = crud_milestone.update_milestone(db=db, milestone_id=milestone_id, data=data, user_id=current_user.id)
+    if milestone is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
-    for key, value in data.dict(exclude_unset=True).items():
-        setattr(milestone, key, value)
-    db.commit()
-    db.refresh(milestone)
     return milestone
 
 
@@ -65,9 +58,7 @@ def delete_milestone(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    milestone = db.query(Milestone).filter_by(id=milestone_id, user_id=current_user.id).first()
-    if not milestone:
+    milestone = crud_milestone.delete_milestone(db=db, milestone_id=milestone_id, user_id=current_user.id)
+    if milestone is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
-    db.delete(milestone)
-    db.commit()
     return None
