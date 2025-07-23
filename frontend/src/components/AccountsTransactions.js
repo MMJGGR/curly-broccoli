@@ -1,10 +1,13 @@
 // TODO: Use src/api.js listAccounts() and listTransactions() to fetch data (Epic 3 Stories 2 & 7, ~70% of account register after integration)
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import MessageBox from './MessageBox';
+import { listAccounts, listTransactions } from '../api';
 
 const AccountsTransactions = ({ onNextScreen }) => {
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
+    const [accounts, setAccounts] = useState([]);
+    const [transactions, setTransactions] = useState([]);
 
     const showActionMessage = (actionName) => {
         setMessage('Action: ' + actionName + ' (This is a wireframe action)');
@@ -16,13 +19,21 @@ const AccountsTransactions = ({ onNextScreen }) => {
         setMessage('');
     };
 
-    const transactions = [
-        { date: '2025-07-15', description: 'Salary', amount: '250,000', category: 'Income: Salary', account: 'M-PESA' },
-        { date: '2025-07-10', description: 'Loan Repayment', amount: '-15,000', category: 'Expenses: Loan', account: 'M-PESA' },
-        { date: '2025-07-08', description: 'Groceries - Naivas', amount: '-5,000', category: 'Expenses: Food & Dining', account: 'KCB' },
-        { date: '2025-07-05', description: 'Electricity Bill', amount: '-2,500', category: 'Expenses: Utilities', account: 'M-PESA' },
-        { date: '2025-07-03', description: 'Transport - Uber', amount: '-800', category: 'Expenses: Transport', account: 'KCB' },
-    ];
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'test') return;
+        const loadData = async () => {
+            try {
+                const accts = await listAccounts();
+                if (Array.isArray(accts)) setAccounts(accts);
+                const txs = await listTransactions();
+                if (Array.isArray(txs)) setTransactions(txs);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        loadData();
+    }, []);
+
 
     return (
         <div className="bg-gray-100 min-h-screen flex flex-col">
@@ -32,18 +43,12 @@ const AccountsTransactions = ({ onNextScreen }) => {
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Account Summary</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-blue-800">
-                            <p className="font-medium">M-PESA</p>
-                            <p className="text-lg font-bold">KES 50,000</p>
-                        </div>
-                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-blue-800">
-                            <p className="font-medium">Bank Account (KCB)</p>
-                            <p className="text-lg font-bold">KES 20,000</p>
-                        </div>
-                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-blue-800">
-                            <p className="font-medium">Pension Fund (NSSF)</p>
-                            <p className="text-lg font-bold">KES 10,000</p>
-                        </div>
+                        {accounts.map((acct, idx) => (
+                            <div key={idx} className="bg-blue-50 p-4 rounded-lg border border-blue-200 text-blue-800">
+                                <p className="font-medium">{acct.name}</p>
+                                <p className="text-lg font-bold">{acct.balance}</p>
+                            </div>
+                        ))}
                     </div>
                     <button className="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-200 shadow-md" onClick={() => showActionMessage('Link New Account')}>
                         Link New Account
@@ -62,8 +67,9 @@ const AccountsTransactions = ({ onNextScreen }) => {
                         </select>
                         <select className="shadow border rounded-lg py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
                             <option>All Accounts</option>
-                            <option>M-PESA</option>
-                            <option>KCB</option>
+                            {accounts.map((acct, idx) => (
+                                <option key={idx}>{acct.name}</option>
+                            ))}
                         </select>
                     </div>
 
