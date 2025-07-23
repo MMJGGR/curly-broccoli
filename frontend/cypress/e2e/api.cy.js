@@ -1,7 +1,7 @@
 describe('API smoke tests', () => {
   it('healthz responds with status ok', () => {
-    cy.request('/healthz').its('status').should('eq', 200)
-  })
+    cy.request('/healthz').its('status').should('eq', 200);
+  });
 
   it('register returns token', () => {
     cy.request('POST', '/auth/register', {
@@ -13,7 +13,9 @@ describe('API smoke tests', () => {
       annual_income: 50000,
       dependents: 0,
       goals: { targetAmount: 10000, timeHorizon: 12 },
-      questionnaire: [1, 2, 3]
-    }).its('body').should('have.property', 'access_token')
-  })
-})
+      questionnaire: [1, 2, 3],
+    })
+      .its('body')
+      .should('have.property', 'access_token');
+  });
+});
