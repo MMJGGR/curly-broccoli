@@ -1,5 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey, Float, JSON
-from sqlalchemy.dialects.postgresql import ARRAY
+# Use JSON for portable storage of lists. ARRAY is not supported by SQLite,
+# which is used in tests, so replacing ARRAY(Integer) with JSON ensures the
+# models work across different databases.
 from sqlalchemy.orm import relationship, declarative_base
 
 
@@ -33,7 +35,9 @@ class Profile(Base):
     annual_income = Column(Float)
     dependents = Column(Integer)
     goals = Column(JSON)  # Stored as JSON
-    questionnaire = Column(ARRAY(Integer))  # Stored as ARRAY of Integers
+    # Store questionnaire responses as JSON to maintain cross-database
+    # compatibility (e.g. SQLite used in tests).
+    questionnaire = Column(JSON)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="profile")

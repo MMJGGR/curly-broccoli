@@ -51,7 +51,7 @@ def register(
         annual_income=data.annual_income,
         dependents=data.dependents,
         goals=data.goals,
-        questionnaire=json.dumps(questionnaire),
+        questionnaire=questionnaire,
     )
 
     # 5. Compute CFA-aligned risk score
