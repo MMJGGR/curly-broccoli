@@ -1,3 +1,4 @@
+// TODO: Create initial goals via createGoal() (Epic 1 Story 8, ~70% completion)
 import { useEffect, useState } from "react";
 
 export default function StepGoals({ data, update, validate }) {

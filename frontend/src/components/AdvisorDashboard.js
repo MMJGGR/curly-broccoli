@@ -1,3 +1,4 @@
+// TODO: Pull KPI metrics from /advisor/stats (Epic 7 Story 2, ~70% dashboard progress)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

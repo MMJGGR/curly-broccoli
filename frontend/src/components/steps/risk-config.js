@@ -1,3 +1,4 @@
+// TODO: Align risk questions with backend schema (Epic 1 extra, ~60% completion)
 // frontend/src/components/steps/risk-config.js
 export const RISK_QUESTIONS = [
   "How would you describe your investment experience?",

@@ -1,3 +1,4 @@
+// TODO: Use listMilestones() for timeline events (Epic 2 Story 1, ~75% once connected)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

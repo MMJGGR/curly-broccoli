@@ -1,3 +1,4 @@
+// TODO: Run simulations via /monte-carlo API (Epic 5 Story 4, ~80% once integrated)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

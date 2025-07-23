@@ -1,3 +1,4 @@
+// TODO: Submit risk answers to backend risk-profile API (FR Risk Profile, ~70% completion)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';

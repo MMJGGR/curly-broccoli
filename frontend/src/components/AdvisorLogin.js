@@ -1,3 +1,4 @@
+// TODO: Authenticate via /advisor/login with MFA (Epic 7 Story 1, 100% once integrated)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

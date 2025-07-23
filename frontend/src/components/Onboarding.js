@@ -1,3 +1,4 @@
+// TODO: Save onboarding progress to backend for resume (Epic 1 Story 1, ~50% completion)
 import { useState } from "react";
 
 const steps = ["Personal Info", "Employment", "Dependents", "Preview"];

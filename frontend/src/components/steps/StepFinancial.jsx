@@ -1,3 +1,4 @@
+// TODO: Save income/expense forms to backend (Epic 1 Stories 3-5, ~80% completion)
 import { useEffect, useState } from "react";
 
 export default function StepFinancial({ data, update, validate }) {

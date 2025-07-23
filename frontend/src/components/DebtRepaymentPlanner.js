@@ -1,3 +1,4 @@
+// TODO: Submit loans to /debt-plan and show schedule (Epic 5 Story 7, ~80% completion)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

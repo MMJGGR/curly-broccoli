@@ -1,3 +1,4 @@
+// TODO: Call /fire endpoint with user params (Epic 5 Story 1, ~70% once wired)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

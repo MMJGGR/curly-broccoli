@@ -1,3 +1,4 @@
+// TODO: Bind profile view to client detail endpoints (Epic 7 Story 6, ~70% completion)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

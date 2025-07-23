@@ -1,3 +1,4 @@
+// TODO: Sync profile info with backend via profile endpoints (Epic 1 Story 2, ~80% completion)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 
