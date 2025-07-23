@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 
-const UserDashboard = ({ onNextScreen }) => {
-    const [message, setMessage] = useState('');
-    const [showMessageBox, setShowMessageBox] = useState(false);
+const UserDashboard = ({
+    onNextScreen,
+    initialMessage = '',
+    initialShowMessageBox = false,
+}) => {
+    const [message, setMessage] = useState(initialMessage);
+    const [showMessageBox, setShowMessageBox] = useState(initialShowMessageBox);
 
     const showTabMessage = (tabName) => {
         setMessage('Navigating to ' + tabName + ' section... (This is a wireframe)');

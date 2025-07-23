@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 
-const AdvisorDashboard = ({ onNextScreen }) => {
-    const [message, setMessage] = useState('');
-    const [showMessageBox, setShowMessageBox] = useState(false);
-
-    const showActionMessage = (actionName) => {
-        setMessage('Action: ' + actionName + ' (This is a wireframe action)');
-        setShowMessageBox(true);
-    };
+const AdvisorDashboard = ({ onNextScreen, initialMessage = '', initialShowMessageBox = false }) => {
+    const [message, setMessage] = useState(initialMessage);
+    const [showMessageBox, setShowMessageBox] = useState(initialShowMessageBox);
 
     const hideMessageBox = () => {
         setShowMessageBox(false);

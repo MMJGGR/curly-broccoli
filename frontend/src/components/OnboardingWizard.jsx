@@ -8,6 +8,58 @@ import StepQuestionnaire from "./steps/StepQuestionnaire";
 import StepSummary from "./steps/StepSummary";
 import { RISK_QUESTIONS } from "./steps/risk-config";
 
+export async function registerUser(base, data, setUserProfile) {
+  try {
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+        dob: data.dob,
+        nationalId: data.nationalId,
+        kra_pin: data.kraPin,
+        annual_income: Number(data.annualIncome),
+        dependents: Number(data.dependents),
+        goals: {
+          ...data.goals,
+          targetAmount: Number(data.goals?.targetAmount),
+          timeHorizon: Number(data.goals?.timeHorizon),
+        },
+        questionnaire: data.questionnaire.map((q) => Number(q)),
+      }),
+    });
+    if (!res.ok) {
+      let message = res.statusText;
+      try {
+        const err = await res.json();
+        message = err.detail || err.message || message;
+      } catch {
+        // ignore
+      }
+      alert("Registration error: " + message);
+      return false;
+    }
+    let access_token, risk_score, risk_level;
+    try {
+      ({ access_token, risk_score, risk_level } = await res.json());
+    } catch {
+      console.error("Registration response was not JSON");
+      alert("Unexpected server response. Please try again later.");
+      return false;
+    }
+    localStorage.setItem("jwt", access_token);
+    setUserProfile({ risk_score, risk_level });
+    return true;
+  } catch (err) {
+    console.error("Registration request failed", err);
+    alert(
+      "Unable to complete registration. Please check your connection and try again."
+    );
+    return false;
+  }
+}
+
 const steps = [
   { label: "Account", component: StepAccount },
   { label: "Personal", component: StepPersonal },
@@ -43,57 +95,7 @@ export default function OnboardingWizard() {
   const next = () => setCurrent((c) => Math.min(c + 1, last));
   const prev = () => setCurrent((c) => Math.max(c - 1, 0));
 
-  const handleFinish = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-          dob: data.dob,
-          nationalId: data.nationalId,
-          kra_pin: data.kraPin,
-          annual_income: Number(data.annualIncome),
-          dependents: Number(data.dependents),
-          goals: {
-            ...data.goals,
-            targetAmount: Number(data.goals?.targetAmount),
-            timeHorizon: Number(data.goals?.timeHorizon),
-          },
-          questionnaire: data.questionnaire.map((q) => Number(q)),
-        }),
-      });
-      if (!res.ok) {
-        let message = res.statusText;
-        try {
-          const err = await res.json();
-          message = err.detail || err.message || message;
-        } catch {
-          // non-JSON error response
-        }
-        alert("Registration error: " + message);
-        return false;
-      }
-      let access_token, risk_score, risk_level;
-      try {
-        ({ access_token, risk_score, risk_level } = await res.json());
-      } catch {
-        console.error("Registration response was not JSON");
-        alert("Unexpected server response. Please try again later.");
-        return false;
-      }
-      localStorage.setItem("jwt", access_token);
-      setUserProfile({ risk_score, risk_level });
-      return true;
-    } catch (err) {
-      console.error("Registration request failed", err);
-      alert(
-        "Unable to complete registration. Please check your connection and try again.",
-      );
-      return false;
-    }
-  };
+  const handleFinish = () => registerUser(API_BASE, data, setUserProfile);
 
   const StepComponent = steps[current].component;
 

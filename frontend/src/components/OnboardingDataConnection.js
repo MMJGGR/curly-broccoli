@@ -68,7 +68,10 @@ const OnboardingDataConnection = () => {
                 </button>
 
                 <p className="text-xs text-gray-500 mt-8">
-                    By continuing, you agree to our <a href="#" className="text-blue-500 hover:underline">Privacy Policy</a>.
+                    By continuing, you agree to our
+                    <button type="button" className="text-blue-500 hover:underline ml-1">
+                        Privacy Policy
+                    </button>.
                 </p>
             </div>
 
