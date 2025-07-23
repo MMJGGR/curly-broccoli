@@ -1,3 +1,4 @@
+// TODO: Replace placeholder text with API-driven messages (Epic 6 Story 4, ~90% completion)
 import React from 'react';
 
 const MessageBox = ({ message, onClose }) => {

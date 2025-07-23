@@ -14,6 +14,7 @@ This document summarizes the current state of the Personal Finance App project, 
 *   **Tools Suite:** `FIRECalculator.js`, `MonteCarloSimulation.js`, `DebtRepaymentPlanner.js`, `GoalsOverview.js`
 *   **Navigation & UX Patterns:** `BottomNavBar.js`, `MessageBox.js`, `MainAppLayout.js`
 *   **Advisor Portal Screens:** `AdvisorLogin.js`, `AdvisorDashboard.js`, `ClientList.js`, `ClientProfile.js`
+*   **API Helper Module:** `src/api.js` provides fetch-based CRUD helpers for Accounts, Transactions, Milestones and Goals.
 **Assessment:** The frontend is largely complete for the MVP scope, providing a strong visual and interactive foundation.
 
 ### 1.2. Backend (FastAPI + SQLAlchemy + PostgreSQL)
@@ -83,7 +84,7 @@ The primary focus for the next phase should be on completing the backend functio
     *   Write unit and integration tests for these endpoints.
 
 5.  **Integrate Frontend with Backend APIs:**
-    *   Connect the existing frontend components (Balance Sheet, Dashboard, Tools) to the newly implemented backend APIs.
+    *   Connect the existing frontend components (Balance Sheet, Dashboard, Tools) to the newly implemented backend APIs using the helpers in `src/api.js`.
 
 6.  **Implement Core Business Logic (Backend):**
     *   **Cash-Flow Setup:** Implement backend logic for processing income sources and expense categories.
@@ -103,3 +104,19 @@ The primary focus for the next phase should be on completing the backend functio
 *   **Test-Driven Development:** Continue writing comprehensive unit and integration tests for all new features.
 *   **Security:** Prioritize security best practices throughout development, especially when handling sensitive financial data.
 *   **Modularity:** Continue to build out the backend with a modular microservices approach as outlined in the PRD.
+## 5. Frontend-Backend Integration Notes
+
+The frontend currently uses mock data and the helper functions in `src/api.js` for local state management. Once FastAPI endpoints are available, integrate the UI with the backend using the following steps:
+
+1. **Authentication flow** – Onboarding and `AuthScreen` store JWT tokens in `localStorage`. Add token refresh endpoints and wire them into login and logout logic.
+2. **Accounts & Transactions** – `AccountsTransactions.js` should call `listAccounts` and `listTransactions` on mount. Use `updateAccount`, `deleteAccount`, `updateTransaction` and `deleteTransaction` for edits.
+3. **Milestones & Goals** – `GoalsOverview.js` and `LifetimeJourneyTimeline.js` rely on `listGoals` and `listMilestones`. Apply optimistic UI updates while awaiting responses.
+4. **Error Handling** – The wrapper throws on non-2xx responses. Components should surface user-friendly messages and handle network failures gracefully.
+
+### Potential Gaps
+
+- **Multi-currency support** – Backend should store currency per account and return converted totals.
+- **Real-time updates** – Consider WebSocket or SSE to notify clients when data changes on another device.
+- **Offline usage** – PWA caching strategies and conflict resolution mechanisms are still undefined.
+
+Consider addressing these areas during integration.

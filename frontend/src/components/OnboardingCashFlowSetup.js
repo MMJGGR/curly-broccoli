@@ -1,3 +1,4 @@
+// TODO: Persist income and expenses via createIncome/Expense APIs (Epic 1 Stories 3-5, ~80% completion)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';

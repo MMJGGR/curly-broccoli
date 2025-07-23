@@ -1,3 +1,4 @@
+// TODO: Use router to highlight active tab and display counts (Epic 6 Story 1, 100% when wired)
 import React from 'react';
 
 const BottomNavBar = ({ onTabClick }) => {

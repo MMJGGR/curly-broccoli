@@ -1,3 +1,4 @@
+// TODO: Fetch dashboard metrics via src/api.js (Epic 4 Story 1, ~60% when integrated)
 import React from "react";
 
 export default function Dashboard() {

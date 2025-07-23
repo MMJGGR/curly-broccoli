@@ -1,3 +1,4 @@
+// TODO: Persist personal info through profile API (Epic 1 Story 2, ~90% completion)
 import { useEffect, useState } from "react";
 
 export default function StepPersonal({ data, update, validate }) {

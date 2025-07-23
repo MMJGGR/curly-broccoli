@@ -1,3 +1,4 @@
+// TODO: Fetch advice steps via src/api.js (Epic 2 Story 6, ~60% completion once wired)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

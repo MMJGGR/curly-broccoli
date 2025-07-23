@@ -1,3 +1,4 @@
+// TODO: Fetch onboarding summary from backend (Epic 1 Story 9, ~80% completion)
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { RISK_QUESTIONS, RISK_SCALE } from "./risk-config";

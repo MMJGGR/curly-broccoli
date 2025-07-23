@@ -1,3 +1,4 @@
+// TODO: Load clients via listClients() and enable server-side filter (Epic 7 Story 4, ~70% completion)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

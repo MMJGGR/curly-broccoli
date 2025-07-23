@@ -1,3 +1,4 @@
+// TODO: Call linkAccount() to add external accounts (Epic 1 Story 6, ~80% completion)
 import { useEffect, useState } from "react";
 
 export default function StepAccount({ data, update, validate }) {

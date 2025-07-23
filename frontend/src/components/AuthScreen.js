@@ -1,3 +1,4 @@
+// TODO: Implement user login with JWT via /auth/login (FR 1 Authentication, 100% when integrated)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';

@@ -313,6 +313,12 @@ Accessibility (WCAG): ARIA roles, keyboard navigation, color-contrast compliance
 
 Localization: Baseline multi-language support (English + Swahili) for all UI strings.
 
+Multi-currency Support: Handling of accounts in different currencies is not defined. Specify how totals are converted and stored.
+
+Real-time Updates: No mechanism for notifying the client when data changes on another device. Consider WebSocket or SSE endpoints.
+
+Offline Usage: PWA caching strategies and reconciliation logic are unspecified.
+
 10.2 Developer Instructions & Best Practices
 
 Architecture & Services

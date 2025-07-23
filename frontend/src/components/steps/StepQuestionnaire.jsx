@@ -1,3 +1,4 @@
+// TODO: Submit risk answers for risk scoring (Epic 1 extra, ~70% completion)
 import React from "react";
 import { RISK_QUESTIONS, RISK_SCALE } from "./risk-config";
 

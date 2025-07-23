@@ -1,3 +1,4 @@
+// TODO: Use src/api.js listAccounts() and listTransactions() to fetch data (Epic 3 Stories 2 & 7, ~70% of account register after integration)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

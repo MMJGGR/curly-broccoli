@@ -1,3 +1,4 @@
+// TODO: Persist layout prefs from backend (Epic 6 Story 3, ~80% integration)
 import React from 'react';
 import { Routes, Route, Outlet, useNavigate } from 'react-router-dom';
 import BottomNavBar from './BottomNavBar';

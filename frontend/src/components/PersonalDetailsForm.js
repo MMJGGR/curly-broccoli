@@ -1,3 +1,4 @@
+// TODO: POST personal details to profile API (Epic 1 Story 2, ~90% when wired)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';

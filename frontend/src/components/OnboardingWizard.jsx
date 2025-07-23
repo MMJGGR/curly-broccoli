@@ -1,3 +1,4 @@
+// TODO: Send step data to backend after each form (Epic 1 Story 1, ~60% integration)
 import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import StepAccount from "./steps/StepAccount";

@@ -1,3 +1,4 @@
+// TODO: Populate widgets from /dashboard endpoints (Epic 4 Stories 1-5, ~75% completion)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 

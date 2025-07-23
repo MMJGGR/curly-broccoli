@@ -1,3 +1,4 @@
+// TODO: Retrieve asset/liability totals with listAccounts() (Epic 3 Story 1, ~80% of summary cards)
 import React, { useState } from 'react';
 import MessageBox from './MessageBox';
 
