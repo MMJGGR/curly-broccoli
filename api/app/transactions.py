@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Transaction, Account, User
+from app.models import User
 from app.schemas import Transaction as TransactionSchema, TransactionCreate, TransactionUpdate
 from app.security import get_current_user
+from app.crud import transaction as crud_transaction
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -15,13 +16,9 @@ def create_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    account = db.query(Account).filter_by(id=tx_in.account_id, user_id=current_user.id).first()
-    if not account:
+    tx = crud_transaction.create_transaction(db=db, tx_in=tx_in, user_id=current_user.id)
+    if tx is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
-    tx = Transaction(**tx_in.dict(), user_id=current_user.id)
-    db.add(tx)
-    db.commit()
-    db.refresh(tx)
     return tx
 
 
@@ -30,7 +27,7 @@ def list_transactions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(Transaction).filter_by(user_id=current_user.id).all()
+    return crud_transaction.get_transactions(db=db, user_id=current_user.id)
 
 
 @router.get("/{tx_id}", response_model=TransactionSchema)
@@ -39,8 +36,8 @@ def get_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    tx = db.query(Transaction).filter_by(id=tx_id, user_id=current_user.id).first()
-    if not tx:
+    tx = crud_transaction.get_transaction(db=db, tx_id=tx_id, user_id=current_user.id)
+    if tx is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
     return tx
 
@@ -52,13 +49,9 @@ def update_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    tx = db.query(Transaction).filter_by(id=tx_id, user_id=current_user.id).first()
-    if not tx:
+    tx = crud_transaction.update_transaction(db=db, tx_id=tx_id, tx_in=tx_in, user_id=current_user.id)
+    if tx is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
-    for key, value in tx_in.dict(exclude_unset=True).items():
-        setattr(tx, key, value)
-    db.commit()
-    db.refresh(tx)
     return tx
 
 
@@ -68,9 +61,7 @@ def delete_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    tx = db.query(Transaction).filter_by(id=tx_id, user_id=current_user.id).first()
-    if not tx:
+    tx = crud_transaction.delete_transaction(db=db, tx_id=tx_id, user_id=current_user.id)
+    if tx is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
-    db.delete(tx)
-    db.commit()
     return None

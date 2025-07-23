@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Goal, User
+from app.models import User
 from app.schemas import Goal as GoalSchema, GoalCreate, GoalUpdate
 from app.security import get_current_user
+from app.crud import goal as crud_goal
 
 router = APIRouter(prefix="/goals", tags=["goals"])
 
@@ -15,11 +16,7 @@ def create_goal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    goal = Goal(**data.dict(), user_id=current_user.id)
-    db.add(goal)
-    db.commit()
-    db.refresh(goal)
-    return goal
+    return crud_goal.create_goal(db=db, data=data, user_id=current_user.id)
 
 
 @router.get("/", response_model=list[GoalSchema])
@@ -27,7 +24,7 @@ def list_goals(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(Goal).filter_by(user_id=current_user.id).all()
+    return crud_goal.get_goals(db=db, user_id=current_user.id)
 
 
 @router.get("/{goal_id}", response_model=GoalSchema)
@@ -36,8 +33,8 @@ def get_goal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    goal = db.query(Goal).filter_by(id=goal_id, user_id=current_user.id).first()
-    if not goal:
+    goal = crud_goal.get_goal(db=db, goal_id=goal_id, user_id=current_user.id)
+    if goal is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Goal not found")
     return goal
 
@@ -49,13 +46,9 @@ def update_goal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    goal = db.query(Goal).filter_by(id=goal_id, user_id=current_user.id).first()
-    if not goal:
+    goal = crud_goal.update_goal(db=db, goal_id=goal_id, data=data, user_id=current_user.id)
+    if goal is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Goal not found")
-    for key, value in data.dict(exclude_unset=True).items():
-        setattr(goal, key, value)
-    db.commit()
-    db.refresh(goal)
     return goal
 
 
@@ -65,9 +58,7 @@ def delete_goal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    goal = db.query(Goal).filter_by(id=goal_id, user_id=current_user.id).first()
-    if not goal:
+    goal = crud_goal.delete_goal(db=db, goal_id=goal_id, user_id=current_user.id)
+    if goal is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Goal not found")
-    db.delete(goal)
-    db.commit()
     return None
