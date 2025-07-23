@@ -46,6 +46,7 @@ API server by the CRA proxy configuration.
   - Start the dev servers (API and frontend): `npm run dev`
   - Lint code: `npx eslint .`
   - Run tests: `npm test -- --coverage` (coverage must remain above 90%)
+  - Our current suite achieves around **90.74%** line coverage
 
 ## Deployment
 The Docker setup is designed so you can deploy to services like Heroku or a cloud provider with minimal changes.
