@@ -8,6 +8,11 @@ const RiskQuestionnaire = () => {
     const [showMessageBox, setShowMessageBox] = useState(false);
     const navigate = useNavigate();
 
+    const hideMessageBox = () => {
+        setShowMessageBox(false);
+        setMessage('');
+    };
+
     const questions = [
         { id: 'q1', text: 'What is your primary investment objective?', options: ['Capital preservation', 'Income generation', 'Capital appreciation', 'Speculation'] },
         { id: 'q2', text: 'What is your investment horizon?', options: ['Less than 1 year', '1-3 years', '3-5 years', 'More than 5 years'] },

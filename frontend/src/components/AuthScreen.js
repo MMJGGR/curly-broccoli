@@ -74,9 +74,13 @@ const AuthScreen = () => {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
-                        <a href="#" className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800" onClick={() => showActionMessage('Forgot Password')}>
+                        <button
+                            type="button"
+                            className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+                            onClick={() => showActionMessage('Forgot Password')}
+                        >
                             Forgot Password?
-                        </a>
+                        </button>
                     </div>
                     <button
                         type="submit"

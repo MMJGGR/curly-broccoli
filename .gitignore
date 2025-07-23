@@ -9,5 +9,6 @@ node_modules/
 pytest_cache/
 frontend/build/
 frontend/node_modules/
+frontend/coverage/
 test.db
 .DS_Store

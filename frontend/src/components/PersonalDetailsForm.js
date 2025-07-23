@@ -11,11 +11,6 @@ const PersonalDetailsForm = () => {
     const [showMessageBox, setShowMessageBox] = useState(false);
     const navigate = useNavigate();
 
-    const showActionMessage = (actionName) => {
-        setMessage('Action: ' + actionName + ' (This is a wireframe action)');
-        setShowMessageBox(true);
-    };
-
     const hideMessageBox = () => {
         setShowMessageBox(false);
         setMessage('');
