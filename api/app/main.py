@@ -31,9 +31,14 @@ app = FastAPI(title=os.getenv("APP_NAME", "FastAPI App"))
 async def add_trace_id(request: Request, call_next):
     trace_id = str(uuid.uuid4())
     request.state.trace_id = trace_id
-    response = call_next(request)
-    if inspect.isawaitable(response):
-        response = await response
+    try:
+        response = call_next(request)
+        if inspect.isawaitable(response):
+            response = await response
+    except HTTPException as exc:  # ensure header added on errors
+        response = await http_exception_handler(request, exc)
+    except Exception as exc:  # pragma: no cover - fallback
+        response = await generic_exception_handler(request, exc)
     if isinstance(response, Response):
         response.headers["X-Trace-ID"] = trace_id
         return response
@@ -128,6 +133,16 @@ class Numbers(BaseModel):
 def add_numbers(nums: Numbers):
     result = add(nums.a, nums.b)
     return {"result": result}
+
+# testing-only endpoints for error propagation checks
+if os.getenv("ENV") == "testing":
+    @app.get("/test-http-exception")
+    def test_http_exception():
+        raise HTTPException(status_code=418, detail="teapot")
+
+    @app.get("/test-unhandled-exception")
+    def test_unhandled_exception():
+        raise RuntimeError("boom")
 
 # mount your routers
 app.include_router(auth_router)
