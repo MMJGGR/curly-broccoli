@@ -121,3 +121,110 @@ def test_crud_models():
     assert resp.status_code == 204
     resp = client.delete(f"/accounts/{account_id}", headers=headers)
     assert resp.status_code == 204
+
+
+def test_transaction_crud():
+    token = register_user()
+    headers = auth_headers(token)
+
+    # Create account for transaction
+    account = {
+        "name": "Wallet",
+        "type": "cash",
+        "balance": 50.0,
+        "institution_name": "Test Bank",
+    }
+    acc_resp = client.post("/accounts/", json=account, headers=headers)
+    assert acc_resp.status_code == 201
+    account_id = acc_resp.json()["id"]
+
+    tx = {
+        "date": datetime.utcnow().isoformat(),
+        "description": "Deposit",
+        "amount": 75.0,
+        "category": "income",
+        "account": "Wallet",
+        "account_id": account_id,
+    }
+    resp = client.post("/transactions/", json=tx, headers=headers)
+    assert resp.status_code == 201
+    tx_id = resp.json()["id"]
+
+    resp = client.get("/transactions/", headers=headers)
+    assert resp.status_code == 200
+    assert any(item["id"] == tx_id for item in resp.json())
+
+    update = {"amount": 100.0}
+    resp = client.put(f"/transactions/{tx_id}", json=update, headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["amount"] == 100.0
+
+    resp = client.delete(f"/transactions/{tx_id}", headers=headers)
+    assert resp.status_code == 204
+    resp = client.get("/transactions/", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_milestone_crud():
+    token = register_user()
+    headers = auth_headers(token)
+
+    data = {
+        "age": 25,
+        "phase": "accumulation",
+        "event": "graduation",
+        "assets": "5000",
+        "liabilities": "0",
+        "net_worth": "5000",
+        "advice": "invest",
+    }
+    resp = client.post("/milestones/", json=data, headers=headers)
+    assert resp.status_code == 201
+    milestone_id = resp.json()["id"]
+
+    resp = client.get("/milestones/", headers=headers)
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
+
+    update = {"phase": "consolidation"}
+    resp = client.put(f"/milestones/{milestone_id}", json=update, headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["phase"] == "consolidation"
+
+    resp = client.delete(f"/milestones/{milestone_id}", headers=headers)
+    assert resp.status_code == 204
+    resp = client.get("/milestones/", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+def test_goal_crud():
+    token = register_user()
+    headers = auth_headers(token)
+
+    goal = {
+        "name": "Emergency Fund",
+        "target": "10000",
+        "current": "0",
+        "progress": 0.0,
+        "target_date": "2030-01-01",
+    }
+    resp = client.post("/goals/", json=goal, headers=headers)
+    assert resp.status_code == 201
+    goal_id = resp.json()["id"]
+
+    resp = client.get("/goals/", headers=headers)
+    assert resp.status_code == 200
+    assert len(resp.json()) == 1
+
+    update = {"progress": 10.0}
+    resp = client.put(f"/goals/{goal_id}", json=update, headers=headers)
+    assert resp.status_code == 200
+    assert resp.json()["progress"] == 10.0
+
+    resp = client.delete(f"/goals/{goal_id}", headers=headers)
+    assert resp.status_code == 204
+    resp = client.get("/goals/", headers=headers)
+    assert resp.status_code == 200
+    assert resp.json() == []
