@@ -2,6 +2,30 @@
 
 This document summarizes the current state of the Personal Finance App project, outlining progress against the Product Requirements Document (PRD), key architectural decisions, and proposed next steps.
 
+## Critical Findings: Mismatched Data Flows
+
+A recent review uncovered several discrepancies between the frontend models and backend schemas. These inconsistencies cause validation errors and prevent key PRD features from working correctly.
+
+* **Milestones** – Frontend sends `liabs` and `netWorth`, but the backend expects `liabilities` and `net_worth`.
+  * **Error**: API responds with `422 Unprocessable Entity` when saving milestones.
+  * **Effect**: Timeline entries fail to persist, blocking the "Lifetime Timeline & Advice" feature in the PRD.
+* **Goals** – UI refers to `targetDate` while the backend uses `target_date`.
+  * **Error**: Goal creation/update fails.
+  * **Effect**: Prevents users from tracking long‑term goals as specified in the PRD.
+* **Registration Payload** – Onboarding includes `nationalId`, yet `RegisterRequest` has no such field.
+  * **Error**: The field is ignored, leaving KYC information incomplete.
+  * **Consequence**: PRD calls for capturing identification during onboarding; this mismatch breaks compliance.
+* **Employment Status** – `employmentStatus` collected in onboarding is missing in backend schemas.
+  * **Effect**: Employment data is discarded, undermining cash‑flow calculations and risk profiling required by the PRD.
+* **Profile Updates** – The PUT `/profile` endpoint accepts `annual_income` and `dependents`, but `ProfileUpdate` does not.
+  * **Error**: Updating income or dependents via the API fails validation.
+  * **Consequence**: Users cannot maintain complete profiles, which affects risk score computation in the PRD.
+* **Transactions** – Frontend uses string amounts and omits `account_id`; backend expects numeric `amount` and optional `account_id`.
+  * **Error**: Transactions cannot be created or display incorrect totals.
+  * **Effect**: Inaccurate ledgers contradict PRD requirements for a reliable balance sheet.
+* **Missing Profile API hooks** – `src/api.js` lacks helpers for `/profile` and `/dependents`.
+  * **Consequence**: Frontend cannot fetch or update these resources, leaving profile management incomplete.
+
 ## 1. Current Project Status
 
 ### 1.1. Frontend (Vite + React + Tailwind CSS)
