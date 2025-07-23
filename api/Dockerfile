@@ -9,11 +9,11 @@ COPY api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt     && pip install --no-cache-dir sqlalchemy alembic     && apt-get update && apt-get install -y netcat-traditional iputils-ping
 
 # 3) Copy your entire repo (api/, compute/, alembic/, etc)
-COPY . .
+COPY api/ ./api
+COPY compute/ ./compute
+COPY alembic/ ./alembic
 COPY alembic.ini .
-COPY alembic ./alembic
 COPY wait-for-it.sh /app/
-COPY api/app/tests /app/app/tests
 RUN chmod +x /app/wait-for-it.sh
 
 # Remove lightweight Pydantic stub so the real library installed above is used

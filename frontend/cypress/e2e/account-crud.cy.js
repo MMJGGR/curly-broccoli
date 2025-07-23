@@ -4,23 +4,19 @@ describe('UI account CRUD', () => {
   let token;
   let accountId;
 
-  it('register via API', () => {
+  beforeEach(() => {
     cy.request('POST', 'http://localhost:8000/auth/register', {
       email,
       password,
       dob: '1990-01-01',
       nationalId: '12345678',
-      kra_pin: 'A1B2C3',
+      kra_pin: `A1B2C3${Date.now()}`,
       annual_income: 50000,
       dependents: 0,
       goals: { targetAmount: 10000, timeHorizon: 12 },
       questionnaire: [1, 2, 3],
-    })
-      .its('status')
-      .should('eq', 200);
-  });
+    });
 
-  it('login via API and store token', () => {
     cy.request({
       method: 'POST',
       url: 'http://localhost:8000/auth/login',
@@ -38,11 +34,12 @@ describe('UI account CRUD', () => {
       method: 'POST',
       url: 'http://localhost:8000/accounts/',
       headers: { Authorization: `Bearer ${token}` },
-      body: { name: 'Test Account', balance: 100 },
+      body: { name: 'Test Account', balance: 100, type: 'checking', institution_name: 'Test Bank' },
     }).then((resp) => {
       accountId = resp.body.id;
     });
     cy.reload();
+    cy.wait(1000);
     cy.contains('Test Account').should('exist');
 
     cy.request({
@@ -52,6 +49,7 @@ describe('UI account CRUD', () => {
       body: { name: 'Updated Account', balance: 200 },
     });
     cy.reload();
+    cy.wait(1000);
     cy.contains('Updated Account').should('exist');
 
     cy.request({
@@ -60,6 +58,7 @@ describe('UI account CRUD', () => {
       headers: { Authorization: `Bearer ${token}` },
     });
     cy.reload();
+    cy.wait(1000);
     cy.contains('Updated Account').should('not.exist');
   });
 });

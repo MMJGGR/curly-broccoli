@@ -1,4 +1,7 @@
 describe('API smoke tests', () => {
+  beforeEach(() => {
+    cy.request('POST', 'http://localhost:8000/dev/clear-db');
+  });
   it('healthz responds with status ok', () => {
     cy.request('/healthz').its('status').should('eq', 200);
   });

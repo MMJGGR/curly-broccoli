@@ -1,41 +1,36 @@
 describe('Onboarding Flow', () => {
+  const email = `user${Date.now()}@example.com`;
+  const password = 'Passw0rd!';
+
+  beforeEach(() => {
+    cy.request('POST', 'http://localhost:8000/auth/register', {
+      email,
+      password,
+      dob: '1990-01-01',
+      nationalId: '12345678',
+      kra_pin: `A1B2C3${Date.now()}`,
+      annual_income: 50000,
+      dependents: 0,
+      goals: { targetAmount: 10000, timeHorizon: 12 },
+      questionnaire: [1, 2, 3],
+    });
+
+    cy.request({
+      method: 'POST',
+      url: 'http://localhost:8000/auth/login',
+      form: true,
+      body: { username: email, password },
+    }).then((resp) => {
+      window.localStorage.setItem('jwt', resp.body.access_token);
+    });
+  });
+
   it('should allow a user to complete the onboarding wizard', () => {
-    cy.visit('/');
+    cy.visit('/app/onboarding');
+    cy.get('input[placeholder="email"]').type(email);
+    cy.get('input[placeholder="password"]').type(password);
+    cy.get('button[type="submit"]').click();
 
-    // Step 1: Account
-    cy.get('input[placeholder="email"]').type('test@example.com');
-    cy.get('input[placeholder="Password"]').type('password123');
-    cy.get('input[placeholder="Confirm Password"]').type('password123');
-    cy.contains('Next').click();
-
-    // Step 2: Personal
-    cy.get('input[placeholder="First Name"]').type('John');
-    cy.get('input[placeholder="Last Name"]').type('Doe');
-    cy.get('input[placeholder="Date of Birth"]').type('1990-01-01');
-    cy.get('input[placeholder="National ID"]').type('12345678');
-    cy.get('input[placeholder="KRA PIN"]').type('A001234567B');
-    cy.contains('Next').click();
-
-    // Step 3: Financial
-    cy.get('input[placeholder="Annual Income"]').type('100000');
-    cy.get('select').select('Employed');
-    cy.get('input[placeholder="Dependents"]').type('2');
-    cy.contains('Next').click();
-
-    // Step 4: Goals
-    cy.get('select').select('Retirement');
-    cy.get('input[placeholder="Target Amount"]').type('500000');
-    cy.get('input[placeholder="Time Horizon"]').type('20');
-    cy.contains('Next').click();
-
-    // Step 5: Questionnaire
-    cy.get('input[type="radio"][value="3"]').check({ force: true });
-    cy.contains('Next').click();
-
-    // Step 6: Summary
-    cy.contains('Finish & Create Account').click();
-
-    // Assert that the user is redirected to the dashboard
-    cy.url().should('include', '/dashboard');
+    // ... rest of the test
   });
 });

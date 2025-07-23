@@ -13,6 +13,7 @@ from .accounts import router as accounts_router
 from .transactions import router as transactions_router
 from .milestones import router as milestones_router
 from .goals import router as goals_router
+from .dev import router as dev_router
 from api.app.api.v1.api import api_router
 from api.app.core.exceptions import UnauthorizedException, ForbiddenException, NotFoundException, ConflictException, UnprocessableEntityException
 
@@ -135,4 +136,5 @@ app.include_router(accounts_router)
 app.include_router(transactions_router)
 app.include_router(milestones_router)
 app.include_router(goals_router)
+app.include_router(dev_router)
 app.include_router(api_router, prefix="/api/v1")
