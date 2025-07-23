@@ -47,6 +47,10 @@ API server by the CRA proxy configuration.
   - Lint code: `npx eslint .`
   - Run tests: `npm test -- --coverage` (coverage must remain above 90%)
   - Our current suite achieves around **90.74%** line coverage
+  - A lightweight wrapper is available at `frontend/src/api.js` for performing
+    CRUD operations on Accounts, Transactions, Milestones and Goals. Each
+    function simply forwards requests to the FastAPI backend and returns the
+    parsed JSON response.
 
 ## Deployment
 The Docker setup is designed so you can deploy to services like Heroku or a cloud provider with minimal changes.

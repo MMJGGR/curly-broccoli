@@ -37,7 +37,12 @@ def test_crud_models():
     headers = auth_headers(token)
 
     # Account CRUD
-    acc = {"name": "Checking", "type": "cash", "balance": 100.0}
+    acc = {
+        "name": "Checking",
+        "type": "cash",
+        "balance": 100.0,
+        "institution_name": "Test Bank",
+    }
     resp = client.post("/accounts/", json=acc, headers=headers)
     assert resp.status_code == 201
     account_id = resp.json()["id"]
