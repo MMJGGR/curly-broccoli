@@ -21,6 +21,12 @@ def create_milestone(
 
 @router.get("/", response_model=list[MilestoneSchema])
 def list_milestones(
+    skip: int = 0,
+    limit: int = 100,
+    phase: str = None,
+    event: str = None,
+    sort_by: str = None,
+    sort_order: str = "asc",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

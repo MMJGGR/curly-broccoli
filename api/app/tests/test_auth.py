@@ -1,13 +1,6 @@
-import os
-import os
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 from fastapi.testclient import TestClient
-from app.main import app, Base, engine
 
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
-client = TestClient(app)
+# Fixtures are now in conftest.py
 
 USER_DATA = {
     "email": "test@example.com",
@@ -22,7 +15,7 @@ USER_DATA = {
 }
 
 
-def test_register_success():
+def test_register_success(client: TestClient):
     resp = client.post("/auth/register", json=USER_DATA)
     assert resp.status_code == 201
     assert "access_token" in resp.json()
@@ -30,13 +23,13 @@ def test_register_success():
     assert isinstance(resp.json()["risk_level"], int)
 
 
-def test_register_duplicate():
+def test_register_duplicate(client: TestClient):
     client.post("/auth/register", json=USER_DATA)
     resp = client.post("/auth/register", json=USER_DATA)
     assert resp.status_code == 400
 
 
-def test_login_valid():
+def test_login_valid(client: TestClient):
     client.post("/auth/register", json=USER_DATA)
     resp = client.post(
         "/auth/login",
@@ -46,7 +39,7 @@ def test_login_valid():
     assert "access_token" in resp.json()
 
 
-def test_login_invalid():
+def test_login_invalid(client: TestClient):
     client.post("/auth/register", json=USER_DATA)
     resp = client.post(
         "/auth/login", data={"username": USER_DATA["email"], "password": "bad"}

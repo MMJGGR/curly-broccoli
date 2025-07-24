@@ -1,38 +1,13 @@
 from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.database import SessionLocal as Session
+from sqlalchemy.orm import Session
 
-from app.main import app
-from app.database import Base, get_db
 from app.models import User, Account
 from app.security import hash_password, create_access_token
 
-# Setup in-memory SQLite for testing
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Fixtures are now in conftest.py
 
-@pytest.fixture(name="session")
-def session_fixture():
-    Base.metadata.create_all(bind=engine)
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=engine)
-
-@pytest.fixture(name="client")
-def client_fixture(session):
-    def override_get_db():
-        yield session
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
-    app.dependency_overrides.clear()
 
 @pytest.fixture(name="test_user")
 def test_user_fixture(session):
@@ -118,7 +93,7 @@ def test_read_single_account_not_found(authenticated_client: TestClient):
     response = authenticated_client.get("/accounts/9999") # Non-existent ID
     assert response.status_code == 404
 
-def test_read_single_account_unauthorized(client: TestClient, test_user: User, session):
+def test_read_single_account_unauthorized(client: TestClient, test_user: User, session, authenticated_client: TestClient):
     # Create an account for a different user
     other_user = User(email="other@example.com", hashed_password=hash_password("otherpassword"), role="user")
     session.add(other_user)
@@ -130,7 +105,7 @@ def test_read_single_account_unauthorized(client: TestClient, test_user: User, s
     session.refresh(other_account)
 
     # Attempt to access with test_user's token
-    response = client.get(f"/accounts/{other_account.id}", headers=authenticated_client.headers)
+    response = authenticated_client.get(f"/accounts/{other_account.id}")
     assert response.status_code == 404 # Should return 404 to prevent enumeration
 
 def test_update_account(authenticated_client: TestClient, test_user: User, session):

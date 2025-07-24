@@ -81,11 +81,23 @@ class ProfileBase(BaseModel):
     date_of_birth: Optional[date] = None
     kra_pin: Optional[str] = None
 
+    class Config:
+        from_attributes = True
+
+    class Config:
+        from_attributes = True
+
 class ProfileCreate(ProfileBase):
     pass
 
 class ProfileUpdate(ProfileBase):
-    pass
+    annual_income: Optional[float] = None
+    dependents: Optional[int] = None
+    goals: Optional[Dict[str, Any]] = None
+    questionnaire: Optional[List[int]] = None
+
+    class Config:
+        from_attributes = True
 
 class Profile(ProfileBase):
     id: int

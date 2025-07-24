@@ -23,6 +23,8 @@ class User(Base):
     milestones = relationship("Milestone", back_populates="owner")
     goals = relationship("Goal", back_populates="owner")
     accounts = relationship("Account", back_populates="owner")
+    income_sources = relationship("IncomeSource", back_populates="owner")
+    expense_categories = relationship("ExpenseCategory", back_populates="owner")
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -89,9 +91,9 @@ class Milestone(Base):
     age = Column(Integer)
     phase = Column(String)
     event = Column(String)
-    assets = Column(String)
-    liabilities = Column(String)
-    net_worth = Column(String)
+    assets = Column(Float)
+    liabilities = Column(Float)
+    net_worth = Column(Float)
     advice = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
 
@@ -109,3 +111,24 @@ class Goal(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="goals")
+
+class IncomeSource(Base):
+    __tablename__ = "income_sources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    amount = Column(Float)
+    frequency = Column(String)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    owner = relationship("User", back_populates="income_sources")
+
+class ExpenseCategory(Base):
+    __tablename__ = "expense_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    budgeted_amount = Column(Float)
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    owner = relationship("User", back_populates="expense_categories")

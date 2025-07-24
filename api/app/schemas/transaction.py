@@ -21,9 +21,13 @@ class TransactionUpdate(BaseModel):
     account: Optional[str] = None
     account_id: Optional[int] = None
 
+    class Config:
+        from_attributes = True
+
 class Transaction(TransactionBase):
     id: int
     user_id: int
 
     class Config:
+        orm_mode = True
         from_attributes = True

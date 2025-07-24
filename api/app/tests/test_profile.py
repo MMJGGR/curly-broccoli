@@ -1,14 +1,7 @@
-import os
 import uuid
-import os
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 from fastapi.testclient import TestClient
-from app.main import app, Base, engine
 
-os.environ["DATABASE_URL"] = "sqlite:///:memory:"
-Base.metadata.drop_all(bind=engine)
-Base.metadata.create_all(bind=engine)
-client = TestClient(app)
+# Fixtures are now in conftest.py
 
 USER_DATA = {
     "password": "pass1234",
@@ -22,7 +15,7 @@ USER_DATA = {
 }
 
 
-def register():
+def register(client: TestClient):
     email = f"{uuid.uuid4()}@example.com"
     kra_pin = str(uuid.uuid4())
     data = USER_DATA.copy()
@@ -36,7 +29,7 @@ def register():
     return email, token
 
 
-def test_profile_unauthorized():
+def test_profile_unauthorized(client: TestClient):
     assert client.get("/profile").status_code == 401
     assert client.put("/profile", json={}).status_code == 401
     assert client.get("/dependents").status_code == 401
@@ -44,8 +37,8 @@ def test_profile_unauthorized():
     assert client.delete("/dependents").status_code == 401
 
 
-def test_profile_get_and_update():
-    email, token = register()
+def test_profile_get_and_update(client: TestClient):
+    email, token = register(client)
     headers = {"Authorization": f"Bearer {token}"}
 
     resp = client.get("/profile", headers=headers)
@@ -65,8 +58,8 @@ def test_profile_get_and_update():
     assert resp.json()["annual_income"] == 20000
 
 
-def test_dependents_crud():
-    _, token = register()
+def test_dependents_crud(client: TestClient):
+    _, token = register(client)
     headers = {"Authorization": f"Bearer {token}"}
 
     resp = client.get("/dependents", headers=headers)
@@ -86,8 +79,8 @@ def test_dependents_crud():
     assert resp.json()["dependents"] == 0
 
 
-def test_profile_risk_level_field():
-    _, token = register()
+def test_profile_risk_level_field(client: TestClient):
+    _, token = register(client)
     headers = {"Authorization": f"Bearer {token}"}
     resp = client.get("/profile", headers=headers)
     assert resp.status_code == 200

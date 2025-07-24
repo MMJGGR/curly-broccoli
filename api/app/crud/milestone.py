@@ -17,8 +17,21 @@ def get_milestone(db: Session, milestone_id: int, user_id: int) -> Optional[Mile
     return db.query(Milestone).filter(Milestone.id == milestone_id, Milestone.user_id == user_id).first()
 
 
-def get_milestones(db: Session, user_id: int) -> List[Milestone]:
-    return db.query(Milestone).filter(Milestone.user_id == user_id).all()
+def get_milestones(db: Session, user_id: int, skip: int = 0, limit: int = 100, phase: str = None, event: str = None, sort_by: str = None, sort_order: str = "asc") -> List[Milestone]:
+    query = db.query(Milestone).filter(Milestone.user_id == user_id)
+
+    if phase:
+        query = query.filter(Milestone.phase.ilike(f"%{phase}%"))
+    if event:
+        query = query.filter(Milestone.event.ilike(f"%{event}%"))
+
+    if sort_by:
+        if sort_order == "desc":
+            query = query.order_by(getattr(Milestone, sort_by).desc())
+        else:
+            query = query.order_by(getattr(Milestone, sort_by).asc())
+
+    return query.offset(skip).limit(limit).all()
 
 
 def update_milestone(db: Session, milestone_id: int, data: MilestoneUpdate, user_id: int) -> Optional[Milestone]:

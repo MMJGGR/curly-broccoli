@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -24,6 +25,13 @@ def create_transaction(
 
 @router.get("/", response_model=list[TransactionSchema])
 def list_transactions(
+    skip: int = 0,
+    limit: int = 100,
+    category: str = None,
+    start_date: datetime = None,
+    end_date: datetime = None,
+    sort_by: str = None,
+    sort_order: str = "asc",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

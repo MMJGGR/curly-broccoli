@@ -18,9 +18,13 @@ class GoalUpdate(BaseModel):
     progress: Optional[float] = None
     target_date: Optional[str] = None
 
+    class Config:
+        from_attributes = True
+
 class Goal(GoalBase):
     id: int
     user_id: int
 
     class Config:
+        orm_mode = True
         from_attributes = True

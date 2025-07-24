@@ -11,7 +11,9 @@ from api.app.core.exceptions import UnprocessableEntityException
 
 from app.database     import get_db
 from app.models import User, Profile
-from app.schemas.user import ProfileOut, Dependents
+from app.schemas.user import ProfileOut, ProfileUpdate, Dependents
+ProfileOut.Config.orm_mode = True
+ProfileOut.Config.orm_mode = True
 ProfileOut.Config.orm_mode = True
 from app.security     import SECRET_KEY, ALGORITHM
 from compute.risk_engine import compute_risk_score, compute_risk_level
@@ -63,7 +65,7 @@ def read_profile(
 
 @router.put("/profile")
 def update_profile(
-    profile_in: ProfileOut,
+    profile_in: ProfileUpdate,
     db:         Session = Depends(get_db),
     current:    User    = Depends(get_current_user),
 ):

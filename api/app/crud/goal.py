@@ -17,8 +17,19 @@ def get_goal(db: Session, goal_id: int, user_id: int) -> Optional[Goal]:
     return db.query(Goal).filter(Goal.id == goal_id, Goal.user_id == user_id).first()
 
 
-def get_goals(db: Session, user_id: int) -> List[Goal]:
-    return db.query(Goal).filter(Goal.user_id == user_id).all()
+def get_goals(db: Session, user_id: int, skip: int = 0, limit: int = 100, name: str = None, sort_by: str = None, sort_order: str = "asc") -> List[Goal]:
+    query = db.query(Goal).filter(Goal.user_id == user_id)
+
+    if name:
+        query = query.filter(Goal.name.ilike(f"%{name}%"))
+
+    if sort_by:
+        if sort_order == "desc":
+            query = query.order_by(getattr(Goal, sort_by).desc())
+        else:
+            query = query.order_by(getattr(Goal, sort_by).asc())
+
+    return query.offset(skip).limit(limit).all()
 
 
 def update_goal(db: Session, goal_id: int, data: GoalUpdate, user_id: int) -> Optional[Goal]:

@@ -21,6 +21,11 @@ def create_goal(
 
 @router.get("/", response_model=list[GoalSchema])
 def list_goals(
+    skip: int = 0,
+    limit: int = 100,
+    name: str = None,
+    sort_by: str = None,
+    sort_order: str = "asc",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

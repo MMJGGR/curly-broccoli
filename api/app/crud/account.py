@@ -20,8 +20,21 @@ def create_account(db: Session, account: AccountCreate, user_id: int) -> Account
 def get_account(db: Session, account_id: int, user_id: int) -> Optional[Account]:
     return db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()
 
-def get_accounts(db: Session, user_id: int, skip: int = 0, limit: int = 100) -> List[Account]:
-    return db.query(Account).filter(Account.user_id == user_id).offset(skip).limit(limit).all()
+def get_accounts(db: Session, user_id: int, skip: int = 0, limit: int = 100, name: str = None, type: str = None, sort_by: str = None, sort_order: str = "asc") -> List[Account]:
+    query = db.query(Account).filter(Account.user_id == user_id)
+
+    if name:
+        query = query.filter(Account.name.ilike(f"%{name}%"))
+    if type:
+        query = query.filter(Account.type.ilike(f"%{type}%"))
+
+    if sort_by:
+        if sort_order == "desc":
+            query = query.order_by(getattr(Account, sort_by).desc())
+        else:
+            query = query.order_by(getattr(Account, sort_by).asc())
+
+    return query.offset(skip).limit(limit).all()
 
 def update_account(db: Session, account_id: int, account_in: AccountUpdate, user_id: int) -> Optional[Account]:
     db_account = db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()
