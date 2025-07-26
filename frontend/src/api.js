@@ -1,10 +1,6 @@
-let rawBase;
-try {
-  rawBase = new Function('return import.meta.env.VITE_API_BASE_URL')();
-} catch {
-  rawBase = process.env.VITE_API_BASE_URL;
-}
-const API_BASE = rawBase && rawBase !== 'undefined' ? rawBase : '';
+// Get API base URL from environment
+const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+console.log('API_BASE URL:', API_BASE); // Debug log
 
 function buildHeaders(token) {
   const headers = { 'Content-Type': 'application/json' };
@@ -37,41 +33,25 @@ async function request(method, path, token, body) {
 }
 
 // Account CRUD
-export const createAccount = (token, data) =>
-  request('POST', '/accounts/', token, data);
-export const listAccounts = (token) =>
-  request('GET', '/accounts/', token);
-export const updateAccount = (token, id, data) =>
-  request('PUT', `/accounts/${id}`, token, data);
-export const deleteAccount = (token, id) =>
-  request('DELETE', `/accounts/${id}`, token);
+export const createAccount = (token, data) => request('POST', '/accounts/', token, data);
+export const listAccounts = (token) => request('GET', '/accounts/', token);
+export const updateAccount = (token, id, data) => request('PUT', `/accounts/${id}`, token, data);
+export const deleteAccount = (token, id) => request('DELETE', `/accounts/${id}`, token);
 
 // Transaction CRUD
-export const createTransaction = (token, data) =>
-  request('POST', '/transactions/', token, data);
-export const listTransactions = (token) =>
-  request('GET', '/transactions/', token);
-export const updateTransaction = (token, id, data) =>
-  request('PUT', `/transactions/${id}`, token, data);
-export const deleteTransaction = (token, id) =>
-  request('DELETE', `/transactions/${id}`, token);
+export const createTransaction = (token, data) => request('POST', '/transactions/', token, data);
+export const listTransactions = (token) => request('GET', '/transactions/', token);
+export const updateTransaction = (token, id, data) => request('PUT', `/transactions/${id}`, token, data);
+export const deleteTransaction = (token, id) => request('DELETE', `/transactions/${id}`, token);
 
 // Milestone CRUD
-export const createMilestone = (token, data) =>
-  request('POST', '/milestones/', token, data);
-export const listMilestones = (token) =>
-  request('GET', '/milestones/', token);
-export const updateMilestone = (token, id, data) =>
-  request('PUT', `/milestones/${id}`, token, data);
-export const deleteMilestone = (token, id) =>
-  request('DELETE', `/milestones/${id}`, token);
+export const createMilestone = (token, data) => request('POST', '/milestones/', token, data);
+export const listMilestones = (token) => request('GET', '/milestones/', token);
+export const updateMilestone = (token, id, data) => request('PUT', `/milestones/${id}`, token, data);
+export const deleteMilestone = (token, id) => request('DELETE', `/milestones/${id}`, token);
 
 // Goal CRUD
-export const createGoal = (token, data) =>
-  request('POST', '/goals/', token, data);
-export const listGoals = (token) =>
-  request('GET', '/goals/', token);
-export const updateGoal = (token, id, data) =>
-  request('PUT', `/goals/${id}`, token, data);
-export const deleteGoal = (token, id) =>
-  request('DELETE', `/goals/${id}`, token);
+export const createGoal = (token, data) => request('POST', '/goals/', token, data);
+export const listGoals = (token) => request('GET', '/goals/', token);
+export const updateGoal = (token, id, data) => request('PUT', `/goals/${id}`, token, data);
+export const deleteGoal = (token, id) => request('DELETE', `/goals/${id}`, token);

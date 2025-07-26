@@ -1,4 +1,3 @@
-// TODO: Implement user login with JWT via /auth/login (FR 1 Authentication, 100% when integrated)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';
@@ -21,35 +20,60 @@ const AuthScreen = () => {
         setMessage('');
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // This is a wireframe action. In a real app, you'd send data to backend.
-        if (isLogin) {
-            console.log('Logging in with:', { email, password });
-            setMessage('Attempting login...');
-            // Simulate successful login and navigate to personal details form
-            setTimeout(() => {
+        
+        const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        
+        try {
+            if (isLogin) {
+                // Handle Login
+                setMessage('Attempting login...');
+                const formData = new FormData();
+                formData.append('username', email);
+                formData.append('password', password);
+                
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    body: formData,
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Login failed:', response.status, errorData);
+                    throw new Error(errorData.detail || 'Invalid credentials');
+                }
+                
+                const data = await response.json();
+                console.log('Login successful:', data);
+                localStorage.setItem('jwt', data.access_token);
+                
                 setMessage('Login successful!');
                 setShowMessageBox(true);
-                navigate('/onboarding/personal-details');
-            }, 1000);
-        } else {
-            console.log('Registering with:', { email, password });
-            setMessage('Attempting registration...');
-            // Simulate successful registration and navigate to personal details form
-            setTimeout(() => {
-                setMessage('Registration successful!');
+                
+                // Navigate to app dashboard for existing users
+                setTimeout(() => navigate('/app/dashboard'), 1000);
+                
+            } else {
+                // Handle Registration
+                setMessage('Please complete the registration through the onboarding process.');
                 setShowMessageBox(true);
-                navigate('/onboarding/personal-details');
-            }, 1000);
+                
+                // Navigate to onboarding for new users
+                setTimeout(() => navigate('/onboarding/personal-details'), 1000);
+            }
+        } catch (error) {
+            console.error('Authentication error:', error);
+            setMessage(error.message || 'Authentication failed');
+            setShowMessageBox(true);
         }
     };
 
     return (
         <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl p-8 md:p-10 max-w-md w-full text-center">
-                <h1 className="text-3xl font-bold text-gray-800 mb-6">{isLogin ? 'Login' : 'Register'}</h1>
-                <p className="text-gray-600 mb-6">{isLogin ? 'Access your account' : 'Create your new account'}.</p>
+                <h1 className="text-3xl font-bold text-gray-800 mb-6">{isLogin ? 'Login' : 'Get Started'}</h1>
+                <p className="text-gray-600 mb-6">{isLogin ? 'Access your account' : 'Begin your financial journey with our guided setup'}.</p>
 
                 <form onSubmit={handleSubmit} className="space-y-4 mb-6 text-left">
                     <div>
@@ -61,7 +85,7 @@ const AuthScreen = () => {
                             placeholder="your.email@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            required
+                            required={isLogin}
                         />
                     </div>
                     <div>
@@ -73,21 +97,23 @@ const AuthScreen = () => {
                             placeholder="********"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            required
+                            required={isLogin}
                         />
-                        <button
-                            type="button"
-                            className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
-                            onClick={() => showActionMessage('Forgot Password')}
-                        >
-                            Forgot Password?
-                        </button>
+                        {isLogin && (
+                            <button
+                                type="button"
+                                className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+                                onClick={() => showActionMessage('Forgot Password')}
+                            >
+                                Forgot Password?
+                            </button>
+                        )}
                     </div>
                     <button
                         type="submit"
                         className="bg-blue-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300 shadow-lg w-full"
                     >
-                        {isLogin ? 'Login' : 'Register'}
+                        {isLogin ? 'Login' : 'Start Onboarding'}
                     </button>
                 </form>
 
@@ -95,7 +121,7 @@ const AuthScreen = () => {
                     className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 mt-4"
                     onClick={() => setIsLogin(!isLogin)}
                 >
-                    {isLogin ? 'Need an account? Register' : 'Already have an account? Login'}
+                    {isLogin ? 'New user? Get Started' : 'Already have an account? Login'}
                 </button>
 
                 {showMessageBox && <MessageBox message={message} onClose={hideMessageBox} />}

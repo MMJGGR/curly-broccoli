@@ -10,6 +10,8 @@ import OnboardingCashFlowSetup from './components/OnboardingCashFlowSetup';
 
 // Main application layout
 import MainAppLayout from './components/MainAppLayout';
+import PrivateRoute from './components/PrivateRoute';
+import { OnboardingProvider } from './contexts/OnboardingContext';
 
 // Advisor components (will be nested under a separate layout or route)
 import AdvisorLogin from './components/AdvisorLogin';
@@ -18,21 +20,36 @@ import ClientList from './components/ClientList';
 import ClientProfile from './components/ClientProfile';
 
 function App() {
+  // Check if user is already logged in
+  const isLoggedIn = localStorage.getItem('jwt') !== null;
+  
   return (
     <div className="bg-white min-h-screen">
       <Routes>
-        {/* Initial entry point: Auth Screen */}
-        <Route path="/" element={<Navigate to="/auth" replace />} />
+        {/* Initial entry point: Auth Screen or App if logged in */}
+        <Route path="/" element={
+          <Navigate to={isLoggedIn ? "/app/dashboard" : "/auth"} replace />
+        } />
         <Route path="/auth" element={<AuthScreen />} />
 
         {/* Onboarding Flow */}
-        <Route path="/onboarding/personal-details" element={<PersonalDetailsForm />} />
-        <Route path="/onboarding/risk-questionnaire" element={<RiskQuestionnaire />} />
-        <Route path="/onboarding/data-connection" element={<OnboardingDataConnection />} />
-        <Route path="/onboarding/cash-flow-setup" element={<OnboardingCashFlowSetup />} />
+        <Route path="/onboarding/*" element={
+          <OnboardingProvider>
+            <Routes>
+              <Route path="personal-details" element={<PersonalDetailsForm />} />
+              <Route path="risk-questionnaire" element={<RiskQuestionnaire />} />
+              <Route path="data-connection" element={<OnboardingDataConnection />} />
+              <Route path="cash-flow-setup" element={<OnboardingCashFlowSetup />} />
+            </Routes>
+          </OnboardingProvider>
+        } />
 
         {/* Main Application - uses MainAppLayout for shared navigation */}
-        <Route path="/app/*" element={<MainAppLayout />} />
+        <Route path="/app/*" element={
+          <PrivateRoute>
+            <MainAppLayout />
+          </PrivateRoute>
+        } />
 
         {/* Advisor Portal */}
         <Route path="/advisor/login" element={<AdvisorLogin />} />

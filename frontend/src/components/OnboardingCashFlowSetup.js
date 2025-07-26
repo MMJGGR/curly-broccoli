@@ -2,10 +2,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';
+import { useOnboarding } from '../contexts/OnboardingContext';
 
 const OnboardingCashFlowSetup = () => {
+    const { submitOnboarding } = useOnboarding();
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
 
     const showActionMessage = (actionName) => {
@@ -18,9 +21,28 @@ const OnboardingCashFlowSetup = () => {
         setMessage('');
     };
 
-    const handleNext = () => {
-        // In a real app, this would involve saving cash flow data to backend
-        navigate('/app/dashboard'); // Navigate to the main application dashboard
+    const handleNext = async () => {
+        setIsSubmitting(true);
+        setMessage('Creating your account...');
+        setShowMessageBox(true);
+        
+        try {
+            const result = await submitOnboarding();
+            
+            if (result.success) {
+                setMessage('Account created successfully! Welcome to your financial journey!');
+                setTimeout(() => {
+                    navigate('/app/dashboard');
+                }, 2000);
+            } else {
+                setMessage(`Registration failed: ${result.error}`);
+                setIsSubmitting(false);
+            }
+        } catch (error) {
+            console.error('Submission error:', error);
+            setMessage('Failed to create account. Please try again.');
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -101,8 +123,16 @@ const OnboardingCashFlowSetup = () => {
                     </div>
                 </div>
 
-                <button className="bg-blue-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300 shadow-lg w-full" onClick={handleNext}>
-                    Next: Set Your Goals
+                <button 
+                    className={`py-3 px-8 rounded-lg font-semibold transition-all duration-300 shadow-lg w-full ${
+                        isSubmitting 
+                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                    onClick={handleNext}
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? 'Creating Account...' : 'Complete Registration'}
                 </button>
             </div>
 

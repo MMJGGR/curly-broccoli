@@ -96,7 +96,13 @@ export default function OnboardingWizard() {
   const next = () => setCurrent((c) => Math.min(c + 1, last));
   const prev = () => setCurrent((c) => Math.max(c - 1, 0));
 
-  const handleFinish = () => registerUser(API_BASE, data, setUserProfile);
+  const handleFinish = async () => {
+    const success = await registerUser(API_BASE, data, setUserProfile);
+    if (success) {
+      // Navigate to main app after successful registration
+      navigate('/app/dashboard');
+    }
+  };
 
   const StepComponent = steps[current].component;
 

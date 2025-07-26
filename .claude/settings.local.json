@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run cypress:run:*)",
+      "Bash(npx cypress run:*)",
+      "Bash(npm run lint)",
+      "Bash(curl:*)",
+      "Bash(NODE_ENV=development npx cypress run --spec cypress/e2e/onboarding.cy.js --headless)",
+      "Bash(node:*)",
+      "Bash(cat:*)",
+      "Bash(set NODE_ENV=development)",
+      "Bash(set BABEL_ENV=development)",
+      "Bash(grep:*)",
+      "Bash(REACT_APP_API_BASE_URL=http://localhost:8000 npx cypress run --spec cypress/e2e/onboarding.cy.js --headless)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker logs:*)",
+      "Bash(sed:*)"
+    ],
+    "deny": []
+  }
+}

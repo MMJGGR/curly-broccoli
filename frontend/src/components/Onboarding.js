@@ -12,9 +12,28 @@ export default function Onboarding() {
 
   const update = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // TODO: handle form submission
+    alert(JSON.stringify(form, null, 2));
+  };
+
   return (
     <div className="max-w-xl mx-auto p-4 text-[#333333]">
-      <h2 className="text-xl font-bold mb-4">{steps[step]}</h2>
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-bold">{steps[step]}</h2>
+          <span className="text-sm text-gray-500">
+            Step {step + 1} of {steps.length}
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div
+            className="bg-blue-600 h-2.5 rounded-full"
+            style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+          ></div>
+        </div>
+      </div>
       {step === 0 && (
         <div className="space-y-2">
           <input
@@ -78,7 +97,10 @@ export default function Onboarding() {
             Next
           </button>
         ) : (
-          <button className="px-4 py-2 bg-[#FF9933] text-white rounded">
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-green-500 text-white rounded"
+          >
             Submit
           </button>
         )}

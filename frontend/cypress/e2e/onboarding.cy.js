@@ -26,11 +26,12 @@ describe('Onboarding Flow', () => {
   });
 
   it('should allow a user to complete the onboarding wizard', () => {
-    cy.visit('/app/onboarding');
-    cy.get('input[placeholder="email"]').type(email);
-    cy.get('input[placeholder="password"]').type(password);
+    cy.visit('/onboarding/personal-details');
+    cy.hideWebpackOverlay(); // Moved here
+    cy.get('input[id="firstName"]').type('John');
+    cy.get('input[id="lastName"]').type('Doe');
+    cy.get('input[id="dob"]').type('1990-01-01');
     cy.get('button[type="submit"]').click();
-
-    // ... rest of the test
+    // Add assertions for the next steps of the wizard
   });
 });

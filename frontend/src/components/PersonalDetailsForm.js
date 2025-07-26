@@ -2,12 +2,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';
+import { useOnboarding } from '../contexts/OnboardingContext';
 
 const PersonalDetailsForm = () => {
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [dob, setDob] = useState('');
-    const [kraPin, setKraPin] = useState('');
+    const { personalDetails, updatePersonalDetails } = useOnboarding();
+    const [firstName, setFirstName] = useState(personalDetails.firstName || '');
+    const [lastName, setLastName] = useState(personalDetails.lastName || '');
+    const [dob, setDob] = useState(personalDetails.dob || '');
+    const [kraPin, setKraPin] = useState(personalDetails.kraPin || '');
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
     const navigate = useNavigate();
@@ -19,12 +21,17 @@ const PersonalDetailsForm = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Saving personal details:', { firstName, lastName, dob, kraPin });
-        setMessage('Saving personal details...');
-        // Simulate successful save and navigate to risk questionnaire
+        
+        // Save to onboarding context
+        const personalData = { firstName, lastName, dob, kraPin };
+        updatePersonalDetails(personalData);
+        
+        console.log('Saving personal details:', personalData);
+        setMessage('Personal details saved!');
+        setShowMessageBox(true);
+        
+        // Navigate to risk questionnaire
         setTimeout(() => {
-            setMessage('Personal details saved!');
-            setShowMessageBox(true);
             navigate('/onboarding/risk-questionnaire');
         }, 1000);
     };

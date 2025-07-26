@@ -6,6 +6,6 @@ module.exports = defineConfig({
       // implement node event listeners here
     },
     baseUrl: 'http://localhost:3000',
-    supportFile: false,
+    supportFile: 'cypress/support/commands.js',
   },
 });

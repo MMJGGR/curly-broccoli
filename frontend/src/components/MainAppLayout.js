@@ -1,6 +1,6 @@
 // TODO: Persist layout prefs from backend (Epic 6 Story 3, ~80% integration)
 import React from 'react';
-import { Routes, Route, Outlet, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import BottomNavBar from './BottomNavBar';
 
 // Main application components
@@ -27,6 +27,7 @@ const MainAppLayout = () => {
     <div className="min-h-screen flex flex-col">
       <main className="flex-grow">
         <Routes>
+          <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="cashflows" element={<AccountsTransactions />} />
           <Route path="balance-sheet" element={<BalanceSheet />} />

@@ -2,8 +2,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';
+import { useOnboarding } from '../contexts/OnboardingContext';
 
 const RiskQuestionnaire = () => {
+    const { riskQuestionnaire, updateRiskQuestionnaire } = useOnboarding();
     const [answers, setAnswers] = useState({});
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
@@ -31,16 +33,25 @@ const RiskQuestionnaire = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Submitting risk questionnaire:', answers);
+        
+        // Convert answers object to array format expected by backend
+        const answersArray = questions.map(q => answers[q.id] || 1);
+        updateRiskQuestionnaire(answersArray);
+        
+        console.log('Submitting risk questionnaire:', answersArray);
         setMessage('Calculating risk score...');
-        // Simulate API call to backend for risk score calculation
+        
+        // Simulate risk score calculation
         setTimeout(() => {
-            const riskScore = Math.floor(Math.random() * 100); // Dummy score
+            const riskScore = Math.floor(Math.random() * 100);
             const riskLevel = riskScore < 30 ? 'Low' : riskScore < 70 ? 'Medium' : 'High';
             setMessage(`Your risk score is ${riskScore}, indicating a ${riskLevel} risk level.`);
             setShowMessageBox(true);
-            // In a real app, you'd pass this data to the backend and then navigate
-            navigate('/onboarding/data-connection');
+            
+            // Navigate to data connection
+            setTimeout(() => {
+                navigate('/onboarding/data-connection');
+            }, 2000);
         }, 1500);
     };
 

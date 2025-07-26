@@ -1,10 +1,11 @@
-// TODO: Sync profile info with backend via profile endpoints (Epic 1 Story 2, ~80% completion)
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';
 
 const Profile = ({ onNextScreen }) => {
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
+    const navigate = useNavigate();
 
     const showActionMessage = (actionName) => {
         setMessage('Action: ' + actionName + ' (This is a wireframe action)');
@@ -14,6 +15,13 @@ const Profile = ({ onNextScreen }) => {
     const hideMessageBox = () => {
         setShowMessageBox(false);
         setMessage('');
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('jwt');
+        setMessage('Logged out successfully');
+        setShowMessageBox(true);
+        setTimeout(() => navigate('/auth'), 1000);
     };
 
     const userProfile = {
@@ -75,9 +83,14 @@ const Profile = ({ onNextScreen }) => {
                         <p><strong>Data Privacy:</strong> {userProfile.settings.dataPrivacy} <button className="ml-2 text-blue-500 hover:text-blue-700 text-xs" onClick={() => showActionMessage('Adjust Data Privacy')}>Adjust</button></p>
                         <p><strong>Linked Accounts:</strong> {userProfile.settings.linkedAccounts} <button className="ml-2 text-blue-500 hover:text-blue-700 text-xs" onClick={() => showActionMessage('Manage Linked Accounts')}>Manage</button></p>
                     </div>
-                    <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md mt-4" onClick={() => showActionMessage('Change Password')}>
-                        Change Password
-                    </button>
+                    <div className="flex space-x-2 mt-4">
+                        <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md" onClick={() => showActionMessage('Change Password')}>
+                            Change Password
+                        </button>
+                        <button className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors duration-200 shadow-md" onClick={handleLogout}>
+                            Logout
+                        </button>
+                    </div>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-lg p-6">
