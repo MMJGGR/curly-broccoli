@@ -9,7 +9,12 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom --coverage",
     "e2e": "cypress run --browser chrome",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "lint:strict": "eslint src --max-warnings 0",
+    "format": "prettier --write src",
+    "format:check": "prettier --check src",
+    "validate": "npm run lint:strict && npm run format:check && npm run test -- --watchAll=false"
   },
   "dependencies": {
     "autoprefixer": "^10.4.13",

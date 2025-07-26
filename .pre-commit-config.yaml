@@ -1,0 +1,51 @@
+repos:
+  # Frontend hooks
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: bash -c 'cd frontend && npx eslint --max-warnings 0'
+        language: system
+        files: ^frontend/src/.*\.(js|jsx|ts|tsx)$
+        pass_filenames: false
+        
+      - id: prettier
+        name: Prettier
+        entry: bash -c 'cd frontend && npx prettier --check'
+        language: system
+        files: ^frontend/src/.*\.(js|jsx|ts|tsx|css|json)$
+        pass_filenames: false
+
+  # Backend hooks  
+  - repo: local
+    hooks:
+      - id: black
+        name: Black (Python formatter)
+        entry: black
+        language: system
+        files: ^(api|compute)/.*\.py$
+        
+      - id: flake8
+        name: Flake8 (Python linter)
+        entry: flake8
+        language: system
+        files: ^(api|compute)/.*\.py$
+        
+      - id: pytest
+        name: Python tests
+        entry: bash -c 'cd api && python -m pytest'
+        language: system
+        files: ^(api|compute)/.*\.py$
+        pass_filenames: false
+
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-json
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']

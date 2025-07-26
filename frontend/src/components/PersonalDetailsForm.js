@@ -10,6 +10,9 @@ const PersonalDetailsForm = () => {
     const [lastName, setLastName] = useState(personalDetails.lastName || '');
     const [dob, setDob] = useState(personalDetails.dob || '');
     const [kraPin, setKraPin] = useState(personalDetails.kraPin || '');
+    const [email, setEmail] = useState(personalDetails.email || '');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
     const navigate = useNavigate();
@@ -22,8 +25,21 @@ const PersonalDetailsForm = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         
+        // Validate password confirmation
+        if (password !== confirmPassword) {
+            setMessage('Passwords do not match!');
+            setShowMessageBox(true);
+            return;
+        }
+        
+        if (password.length < 8) {
+            setMessage('Password must be at least 8 characters long!');
+            setShowMessageBox(true);
+            return;
+        }
+        
         // Save to onboarding context
-        const personalData = { firstName, lastName, dob, kraPin };
+        const personalData = { firstName, lastName, dob, kraPin, email, password };
         updatePersonalDetails(personalData);
         
         console.log('Saving personal details:', personalData);
@@ -87,6 +103,42 @@ const PersonalDetailsForm = () => {
                             placeholder="A123456789Z"
                             value={kraPin}
                             onChange={(e) => setKraPin(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">Email Address</label>
+                        <input
+                            type="email"
+                            id="email"
+                            className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+                            placeholder="your.email@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+                            placeholder="Minimum 8 characters"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="confirmPassword" className="block text-gray-700 text-sm font-bold mb-2">Confirm Password</label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+                            placeholder="Re-enter your password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
                         />
                     </div>
                     <button

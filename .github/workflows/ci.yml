@@ -51,10 +51,10 @@ jobs:
         run: |
           cd frontend
           npm ci
-      - name: Lint Frontend
+      - name: Lint Frontend (Strict)
         run: |
           cd frontend
-          npx eslint .
+          npx eslint . --max-warnings 0
       - name: Check formatting (Prettier)
         run: |
           cd frontend

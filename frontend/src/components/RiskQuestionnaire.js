@@ -5,11 +5,25 @@ import MessageBox from './MessageBox';
 import { useOnboarding } from '../contexts/OnboardingContext';
 
 const RiskQuestionnaire = () => {
-    const { riskQuestionnaire, updateRiskQuestionnaire } = useOnboarding();
+    const { updateRiskQuestionnaire } = useOnboarding();
     const [answers, setAnswers] = useState({});
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
     const navigate = useNavigate();
+
+    // Calculate risk score deterministically based on answers
+    const calculateRiskScore = (answersArray) => {
+        // Each answer contributes to risk score (1-4 scale mapped to 0-100)
+        const weights = [25, 20, 30, 15, 10]; // Different weights for each question
+        let totalScore = 0;
+        
+        answersArray.forEach((answer, index) => {
+            const normalizedAnswer = (answer - 1) / 3; // Convert 1-4 to 0-1
+            totalScore += normalizedAnswer * weights[index];
+        });
+        
+        return Math.round(totalScore);
+    };
 
     const hideMessageBox = () => {
         setShowMessageBox(false);
@@ -41,9 +55,9 @@ const RiskQuestionnaire = () => {
         console.log('Submitting risk questionnaire:', answersArray);
         setMessage('Calculating risk score...');
         
-        // Simulate risk score calculation
+        // Calculate risk score based on answers
         setTimeout(() => {
-            const riskScore = Math.floor(Math.random() * 100);
+            const riskScore = calculateRiskScore(answersArray);
             const riskLevel = riskScore < 30 ? 'Low' : riskScore < 70 ? 'Medium' : 'High';
             setMessage(`Your risk score is ${riskScore}, indicating a ${riskLevel} risk level.`);
             setShowMessageBox(true);

@@ -22,25 +22,35 @@ const OnboardingCashFlowSetup = () => {
     };
 
     const handleNext = async () => {
+        if (isSubmitting) {
+            console.log('🔍 Already submitting, ignoring duplicate click');
+            return;
+        }
+        
         setIsSubmitting(true);
         setMessage('Creating your account...');
         setShowMessageBox(true);
         
         try {
+            console.log('🔍 Calling submitOnboarding...');
             const result = await submitOnboarding();
+            console.log('🔍 submitOnboarding result:', result);
             
-            if (result.success) {
+            if (result && result.success) {
+                console.log('🔍 Registration successful, redirecting to dashboard');
                 setMessage('Account created successfully! Welcome to your financial journey!');
                 setTimeout(() => {
+                    console.log('🔍 Navigating to dashboard...');
                     navigate('/app/dashboard');
                 }, 2000);
             } else {
-                setMessage(`Registration failed: ${result.error}`);
+                console.log('🔍 Registration failed:', result);
+                setMessage(`Registration failed: ${result?.error || 'Unknown error'}`);
                 setIsSubmitting(false);
             }
         } catch (error) {
-            console.error('Submission error:', error);
-            setMessage('Failed to create account. Please try again.');
+            console.error('🔍 Submission error:', error);
+            setMessage(`Failed to create account: ${error.message}`);
             setIsSubmitting(false);
         }
     };

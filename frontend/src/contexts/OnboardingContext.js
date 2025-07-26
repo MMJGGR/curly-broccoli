@@ -73,32 +73,44 @@ export function OnboardingProvider({ children }) {
 
   // Submit complete onboarding data to backend
   const submitOnboarding = async () => {
-    const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+    // Use relative URL to leverage the proxy configuration
+    const API_BASE = '';
     
     try {
-      console.log('Current onboarding state:', state);
+      console.log('🔍 Starting registration submission...');
+      console.log('🔍 Current onboarding state:', JSON.stringify(state, null, 2));
+      console.log('🔍 API_BASE:', API_BASE);
       
       const registrationData = {
-        email: `user${Date.now()}@example.com`, // Generate unique email
-        password: 'defaultPassword123',
-        first_name: state.personalDetails.firstName,
-        last_name: state.personalDetails.lastName,
-        dob: state.personalDetails.dob,
-        nationalId: state.personalDetails.nationalId || '12345678',
-        kra_pin: state.personalDetails.kraPin,
-        annual_income: Number(state.cashFlowData.income) || 50000,
-        dependents: Number(state.personalDetails.dependents) || 0,
+        email: state.personalDetails?.email || `user${Date.now()}@example.com`,
+        password: state.personalDetails?.password || 'defaultPassword123',
+        first_name: state.personalDetails?.firstName || 'DefaultFirst',
+        last_name: state.personalDetails?.lastName || 'DefaultLast',
+        dob: state.personalDetails?.dob || '1990-01-01',
+        nationalId: state.personalDetails?.nationalId || '12345678',
+        kra_pin: state.personalDetails?.kraPin || 'A123456789Z',
+        annual_income: Number(state.cashFlowData?.income) || 50000,
+        dependents: Number(state.personalDetails?.dependents) || 0,
         goals: {
-          targetAmount: Number(state.goals.emergencyFund) || 10000,
+          targetAmount: Number(state.goals?.emergencyFund) || 10000,
           timeHorizon: 12
         },
-        questionnaire: state.riskQuestionnaire.length > 0 ? state.riskQuestionnaire.map(q => Number(q)) : [1, 2, 3, 4, 5]
+        questionnaire: (state.riskQuestionnaire && state.riskQuestionnaire.length > 0) ? state.riskQuestionnaire.map(q => Number(q)) : [1, 2, 3, 4, 5]
       };
 
-      console.log('Submitting registration data:', registrationData);
-      console.log('API_BASE URL:', API_BASE);
-      console.log('Full registration URL:', `${API_BASE}/auth/register`);
+      // Validate registration data before sending
+      const requiredFields = ['email', 'password', 'first_name', 'last_name', 'dob', 'kra_pin'];
+      const missingFields = requiredFields.filter(field => !registrationData[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+      
+      console.log('🔍 Submitting registration data:', JSON.stringify(registrationData, null, 2));
+      console.log('🔍 API_BASE URL:', API_BASE);
+      console.log('🔍 Full registration URL:', `${API_BASE}/auth/register`);
 
+      console.log('🔍 Making fetch request...');
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: {
@@ -107,12 +119,18 @@ export function OnboardingProvider({ children }) {
         body: JSON.stringify(registrationData),
       });
 
+      console.log('🔍 Response received:', response);
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response ok:', response.ok);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.log('🔍 Error response data:', errorData);
         throw new Error(errorData.detail || 'Registration failed');
       }
 
       const data = await response.json();
+      console.log('🔍 Success response data:', data);
       
       // Store JWT token
       localStorage.setItem('jwt', data.access_token);
@@ -121,11 +139,21 @@ export function OnboardingProvider({ children }) {
       return { success: true, data };
       
     } catch (error) {
-      console.error('Registration error:', error);
-      console.error('Error stack:', error.stack);
-      console.error('Error type:', typeof error);
-      console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-      return { success: false, error: error.message || 'Network error occurred' };
+      console.error('🔍 Registration error:', error);
+      console.error('🔍 Error stack:', error.stack);
+      console.error('🔍 Error type:', typeof error);
+      console.error('🔍 Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      
+      // Handle different error types
+      let errorMessage = 'Network error occurred';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      console.error('🔍 Returning error result:', { success: false, error: errorMessage });
+      return { success: false, error: errorMessage };
     }
   };
 

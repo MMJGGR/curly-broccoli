@@ -14,7 +14,12 @@
       "Bash(REACT_APP_API_BASE_URL=http://localhost:8000 npx cypress run --spec cypress/e2e/onboarding.cy.js --headless)",
       "Bash(docker-compose restart:*)",
       "Bash(docker logs:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(npm run e2e:*)",
+      "Bash(docker-compose:*)",
+      "Bash(timeout 30 npm run e2e -- --spec \"cypress/e2e/test-new-registration.cy.js\")",
+      "Bash(npx cypress:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

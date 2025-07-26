@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';
 
 const Profile = ({ onNextScreen }) => {
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
+    const [userProfile, setUserProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     const showActionMessage = (actionName) => {
@@ -17,6 +19,91 @@ const Profile = ({ onNextScreen }) => {
         setMessage('');
     };
 
+    const fetchUserProfile = async () => {
+        try {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) {
+                navigate('/auth');
+                return;
+            }
+
+            const response = await fetch('/auth/me', {
+                headers: {
+                    'Authorization': `Bearer ${jwt}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('jwt');
+                    navigate('/auth');
+                    return;
+                }
+                throw new Error('Failed to fetch profile');
+            }
+
+            const userData = await response.json();
+            
+            // Transform backend data to frontend format
+            const profileData = {
+                personal: {
+                    name: `${userData.first_name} ${userData.last_name}`,
+                    age: calculateAge(userData.dob),
+                    occupation: userData.occupation || 'Not specified',
+                    maritalStatus: userData.marital_status || 'Not specified',
+                },
+                contact: {
+                    email: userData.email,
+                    phone: userData.phone || 'Not provided',
+                },
+                settings: {
+                    notifications: 'On',
+                    dataPrivacy: 'High',
+                    linkedAccounts: '1',
+                },
+                financialMilestones: {
+                    nextMajor: `Emergency Fund (Target: KES ${userData.goals?.targetAmount || 'Not set'})`,
+                    yearsToRetirement: userData.years_to_retirement || 'Not calculated',
+                    emergencyFundStatus: userData.emergency_fund_status || 'Not started',
+                },
+                riskProfile: {
+                    score: userData.risk_score || 'Not assessed',
+                    level: userData.risk_level || 'Not assessed'
+                }
+            };
+            
+            setUserProfile(profileData);
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+            setMessage('Failed to load profile data');
+            setShowMessageBox(true);
+            
+            // Fallback to basic profile
+            setUserProfile({
+                personal: { name: 'User', age: 'Unknown', occupation: 'Unknown', maritalStatus: 'Unknown' },
+                contact: { email: 'Unknown', phone: 'Unknown' },
+                settings: { notifications: 'On', dataPrivacy: 'High', linkedAccounts: '1' },
+                financialMilestones: { nextMajor: 'Not set', yearsToRetirement: 'Unknown', emergencyFundStatus: 'Unknown' },
+                riskProfile: { score: 'Not assessed', level: 'Not assessed' }
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const calculateAge = (dob) => {
+        if (!dob) return 'Unknown';
+        const birthDate = new Date(dob);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('jwt');
         setMessage('Logged out successfully');
@@ -24,28 +111,31 @@ const Profile = ({ onNextScreen }) => {
         setTimeout(() => navigate('/auth'), 1000);
     };
 
-    const userProfile = {
-        personal: {
-            name: 'Jamal Mwangi',
-            age: 27,
-            occupation: 'Software Engineer',
-            maritalStatus: 'Single',
-        },
-        contact: {
-            email: 'jamal.mwangi@example.com',
-            phone: '+254 7XX XXX XXX',
-        },
-        settings: {
-            notifications: 'On',
-            dataPrivacy: 'High',
-            linkedAccounts: '2',
-        },
-        financialMilestones: {
-            nextMajor: 'Home Purchase (5 years)',
-            yearsToRetirement: '38 years (Age 65)',
-            emergencyFundStatus: '75% Complete',
-        }
-    };
+    useEffect(() => {
+        fetchUserProfile();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+                <div className="text-lg text-gray-600">Loading your profile...</div>
+            </div>
+        );
+    }
+
+    if (!userProfile) {
+        return (
+            <div className="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+                <div className="text-lg text-red-600">Failed to load profile</div>
+                <button 
+                    className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
+                    onClick={fetchUserProfile}
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gray-100 min-h-screen flex flex-col">
@@ -91,6 +181,17 @@ const Profile = ({ onNextScreen }) => {
                             Logout
                         </button>
                     </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Risk Profile</h2>
+                    <div className="space-y-2 text-gray-700">
+                        <p><strong>Risk Score:</strong> <span className="font-bold text-blue-600">{userProfile.riskProfile.score}</span></p>
+                        <p><strong>Risk Level:</strong> <span className="font-bold text-blue-600">{userProfile.riskProfile.level}</span></p>
+                    </div>
+                    <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md mt-4" onClick={() => showActionMessage('Retake Risk Assessment')}>
+                        Retake Risk Assessment
+                    </button>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-lg p-6">
