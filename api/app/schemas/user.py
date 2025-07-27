@@ -42,18 +42,23 @@ class RegisterResponse(BaseModel):
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: constr(min_length=8)
-    dob: date
-    kra_pin: str
-    annual_income: float
+    user_type: str = "user"  # 'user' or 'advisor'
+    # Optional fields with defaults for simplified registration
+    first_name: str = "New"
+    last_name: str = "User"
+    dob: date = date(1990, 1, 1)
+    nationalId: str = "12345678"
+    kra_pin: str = "A123456789Z"
+    annual_income: float = 50000
     dependents: int = 0
-    goals: Dict[str, Any]
-    questionnaire: List[int] # length 8, values 1–5
-    role: str = "user" # Added role field
+    goals: Dict[str, Any] = {"targetAmount": 10000, "timeHorizon": 12}
+    questionnaire: List[int] = [1, 2, 3, 4, 5]  # Default neutral values
 
 class ProfileOut(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    date_of_birth: Optional[date] = None
+    dob: Optional[date] = None
+    nationalId: Optional[str] = None
     kra_pin: Optional[str] = None
     annual_income: Optional[float] = None
     dependents: Optional[int] = None
@@ -91,6 +96,7 @@ class ProfileCreate(ProfileBase):
     pass
 
 class ProfileUpdate(ProfileBase):
+    nationalId: Optional[str] = None
     annual_income: Optional[float] = None
     dependents: Optional[int] = None
     goals: Optional[Dict[str, Any]] = None

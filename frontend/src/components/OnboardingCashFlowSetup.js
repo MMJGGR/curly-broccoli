@@ -5,10 +5,19 @@ import MessageBox from './MessageBox';
 import { useOnboarding } from '../contexts/OnboardingContext';
 
 const OnboardingCashFlowSetup = () => {
-    const { submitOnboarding } = useOnboarding();
+    const { updateProfile, updateCashFlow } = useOnboarding();
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [cashFlowData, setCashFlowData] = useState({
+        monthlyIncome: '',
+        incomeFrequency: 'Monthly',
+        rent: '',
+        utilities: '',
+        groceries: '',
+        transport: '',
+        loanRepayments: ''
+    });
     const navigate = useNavigate();
 
     const showActionMessage = (actionName) => {
@@ -21,6 +30,13 @@ const OnboardingCashFlowSetup = () => {
         setMessage('');
     };
 
+    const handleInputChange = (field, value) => {
+        setCashFlowData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
     const handleNext = async () => {
         if (isSubmitting) {
             console.log('🔍 Already submitting, ignoring duplicate click');
@@ -28,24 +44,32 @@ const OnboardingCashFlowSetup = () => {
         }
         
         setIsSubmitting(true);
-        setMessage('Creating your account...');
+        setMessage('Updating your profile...');
         setShowMessageBox(true);
         
         try {
-            console.log('🔍 Calling submitOnboarding...');
-            const result = await submitOnboarding();
-            console.log('🔍 submitOnboarding result:', result);
+            // Save cash flow data to context first
+            console.log('Saving cash flow data:', cashFlowData);
+            updateCashFlow(cashFlowData);
+            
+            console.log('Calling updateProfile...');
+            const result = await updateProfile();
+            console.log('updateProfile result:', result);
             
             if (result && result.success) {
-                console.log('🔍 Registration successful, redirecting to dashboard');
-                setMessage('Account created successfully! Welcome to your financial journey!');
+                console.log('Profile update successful, redirecting to dashboard');
+                setMessage('Profile updated successfully! Welcome to your complete dashboard!');
+                
+                // Set flag to trigger dashboard refresh
+                localStorage.setItem('onboardingCompleted', 'true');
+                
                 setTimeout(() => {
-                    console.log('🔍 Navigating to dashboard...');
+                    console.log('Navigating to dashboard...');
                     navigate('/app/dashboard');
                 }, 2000);
             } else {
-                console.log('🔍 Registration failed:', result);
-                setMessage(`Registration failed: ${result?.error || 'Unknown error'}`);
+                console.log('Profile update failed:', result);
+                setMessage(`Profile update failed: ${result?.error || 'Unknown error'}`);
                 setIsSubmitting(false);
             }
         } catch (error) {
@@ -65,8 +89,8 @@ const OnboardingCashFlowSetup = () => {
 
                 {/* Progress Bar */}
                 <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8">
-                    <div className="bg-blue-600 h-2.5 rounded-full w-[40%]"></div> {/* Example: 2/5 steps */}
-                    <p className="text-sm text-gray-600 mt-2">Step 2 of 5</p>
+                    <div className="bg-blue-600 h-2.5 rounded-full w-[80%]"></div>
+                    <p className="text-sm text-gray-600 mt-2">Step 4 of 5</p>
                 </div>
 
                 <div className="text-left space-y-6 mb-10">
@@ -75,11 +99,23 @@ const OnboardingCashFlowSetup = () => {
                         <h3 className="text-xl font-bold text-gray-800 mb-4">Income</h3>
                         <div className="mb-4">
                             <label htmlFor="monthlyIncome" className="block text-gray-700 text-sm font-bold mb-2">Monthly Net Income</label>
-                            <input type="number" id="monthlyIncome" className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" placeholder="KES 250,000" />
+                            <input 
+                                type="number" 
+                                id="monthlyIncome" 
+                                value={cashFlowData.monthlyIncome}
+                                onChange={(e) => handleInputChange('monthlyIncome', e.target.value)}
+                                className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" 
+                                placeholder="KES 250,000" 
+                            />
                         </div>
                         <div className="mb-4">
                             <label htmlFor="incomeFrequency" className="block text-gray-700 text-sm font-bold mb-2">Income Frequency</label>
-                            <select id="incomeFrequency" className="shadow border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500">
+                            <select 
+                                id="incomeFrequency" 
+                                value={cashFlowData.incomeFrequency}
+                                onChange={(e) => handleInputChange('incomeFrequency', e.target.value)}
+                                className="shadow border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+                            >
                                 <option>Monthly</option>
                                 <option>Bi-weekly</option>
                                 <option>Other</option>
@@ -96,23 +132,58 @@ const OnboardingCashFlowSetup = () => {
                         <div className="space-y-4">
                             <div>
                                 <label htmlFor="rent" className="block text-gray-700 text-sm font-bold mb-2">Rent/Mortgage</label>
-                                <input type="number" id="rent" className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" placeholder="KES 30,000" />
+                                <input 
+                                    type="number" 
+                                    id="rent" 
+                                    value={cashFlowData.rent}
+                                    onChange={(e) => handleInputChange('rent', e.target.value)}
+                                    className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" 
+                                    placeholder="KES 30,000" 
+                                />
                             </div>
                             <div>
                                 <label htmlFor="utilities" className="block text-gray-700 text-sm font-bold mb-2">Utilities</label>
-                                <input type="number" id="utilities" className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" placeholder="KES 5,000" />
+                                <input 
+                                    type="number" 
+                                    id="utilities" 
+                                    value={cashFlowData.utilities}
+                                    onChange={(e) => handleInputChange('utilities', e.target.value)}
+                                    className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" 
+                                    placeholder="KES 5,000" 
+                                />
                             </div>
                             <div>
                                 <label htmlFor="groceries" className="block text-gray-700 text-sm font-bold mb-2">Groceries</label>
-                                <input type="number" id="groceries" className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" placeholder="KES 10,000" />
+                                <input 
+                                    type="number" 
+                                    id="groceries" 
+                                    value={cashFlowData.groceries}
+                                    onChange={(e) => handleInputChange('groceries', e.target.value)}
+                                    className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" 
+                                    placeholder="KES 10,000" 
+                                />
                             </div>
                             <div>
                                 <label htmlFor="transport" className="block text-gray-700 text-sm font-bold mb-2">Transport</label>
-                                <input type="number" id="transport" className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" placeholder="KES 8,000" />
+                                <input 
+                                    type="number" 
+                                    id="transport" 
+                                    value={cashFlowData.transport}
+                                    onChange={(e) => handleInputChange('transport', e.target.value)}
+                                    className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" 
+                                    placeholder="KES 8,000" 
+                                />
                             </div>
                             <div>
                                 <label htmlFor="loanRepayments" className="block text-gray-700 text-sm font-bold mb-2">Loan Repayments</label>
-                                <input type="number" id="loanRepayments" className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" placeholder="KES 15,000" />
+                                <input 
+                                    type="number" 
+                                    id="loanRepayments" 
+                                    value={cashFlowData.loanRepayments}
+                                    onChange={(e) => handleInputChange('loanRepayments', e.target.value)}
+                                    className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500" 
+                                    placeholder="KES 15,000" 
+                                />
                             </div>
                         </div>
                         <button className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 mt-4" onClick={() => showActionMessage('Add Custom Category')}>
@@ -120,30 +191,28 @@ const OnboardingCashFlowSetup = () => {
                         </button>
                     </div>
 
-                    {/* Emergency Fund Target */}
-                    <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-                        <h3 className="text-xl font-bold text-blue-800 mb-4">Emergency Fund Target</h3>
-                        <p className="text-blue-700 mb-4">
-                            Based on your expenses, we recommend a 6-month emergency fund of <span className="font-bold">KES 60,000</span>.
-                        </p>
-                        <label className="inline-flex items-center">
-                            <input type="checkbox" className="form-checkbox h-5 w-5 text-blue-600 rounded" defaultChecked />
-                            <span className="ml-2 text-gray-700">Set as a Goal</span>
-                        </label>
-                    </div>
                 </div>
 
-                <button 
-                    className={`py-3 px-8 rounded-lg font-semibold transition-all duration-300 shadow-lg w-full ${
-                        isSubmitting 
-                            ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                    }`}
-                    onClick={handleNext}
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? 'Creating Account...' : 'Complete Registration'}
-                </button>
+                <div className="flex flex-col md:flex-row gap-4">
+                    <button 
+                        type="button"
+                        onClick={() => navigate('/onboarding/data-connection')}
+                        className="bg-gray-300 text-gray-700 py-3 px-8 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300 shadow-lg flex-1"
+                    >
+                        ← Back
+                    </button>
+                    <button 
+                        className={`py-3 px-8 rounded-lg font-semibold transition-all duration-300 shadow-lg flex-1 ${
+                            isSubmitting 
+                                ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                        onClick={handleNext}
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? 'Creating Account...' : 'Complete Registration'}
+                    </button>
+                </div>
             </div>
 
             {showMessageBox && <MessageBox message={message} onClose={hideMessageBox} />}

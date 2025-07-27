@@ -4,7 +4,7 @@ import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import BottomNavBar from './BottomNavBar';
 
 // Main application components
-import UserDashboard from './UserDashboard';
+import Dashboard from './Dashboard';
 import AccountsTransactions from './AccountsTransactions';
 import BalanceSheet from './BalanceSheet';
 import GoalsOverview from './GoalsOverview';
@@ -28,7 +28,7 @@ const MainAppLayout = () => {
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
-          <Route path="dashboard" element={<UserDashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="cashflows" element={<AccountsTransactions />} />
           <Route path="balance-sheet" element={<BalanceSheet />} />
           <Route path="goals" element={<GoalsOverview />} />

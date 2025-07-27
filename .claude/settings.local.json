@@ -19,7 +19,25 @@
       "Bash(docker-compose:*)",
       "Bash(timeout 30 npm run e2e -- --spec \"cypress/e2e/test-new-registration.cy.js\")",
       "Bash(npx cypress:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker restart:*)",
+      "Bash(rm:*)",
+      "Bash(docker exec:*)",
+      "Bash(npm test:*)",
+      "Bash(timeout 30 npx cypress run --spec \"cypress/e2e/persona-validation.cy.js\" --browser chrome --headless)",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(timeout 15 npx cypress run:*)",
+      "Bash(timeout 30 npx cypress run:*)",
+      "Bash(git commit:*)",
+      "Bash(timeout 60 npx cypress run --spec \"cypress/e2e/smoke-risk-questionnaire.cy.js\" --browser chrome --headless)",
+      "Bash(docker inspect:*)",
+      "Bash(docker volume:*)",
+      "Bash(docker system:*)",
+      "Bash(time npm ping)",
+      "Bash(npm config:*)",
+      "Bash(time npm install:*)"
     ],
     "deny": []
   }

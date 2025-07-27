@@ -33,13 +33,16 @@ class Profile(Base):
     first_name = Column(String, index=True)
     last_name = Column(String, index=True)
     date_of_birth = Column(Date)
-    kra_pin = Column(String, unique=True, index=True)
+    nationalId = Column(String, index=True)
+    kra_pin = Column(String, index=True)
     annual_income = Column(Float)
     dependents = Column(Integer)
     goals = Column(JSON)  # Stored as JSON
     # Store questionnaire responses as JSON to maintain cross-database
     # compatibility (e.g. SQLite used in tests).
     questionnaire = Column(JSON)
+    risk_score = Column(Integer)
+    risk_level = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="profile")

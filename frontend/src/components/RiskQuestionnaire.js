@@ -85,6 +85,12 @@ const RiskQuestionnaire = () => {
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">Risk Assessment Questionnaire</h1>
                 <p className="text-gray-600 mb-8">Please answer the following questions to help us understand your risk tolerance and investment preferences.</p>
 
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8">
+                    <div className="bg-blue-600 h-2.5 rounded-full w-[40%]"></div>
+                    <p className="text-sm text-gray-600 mt-2">Step 2 of 5</p>
+                </div>
+
                 <form onSubmit={handleSubmit} className="space-y-6 mb-6 text-left">
                     {questions.map((q) => (
                         <div key={q.id} className="bg-gray-50 p-6 rounded-lg border border-gray-200">
@@ -108,13 +114,22 @@ const RiskQuestionnaire = () => {
                         </div>
                     ))}
 
-                    <button
-                        type="submit"
-                        className={`py-3 px-8 rounded-lg font-semibold transition-all duration-300 shadow-lg w-full ${isFormValid ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-                        disabled={!isFormValid}
-                    >
-                        Calculate My Risk Profile
-                    </button>
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/onboarding/personal-details')}
+                            className="bg-gray-300 text-gray-700 py-3 px-8 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300 shadow-lg flex-1"
+                        >
+                            ← Back
+                        </button>
+                        <button
+                            type="submit"
+                            className={`py-3 px-8 rounded-lg font-semibold transition-all duration-300 shadow-lg flex-1 ${isFormValid ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+                            disabled={!isFormValid}
+                        >
+                            Calculate My Risk Profile
+                        </button>
+                    </div>
                 </form>
 
                 {showMessageBox && <MessageBox message={message} onClose={hideMessageBox} />}

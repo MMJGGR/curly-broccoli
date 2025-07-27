@@ -4,9 +4,12 @@ FROM python:3.10-slim
 # 1) Set working dir
 WORKDIR /app
 
-# 2) Install dependencies
+# 2) Install dependencies (use pip cache for faster rebuilds)
 COPY api/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt     && pip install --no-cache-dir sqlalchemy alembic     && apt-get update && apt-get install -y netcat-traditional iputils-ping
+RUN pip install -r requirements.txt \
+    && pip install sqlalchemy alembic \
+    && apt-get update && apt-get install -y netcat-traditional iputils-ping \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 3) Copy your entire repo (api/, compute/, alembic/, etc)
 COPY api/ ./api

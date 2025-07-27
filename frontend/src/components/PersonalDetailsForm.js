@@ -10,9 +10,8 @@ const PersonalDetailsForm = () => {
     const [lastName, setLastName] = useState(personalDetails.lastName || '');
     const [dob, setDob] = useState(personalDetails.dob || '');
     const [kraPin, setKraPin] = useState(personalDetails.kraPin || '');
-    const [email, setEmail] = useState(personalDetails.email || '');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+    const [nationalId, setNationalId] = useState(personalDetails.nationalId || '');
+    const [dependents, setDependents] = useState(personalDetails.dependents || '');
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
     const navigate = useNavigate();
@@ -25,21 +24,15 @@ const PersonalDetailsForm = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        // Validate password confirmation
-        if (password !== confirmPassword) {
-            setMessage('Passwords do not match!');
-            setShowMessageBox(true);
-            return;
-        }
-        
-        if (password.length < 8) {
-            setMessage('Password must be at least 8 characters long!');
+        // Basic validation
+        if (!firstName || !lastName || !dob) {
+            setMessage('Please fill in all required fields');
             setShowMessageBox(true);
             return;
         }
         
         // Save to onboarding context
-        const personalData = { firstName, lastName, dob, kraPin, email, password };
+        const personalData = { firstName, lastName, dob, kraPin, nationalId, dependents };
         updatePersonalDetails(personalData);
         
         console.log('Saving personal details:', personalData);
@@ -58,9 +51,15 @@ const PersonalDetailsForm = () => {
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">Tell Us About Yourself</h1>
                 <p className="text-gray-600 mb-8">Please provide your personal details to help us personalize your financial journey.</p>
 
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8">
+                    <div className="bg-blue-600 h-2.5 rounded-full w-[20%]"></div>
+                    <p className="text-sm text-gray-600 mt-2">Step 1 of 5</p>
+                </div>
+
                 <form onSubmit={handleSubmit} className="space-y-6 mb-6 text-left">
                     <div>
-                        <label htmlFor="firstName" className="block text-gray-700 text-sm font-bold mb-2">First Name</label>
+                        <label htmlFor="firstName" className="block text-gray-700 text-sm font-bold mb-2">First Name *</label>
                         <input
                             type="text"
                             id="firstName"
@@ -72,7 +71,7 @@ const PersonalDetailsForm = () => {
                         />
                     </div>
                     <div>
-                        <label htmlFor="lastName" className="block text-gray-700 text-sm font-bold mb-2">Last Name</label>
+                        <label htmlFor="lastName" className="block text-gray-700 text-sm font-bold mb-2">Last Name *</label>
                         <input
                             type="text"
                             id="lastName"
@@ -84,7 +83,7 @@ const PersonalDetailsForm = () => {
                         />
                     </div>
                     <div>
-                        <label htmlFor="dob" className="block text-gray-700 text-sm font-bold mb-2">Date of Birth</label>
+                        <label htmlFor="dob" className="block text-gray-700 text-sm font-bold mb-2">Date of Birth *</label>
                         <input
                             type="date"
                             id="dob"
@@ -92,6 +91,17 @@ const PersonalDetailsForm = () => {
                             value={dob}
                             onChange={(e) => setDob(e.target.value)}
                             required
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="nationalId" className="block text-gray-700 text-sm font-bold mb-2">National ID</label>
+                        <input
+                            type="text"
+                            id="nationalId"
+                            className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
+                            placeholder="12345678"
+                            value={nationalId}
+                            onChange={(e) => setNationalId(e.target.value)}
                         />
                     </div>
                     <div>
@@ -106,47 +116,32 @@ const PersonalDetailsForm = () => {
                         />
                     </div>
                     <div>
-                        <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">Email Address</label>
+                        <label htmlFor="dependents" className="block text-gray-700 text-sm font-bold mb-2">Number of Dependents</label>
                         <input
-                            type="email"
-                            id="email"
+                            type="number"
+                            id="dependents"
                             className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
-                            placeholder="your.email@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
+                            placeholder="0"
+                            value={dependents}
+                            onChange={(e) => setDependents(e.target.value)}
+                            min="0"
                         />
                     </div>
-                    <div>
-                        <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
-                            placeholder="Minimum 8 characters"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/auth')}
+                            className="bg-gray-300 text-gray-700 py-3 px-8 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300 shadow-lg flex-1"
+                        >
+                            ← Back to Login
+                        </button>
+                        <button
+                            type="submit"
+                            className="bg-blue-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300 shadow-lg flex-1"
+                        >
+                            Next: Risk Questionnaire
+                        </button>
                     </div>
-                    <div>
-                        <label htmlFor="confirmPassword" className="block text-gray-700 text-sm font-bold mb-2">Confirm Password</label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:border-blue-500"
-                            placeholder="Re-enter your password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        className="bg-blue-600 text-white py-3 px-8 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300 shadow-lg w-full"
-                    >
-                        Next: Risk Questionnaire
-                    </button>
                 </form>
 
                 {showMessageBox && <MessageBox message={message} onClose={hideMessageBox} />}

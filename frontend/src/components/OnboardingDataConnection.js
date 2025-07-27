@@ -29,6 +29,12 @@ const OnboardingDataConnection = () => {
                 <h1 className="text-4xl font-extrabold text-gray-900 mb-6">Welcome to [App Name]!</h1>
                 <h2 className="text-2xl font-semibold text-blue-700 mb-8">Let's Connect Your Finances.</h2>
 
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8">
+                    <div className="bg-blue-600 h-2.5 rounded-full w-[60%]"></div>
+                    <p className="text-sm text-gray-600 mt-2">Step 3 of 5</p>
+                </div>
+
                 <p className="text-gray-700 text-lg mb-8 leading-relaxed">
                     To help you achieve your financial goals, [App Name] can automatically categorize your transactions by securely monitoring your M-PESA SMS alerts and/or payroll emails. This allows us to build your personalized Lifetime Balance Sheet and offer tailored advice.
                 </p>
@@ -64,9 +70,18 @@ const OnboardingDataConnection = () => {
                         Connect Email Provider
                     </button>
                 </div>
-                <button className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200" onClick={handleNext}>
-                    Manual Entry (Later)
-                </button>
+                
+                <div className="flex flex-col md:flex-row gap-4 items-center">
+                    <button 
+                        className="bg-gray-300 text-gray-700 py-3 px-8 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300 shadow-lg flex-1"
+                        onClick={() => navigate('/onboarding/risk-questionnaire')}
+                    >
+                        ← Back
+                    </button>
+                    <button className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 flex-1" onClick={handleNext}>
+                        Manual Entry (Later) →
+                    </button>
+                </div>
 
                 <p className="text-xs text-gray-500 mt-8">
                     By continuing, you agree to our
