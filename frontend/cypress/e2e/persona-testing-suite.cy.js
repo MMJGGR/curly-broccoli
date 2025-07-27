@@ -3,7 +3,8 @@ import {
   PRD_TARGETS,
   fillLoginForm, 
   assertDashboardWelcome, 
-  assertOnAuthPage 
+  assertOnAuthPage,
+  completePersonaOnboarding
 } from '../support/test-data.js';
 
 describe('Complete Persona Testing Suite', () => {

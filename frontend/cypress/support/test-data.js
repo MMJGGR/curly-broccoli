@@ -51,6 +51,26 @@ export const PERSONAS = {
         last_name: 'Mwangi',
         age: 27,
         description: 'Early Career Professional'
+      },
+      onboarding: {
+        personalDetails: {
+          firstName: 'Jamal',
+          lastName: 'Mwangi',
+          dob: '1997-03-15',
+          nationalId: '32456789',
+          kraPin: 'A032456789J',
+          dependents: '1'
+        },
+        riskAssessment: [3, 3, 3, 3, 3], // 1-4 scale: moderate responses
+        cashFlow: {
+          monthlyIncome: '65000',
+          incomeFrequency: 'Monthly',
+          rent: '25000',
+          utilities: '3000',
+          groceries: '8000',
+          transport: '5000',
+          loanRepayments: '4000'
+        }
       }
     },
     aisha: {
@@ -141,29 +161,85 @@ export const fillOnboardingPersonalDetails = (details) => {
   cy.get('input[id="lastName"]').clear().type(details.lastName);
   cy.get('input[id="dob"]').clear().type(details.dob);
   cy.get('input[id="nationalId"]').clear().type(details.nationalId);
-  cy.get('input[id="kraPin"]').clear().type(details.kraPin);
-  cy.get('input[id="dependents"]').clear().type(details.dependents.toString());
+  if (details.kraPin) {
+    cy.get('input[id="kraPin"]').clear().type(details.kraPin);
+  }
+  if (details.dependents) {
+    cy.get('input[id="dependents"]').clear().type(details.dependents.toString());
+  }
   
   cy.get('button[type="submit"]').click();
 };
 
 export const fillRiskQuestionnaire = (responses = [3, 3, 3, 3, 3]) => {
+  // Risk questionnaire uses radio buttons with option text values, not numeric values
+  const questions = [
+    { id: 'q1', options: ['Capital preservation', 'Income generation', 'Capital appreciation', 'Speculation'] },
+    { id: 'q2', options: ['Less than 1 year', '1-3 years', '3-5 years', 'More than 5 years'] },
+    { id: 'q3', options: ['Sell all investments', 'Sell some investments', 'Hold investments', 'Buy more investments'] },
+    { id: 'q4', options: ['None', 'Limited', 'Good', 'Extensive'] },
+    { id: 'q5', options: ['None', 'Less than 10%', '10-25%', 'More than 25%'] }
+  ];
+
   responses.forEach((response, index) => {
-    cy.get('input[type="radio"][value="' + response + '"]').eq(index).check();
+    const questionId = questions[index].id;
+    const optionText = questions[index].options[response - 1]; // Convert 1-4 to 0-3 index
+    cy.get(`input[name="${questionId}"][value="${optionText}"]`).check();
   });
   
   cy.get('button').contains('Calculate My Risk Profile').click();
 };
 
-export const fillCashFlowSetup = (income, expenses) => {
-  cy.get('input[placeholder="Enter your monthly income"]').type(income.toString());
-  cy.get('input[placeholder="Enter your monthly expenses"]').type(expenses.toString());
-  cy.get('button').contains('Continue to Goals').click();
+export const fillCashFlowSetup = (cashFlowData) => {
+  // Fill income section
+  cy.get('input[id="monthlyIncome"]').type(cashFlowData.monthlyIncome.toString());
+  
+  if (cashFlowData.incomeFrequency) {
+    cy.get('select[id="incomeFrequency"]').select(cashFlowData.incomeFrequency);
+  }
+  
+  // Fill expense categories
+  if (cashFlowData.rent) {
+    cy.get('input[id="rent"]').type(cashFlowData.rent.toString());
+  }
+  if (cashFlowData.utilities) {
+    cy.get('input[id="utilities"]').type(cashFlowData.utilities.toString());
+  }
+  if (cashFlowData.groceries) {
+    cy.get('input[id="groceries"]').type(cashFlowData.groceries.toString());
+  }
+  if (cashFlowData.transport) {
+    cy.get('input[id="transport"]').type(cashFlowData.transport.toString());
+  }
+  if (cashFlowData.loanRepayments) {
+    cy.get('input[id="loanRepayments"]').type(cashFlowData.loanRepayments.toString());
+  }
+  
+  // Complete registration
+  cy.get('button').contains('Complete Registration').click();
 };
 
-export const fillFinancialGoals = (emergencyFund) => {
-  cy.get('input[placeholder="Enter emergency fund target"]').type(emergencyFund.toString());
-  cy.get('button').contains('Complete Setup').click();
+// Data connection step - handle wireframe actions
+export const handleDataConnection = () => {
+  // Click "Manual Entry (Later)" to skip data connection
+  cy.get('button').contains('Manual Entry (Later)').click();
+};
+
+// Complete full onboarding flow for a persona
+export const completePersonaOnboarding = (persona) => {
+  const onboardingData = persona.onboarding;
+  
+  // Step 1: Personal Details
+  fillOnboardingPersonalDetails(onboardingData.personalDetails);
+  
+  // Step 2: Risk Assessment
+  fillRiskQuestionnaire(onboardingData.riskAssessment);
+  
+  // Step 3: Data Connection (skip with manual entry)
+  handleDataConnection();
+  
+  // Step 4: Cash Flow Setup (final step)
+  fillCashFlowSetup(onboardingData.cashFlow);
 };
 
 // Assertion helpers
