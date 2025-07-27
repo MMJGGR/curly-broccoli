@@ -49,15 +49,23 @@ const RiskQuestionnaire = () => {
         e.preventDefault();
         
         // Convert answers object to array format expected by backend
-        const answersArray = questions.map(q => answers[q.id] || 1);
+        const answersArray = questions.map(q => {
+            const answer = answers[q.id];
+            if (!answer) return 1; // Default to first option
+            // Convert text option to numeric value (1-4)
+            const optionIndex = q.options.indexOf(answer);
+            return optionIndex >= 0 ? optionIndex + 1 : 1;
+        });
         updateRiskQuestionnaire(answersArray);
         
         console.log('Submitting risk questionnaire:', answersArray);
+        console.log('Answers object:', answers);
         setMessage('Calculating risk score...');
         
         // Calculate risk score based on answers
         setTimeout(() => {
             const riskScore = calculateRiskScore(answersArray);
+            console.log('Calculated risk score:', riskScore);
             const riskLevel = riskScore < 30 ? 'Low' : riskScore < 70 ? 'Medium' : 'High';
             setMessage(`Your risk score is ${riskScore}, indicating a ${riskLevel} risk level.`);
             setShowMessageBox(true);
