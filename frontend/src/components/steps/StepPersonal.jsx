@@ -76,6 +76,16 @@ export default function StepPersonal({ data, update, validate }) {
           <p className="text-red-600 text-sm">{errors.kraPin}</p>
         )}
       </div>
+      <div>
+        <input
+          name="phone"
+          type="tel"
+          value={data.phone || ""}
+          onChange={(e) => update({ phone: e.target.value })}
+          placeholder="Phone Number (Optional)"
+          className="border-gray-200 focus:ring-amber-500 focus:border-amber-500 rounded-lg p-2 w-full"
+        />
+      </div>
     </div>
   );
 }

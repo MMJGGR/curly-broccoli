@@ -50,6 +50,7 @@ class RegisterRequest(BaseModel):
     nationalId: str = "12345678"
     kra_pin: str = "A123456789Z"
     annual_income: float = 50000
+    employment_status: str = "Employed"
     dependents: int = 0
     goals: Dict[str, Any] = {"targetAmount": 10000, "timeHorizon": 12}
     questionnaire: List[int] = [1, 2, 3, 4, 5]  # Default neutral values
@@ -60,7 +61,9 @@ class ProfileOut(BaseModel):
     dob: Optional[date] = None
     nationalId: Optional[str] = None
     kra_pin: Optional[str] = None
+    phone: Optional[str] = None
     annual_income: Optional[float] = None
+    employment_status: Optional[str] = None
     dependents: Optional[int] = None
     goals: Optional[Dict[str, Any]] = None
     questionnaire: Optional[List[int]] = None
@@ -97,6 +100,7 @@ class ProfileCreate(ProfileBase):
 
 class ProfileUpdate(ProfileBase):
     nationalId: Optional[str] = None
+    phone: Optional[str] = None
     annual_income: Optional[float] = None
     dependents: Optional[int] = None
     goals: Optional[Dict[str, Any]] = None
@@ -111,3 +115,34 @@ class Profile(ProfileBase):
 
     class Config:
         from_attributes = True
+
+class DeleteAccountRequest(BaseModel):
+    password: str
+    
+class DeleteAccountResponse(BaseModel):
+    message: str
+
+class CreateAccountRequest(BaseModel):
+    email: EmailStr
+    password: constr(min_length=8)
+    user_type: str = "user"  # 'user' or 'advisor'
+
+class CreateAccountResponse(BaseModel):
+    access_token: str
+    token_type: str
+
+class CompleteProfileRequest(BaseModel):
+    first_name: str
+    last_name: str
+    date_of_birth: date
+    nationalId: str
+    kra_pin: str
+    annual_income: float
+    employment_status: str
+    dependents: int
+    goals: Dict[str, Any]
+    questionnaire: List[int]
+
+class CompleteProfileResponse(BaseModel):
+    risk_score: int
+    risk_level: int

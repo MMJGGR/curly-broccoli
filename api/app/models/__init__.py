@@ -35,7 +35,9 @@ class Profile(Base):
     date_of_birth = Column(Date)
     nationalId = Column(String, index=True)
     kra_pin = Column(String, index=True)
+    phone = Column(String, nullable=True)
     annual_income = Column(Float)
+    employment_status = Column(String)
     dependents = Column(Integer)
     goals = Column(JSON)  # Stored as JSON
     # Store questionnaire responses as JSON to maintain cross-database
