@@ -1,50 +1,93 @@
 # Project Handover: Personal Finance App
 
-## Current Status (July 2025)
+## Current Status (January 2025)
 
-### 🎯 **IMMEDIATE TASK FOR NEXT DEVELOPER**
-**Complete the advisor onboarding flow integration - estimated 2-4 hours of work.**
+### 🚨 **CRITICAL PRIORITY TASKS FOR NEXT DEVELOPER**
 
-#### What's Done:
-✅ **Core Components Created** (3 new files):
-- `frontend/src/components/AdvisorProfessionalDetails.js` - Step 1: Professional info
-- `frontend/src/components/AdvisorServiceModel.js` - Step 2: Service model selection  
-- `frontend/src/components/AdvisorOnboardingComplete.js` - Step 3: Final setup
+#### **1. IMMEDIATE (1-2 days) - Fix CRUD UI Gaps**
+**Issue**: Backend APIs exist but frontend UI doesn't expose full CRUD capabilities
 
-✅ **Working Features**:
-- User registration and login working perfectly
-- User onboarding flow complete (personal details → risk assessment → cash flow → goals)
-- Beautiful UI with glassmorphism design
-- Backend API with JWT authentication
-- Database tables created and working
-- Docker containers optimized and running
-
-#### What Needs Completion:
-🔄 **Wire up the advisor onboarding routes** (30 mins):
+**🔄 Fix Profile.js CRUD UI** (4-6 hours):
 ```javascript
-// Add to App.js in the onboarding section:
-<Route path="advisor/professional-details" element={<AdvisorProfessionalDetails />} />
-<Route path="advisor/service-model" element={<AdvisorServiceModel />} />  
-<Route path="advisor/complete" element={<AdvisorOnboardingComplete />} />
+// In frontend/src/components/Profile.js - Add missing CRUD buttons:
+// 1. Expense Categories section needs:
+//    - "Add New Category" button
+//    - "Delete Category" buttons per item
+//    - Proper category management interface
+
+// 2. Goals section needs:
+//    - "Add New Goal" button  
+//    - "Delete Goal" buttons
+//    - Integration with existing Goals API (goals.py has full CRUD)
 ```
 
-🔄 **Update AuthScreen navigation** (15 mins):
-```javascript
-// In AuthScreen.js, change advisor navigation from:
-navigate('/advisor/dashboard');
-// To:
-navigate('/onboarding/advisor/professional-details');
+**🔄 Test Full CRUD Operations** (1 hour):
+- Create new expense categories from Profile page
+- Delete expense categories from Profile page  
+- Create/delete goals from Profile page
+- Verify all operations save to database correctly
+
+#### **2. SHORT-TERM (1 week) - Expand Personal Data Collection**
+**Issue**: Current profile collects only ~30% of data needed for advanced financial planning
+
+**🔄 Expand Profile Model** (1 day):
+```python
+# Add to api/app/models/__init__.py Profile class:
+# Tax Planning Fields
+tax_filing_status = Column(String)        # Single, Married Filing Jointly, etc.
+estimated_annual_taxes = Column(Float)
+tax_deductions = Column(JSON)
+
+# Insurance Planning Fields  
+life_insurance_coverage = Column(Float)
+health_insurance_type = Column(String)
+insurance_beneficiaries = Column(JSON)
+
+# Retirement Planning Fields
+target_retirement_age = Column(Integer)
+expected_retirement_expenses = Column(Float) 
+social_security_estimated = Column(Float)
+retirement_accounts = Column(JSON)
+
+# Estate Planning Fields
+will_status = Column(String)
+beneficiaries = Column(JSON)
+power_of_attorney = Column(String)
+
+# Advanced Investment Data
+investment_experience = Column(String)
+investment_preferences = Column(JSON)
+risk_capacity = Column(Integer)
 ```
 
-🔄 **Backend API adjustment** (30 mins):
-- Update `/auth/profile` endpoint to handle advisor-specific fields:
-  - `firm_name`, `license_number`, `professional_email`, `service_model`, `target_client_type`
+**🔄 Create Advanced Onboarding Steps** (2 days):
+- Add tax information collection step
+- Add insurance planning step  
+- Add estate planning step
+- Add detailed retirement planning step
 
-🔄 **Test the complete flow** (30 mins):
-1. Register as advisor
-2. Complete advisor onboarding  
-3. Verify profile data saves correctly
-4. Ensure navigation to advisor dashboard works
+#### **3. MEDIUM-TERM (2-4 weeks) - Advanced Financial Features**
+**🔄 New API Endpoints Needed**:
+```python
+# Insurance Management
+/insurance-policies/ (full CRUD)
+
+# Beneficiaries Management  
+/beneficiaries/ (full CRUD)
+
+# Retirement Planning
+/retirement-accounts/ (full CRUD)
+
+# Tax Planning  
+/tax-documents/ (full CRUD)
+```
+
+### **Previous Priority (Still Relevant)**
+🔄 **Complete advisor onboarding flow integration** (2-4 hours):
+- Wire up advisor onboarding routes in App.js
+- Update AuthScreen navigation for advisors
+- Add advisor-specific fields to `/auth/profile` endpoint
+- Test complete advisor flow
 
 ---
 

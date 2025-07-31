@@ -37,7 +37,16 @@
       "Bash(docker system:*)",
       "Bash(time npm ping)",
       "Bash(npm config:*)",
-      "Bash(time npm install:*)"
+      "Bash(time npm install:*)",
+      "Bash(git restore:*)",
+      "Bash(git rm:*)",
+      "Bash(npm run build:*)",
+      "Bash(python:*)",
+      "Bash(bash:*)",
+      "Bash(docker cp:*)",
+      "Bash(timeout 30 docker-compose logs api)",
+      "Bash(npm run cy:open:*)",
+      "Bash(npm run cy:run:*)"
     ],
     "deny": []
   }
