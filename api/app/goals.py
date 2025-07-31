@@ -63,7 +63,11 @@ def delete_goal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    goal = crud_goal.delete_goal(db=db, goal_id=goal_id, user_id=current_user.id)
-    if goal is None:
+    # First check if goal exists
+    existing_goal = crud_goal.get_goal(db=db, goal_id=goal_id, user_id=current_user.id)
+    if existing_goal is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Goal not found")
+    
+    # Delete the goal
+    crud_goal.delete_goal(db=db, goal_id=goal_id, user_id=current_user.id)
     return None

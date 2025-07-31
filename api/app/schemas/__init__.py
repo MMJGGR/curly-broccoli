@@ -1,4 +1,4 @@
-from .user import UserBase, UserCreate, UserInDB, User, Token, TokenData, RegisterResponse, ProfileBase, ProfileCreate, ProfileUpdate, Profile, RegisterRequest, ProfileOut, ProfileResponse, Dependents
+from .user import UserBase, UserCreate, UserInDB, User, Token, TokenData, RegisterResponse, ProfileBase, ProfileCreate, ProfileUpdate, Profile, RegisterRequest, ProfileOut, ProfileResponse, Dependents, DeleteAccountRequest, DeleteAccountResponse, CreateAccountRequest, CreateAccountResponse, CompleteProfileRequest, CompleteProfileResponse
 from .risk_profile import RiskProfileBase, RiskProfileCreate, RiskProfileUpdate, RiskProfile
 from .transaction import TransactionBase, TransactionCreate, TransactionUpdate, Transaction
 from .milestone import MilestoneBase, MilestoneCreate, MilestoneUpdate, Milestone

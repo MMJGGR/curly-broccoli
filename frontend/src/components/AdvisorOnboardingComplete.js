@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AdvisorOnboardingComplete = () => {
@@ -39,7 +39,7 @@ const AdvisorOnboardingComplete = () => {
         target_client_type: serviceModel.targetClientType,
         minimum_aum: serviceModel.minimumAUM,
         // Default advisor values
-        dob: '1980-01-01',
+        date_of_birth: '1980-01-01',
         nationalId: 'ADV-' + Date.now(),
         kra_pin: 'A' + Date.now() + 'Z',
         annual_income: 300000,

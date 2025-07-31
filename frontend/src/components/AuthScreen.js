@@ -129,8 +129,8 @@ const AuthScreen = () => {
                 // Navigate to onboarding for new users to complete their profile
                 console.log('Attempting navigation to onboarding...');
                 if (userType === 'advisor') {
-                    console.log('Navigating to advisor dashboard');
-                    navigate('/advisor/dashboard', { replace: true });
+                    console.log('Navigating to advisor onboarding');
+                    navigate('/onboarding/advisor/professional-details', { replace: true });
                 } else {
                     console.log('Navigating to user onboarding');
                     navigate('/onboarding/personal-details', { replace: true });

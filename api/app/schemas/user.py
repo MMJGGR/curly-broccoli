@@ -67,6 +67,13 @@ class ProfileOut(BaseModel):
     dependents: Optional[int] = None
     goals: Optional[Dict[str, Any]] = None
     questionnaire: Optional[List[int]] = None
+    # Advisor-specific fields
+    firm_name: Optional[str] = None
+    license_number: Optional[str] = None
+    professional_email: Optional[str] = None
+    service_model: Optional[str] = None
+    target_client_type: Optional[str] = None
+    minimum_aum: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -105,6 +112,13 @@ class ProfileUpdate(ProfileBase):
     dependents: Optional[int] = None
     goals: Optional[Dict[str, Any]] = None
     questionnaire: Optional[List[int]] = None
+    # Advisor-specific fields
+    firm_name: Optional[str] = None
+    license_number: Optional[str] = None
+    professional_email: Optional[str] = None
+    service_model: Optional[str] = None
+    target_client_type: Optional[str] = None
+    minimum_aum: Optional[str] = None
 
     class Config:
         from_attributes = True

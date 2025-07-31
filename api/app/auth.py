@@ -222,6 +222,13 @@ def get_current_user_profile(
             "dependents": profile.dependents,
             "goals": profile.goals,
             "questionnaire": profile.questionnaire,
+            # Advisor-specific fields
+            "firm_name": profile.firm_name,
+            "license_number": profile.license_number,
+            "professional_email": profile.professional_email,
+            "service_model": profile.service_model,
+            "target_client_type": profile.target_client_type,
+            "minimum_aum": profile.minimum_aum,
         },
         risk_score=profile.risk_score,
         risk_level=profile.risk_level
@@ -320,6 +327,13 @@ def update_user_profile(
             "dependents": profile.dependents,
             "goals": profile.goals,
             "questionnaire": profile.questionnaire,
+            # Advisor-specific fields
+            "firm_name": profile.firm_name,
+            "license_number": profile.license_number,
+            "professional_email": profile.professional_email,
+            "service_model": profile.service_model,
+            "target_client_type": profile.target_client_type,
+            "minimum_aum": profile.minimum_aum,
         },
         risk_score=profile.risk_score,
         risk_level=profile.risk_level

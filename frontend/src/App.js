@@ -19,6 +19,11 @@ import AdvisorDashboard from './components/AdvisorDashboard';
 import ClientList from './components/ClientList';
 import ClientProfile from './components/ClientProfile';
 
+// Advisor onboarding components
+import AdvisorProfessionalDetails from './components/AdvisorProfessionalDetails';
+import AdvisorServiceModel from './components/AdvisorServiceModel';
+import AdvisorOnboardingComplete from './components/AdvisorOnboardingComplete';
+
 function App() {
   // Check if user is already logged in
   const isLoggedIn = localStorage.getItem('jwt') !== null;
@@ -42,6 +47,15 @@ function App() {
               <Route path="cash-flow-setup" element={<OnboardingCashFlowSetup />} />
             </Routes>
           </OnboardingProvider>
+        } />
+
+        {/* Advisor Onboarding Flow */}
+        <Route path="/onboarding/advisor/*" element={
+          <Routes>
+            <Route path="professional-details" element={<AdvisorProfessionalDetails />} />
+            <Route path="service-model" element={<AdvisorServiceModel />} />
+            <Route path="complete" element={<AdvisorOnboardingComplete />} />
+          </Routes>
         } />
 
         {/* Main Application - uses MainAppLayout for shared navigation */}

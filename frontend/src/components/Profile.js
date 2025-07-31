@@ -14,12 +14,17 @@ const Profile = ({ onNextScreen }) => {
     const [editingSection, setEditingSection] = useState(null); // 'personal', 'contact', 'financial', 'goals'
     const [editFormData, setEditFormData] = useState({});
     const [expenseCategories, setExpenseCategories] = useState([]);
+    const [goals, setGoals] = useState([]);
+    const [showGoalModal, setShowGoalModal] = useState(false);
+    const [goalModalData, setGoalModalData] = useState({
+        name: '',
+        target: '',
+        current: '',
+        target_date: ''
+    });
+    const [editingGoalId, setEditingGoalId] = useState(null);
     const navigate = useNavigate();
 
-    const showActionMessage = (actionName) => {
-        setMessage('Action: ' + actionName + ' (This is a wireframe action)');
-        setShowMessageBox(true);
-    };
 
     const hideMessageBox = () => {
         setShowMessageBox(false);
@@ -47,6 +52,184 @@ const Profile = ({ onNextScreen }) => {
             console.error('Error fetching expense categories:', error);
         }
     }, []);
+
+    const fetchGoals = useCallback(async () => {
+        try {
+            console.log('Fetching goals...');
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) {
+                console.log('No JWT token found');
+                return;
+            }
+
+            const API_BASE = 'http://localhost:8000';
+            const response = await fetch(`${API_BASE}/goals/`, {
+                headers: {
+                    'Authorization': `Bearer ${jwt}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('Goals API response status:', response.status);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Goals data received:', data);
+                setGoals(data);
+            } else {
+                console.log('Goals API error:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error fetching goals:', error);
+        }
+    }, []);
+
+    const deleteExpenseCategory = async (categoryId) => {
+        try {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+
+            const API_BASE = 'http://localhost:8000';
+            const response = await fetch(`${API_BASE}/expense-categories/${categoryId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${jwt}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                await fetchExpenseCategories();
+                setMessage('Expense category deleted successfully!');
+                setShowMessageBox(true);
+            } else {
+                throw new Error('Failed to delete expense category');
+            }
+        } catch (error) {
+            console.error('Error deleting expense category:', error);
+            setMessage('Failed to delete expense category');
+            setShowMessageBox(true);
+        }
+    };
+
+    const deleteGoal = async (goalId) => {
+        try {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+
+            const API_BASE = 'http://localhost:8000';
+            const response = await fetch(`${API_BASE}/goals/${goalId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${jwt}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                await fetchGoals();
+                setMessage('Goal deleted successfully!');
+                setShowMessageBox(true);
+            } else {
+                throw new Error('Failed to delete goal');
+            }
+        } catch (error) {
+            console.error('Error deleting goal:', error);
+            setMessage('Failed to delete goal');
+            setShowMessageBox(true);
+        }
+    };
+
+    const openGoalModal = (goal = null) => {
+        if (goal) {
+            // Editing existing goal
+            setEditingGoalId(goal.id);
+            setGoalModalData({
+                name: goal.name,
+                target: goal.target,
+                current: goal.current,
+                target_date: goal.target_date || ''
+            });
+        } else {
+            // Creating new goal
+            setEditingGoalId(null);
+            setGoalModalData({
+                name: '',
+                target: '',
+                current: '',
+                target_date: ''
+            });
+        }
+        setShowGoalModal(true);
+    };
+
+    const closeGoalModal = () => {
+        setShowGoalModal(false);
+        setEditingGoalId(null);
+        setGoalModalData({
+            name: '',
+            target: '',
+            current: '',
+            target_date: ''
+        });
+    };
+
+    const handleGoalSubmit = async () => {
+        try {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) return;
+
+            const API_BASE = 'http://localhost:8000';
+            
+            // Calculate progress
+            const targetAmount = parseFloat(goalModalData.target) || 0;
+            const currentAmount = parseFloat(goalModalData.current) || 0;
+            const progress = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
+
+            const goalData = {
+                name: goalModalData.name,
+                target: goalModalData.target,
+                current: goalModalData.current,
+                progress: progress,
+                target_date: goalModalData.target_date || null
+            };
+
+            let response;
+            if (editingGoalId) {
+                // Update existing goal
+                response = await fetch(`${API_BASE}/goals/${editingGoalId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${jwt}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(goalData)
+                });
+            } else {
+                // Create new goal
+                response = await fetch(`${API_BASE}/goals/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${jwt}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(goalData)
+                });
+            }
+
+            if (response.ok) {
+                await fetchGoals();
+                closeGoalModal();
+                setMessage(editingGoalId ? 'Goal updated successfully!' : 'Goal created successfully!');
+                setShowMessageBox(true);
+            } else {
+                throw new Error('Failed to save goal');
+            }
+        } catch (error) {
+            console.error('Error saving goal:', error);
+            setMessage('Failed to save goal');
+            setShowMessageBox(true);
+        }
+    };
 
     const fetchUserProfile = useCallback(async () => {
         try {
@@ -122,6 +305,7 @@ const Profile = ({ onNextScreen }) => {
             
             setUserProfile(profileData);
             await fetchExpenseCategories();
+            await fetchGoals();
         } catch (error) {
             console.error('Error fetching profile:', error);
             console.error('Error details:', error.message);
@@ -260,12 +444,6 @@ const Profile = ({ onNextScreen }) => {
                     amount: cat.budgeted_amount
                 }))
             });
-        } else if (section === 'goals') {
-            setEditFormData({
-                goalType: userProfile.goals.type,
-                targetAmount: parseFloat(userProfile.goals.targetAmount.replace(/[^\d]/g, '')) || 0,
-                timeHorizon: parseInt(userProfile.goals.timeHorizon) || 1,
-            });
         }
     };
 
@@ -356,14 +534,6 @@ const Profile = ({ onNextScreen }) => {
                 setMessage('Financial information updated successfully!');
                 setShowMessageBox(true);
                 return;
-            } else if (editingSection === 'goals') {
-                updatePayload = {
-                    goals: {
-                        type: editFormData.goalType,
-                        targetAmount: parseFloat(editFormData.targetAmount),
-                        timeHorizon: parseInt(editFormData.timeHorizon),
-                    }
-                };
             }
 
             const response = await fetch(`${API_BASE}/auth/profile`, {
@@ -395,7 +565,7 @@ const Profile = ({ onNextScreen }) => {
 
     useEffect(() => {
         fetchUserProfile();
-    }, [fetchUserProfile]);
+    }, [fetchUserProfile, fetchExpenseCategories, fetchGoals]);
 
     if (loading) {
         return (
@@ -604,6 +774,20 @@ const Profile = ({ onNextScreen }) => {
                                                 placeholder="Amount"
                                             />
                                             <span className="text-sm text-gray-500">KES</span>
+                                            {category.id && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (window.confirm('Are you sure you want to delete this expense category?')) {
+                                                            const newCategories = editFormData.expenseCategories.filter((_, i) => i !== index);
+                                                            setEditFormData({...editFormData, expenseCategories: newCategories});
+                                                        }
+                                                    }}
+                                                    className="px-2 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -645,9 +829,21 @@ const Profile = ({ onNextScreen }) => {
                                     {expenseCategories.length > 0 ? (
                                         <div className="space-y-1 ml-4">
                                             {expenseCategories.map(category => (
-                                                <div key={category.id} className="flex justify-between">
+                                                <div key={category.id} className="flex justify-between items-center">
                                                     <span>{category.name}:</span>
-                                                    <span>KES {category.budgeted_amount?.toLocaleString()}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span>KES {category.budgeted_amount?.toLocaleString()}</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (window.confirm('Are you sure you want to delete this expense category?')) {
+                                                                    deleteExpenseCategory(category.id);
+                                                                }
+                                                            }}
+                                                            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             ))}
                                             <div className="border-t pt-1 font-semibold flex justify-between">
@@ -656,7 +852,15 @@ const Profile = ({ onNextScreen }) => {
                                             </div>
                                         </div>
                                     ) : (
-                                        <span className="text-gray-500 ml-4">No expense categories set</span>
+                                        <div className="ml-4">
+                                            <span className="text-gray-500">No expense categories set</span>
+                                            <button
+                                                className="ml-4 bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                                                onClick={() => startEditing('financial')}
+                                            >
+                                                Add Category
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -671,76 +875,67 @@ const Profile = ({ onNextScreen }) => {
                 </div>
 
 
+                {/* Consolidated Goals Management Section */}
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Financial Goals</h2>
-                    {editingSection === 'goals' ? (
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-semibold text-gray-800">Goals Management</h2>
+                        <button
+                            onClick={() => openGoalModal()}
+                            className="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors"
+                        >
+                            Add New Goal
+                        </button>
+                    </div>
+                    
+                    {goals.length > 0 ? (
                         <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Goal Type</label>
-                                <select
-                                    value={editFormData.goalType || ''}
-                                    onChange={(e) => setEditFormData({...editFormData, goalType: e.target.value})}
-                                    className="border-gray-300 rounded-lg p-2 w-full focus:ring-blue-500 focus:border-blue-500"
-                                >
-                                    <option>Wealth</option>
-                                    <option>Education</option>
-                                    <option>Retirement</option>
-                                    <option>Emergency Fund</option>
-                                    <option>Investment</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Target Amount (KES)</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={editFormData.targetAmount || ''}
-                                    onChange={(e) => setEditFormData({...editFormData, targetAmount: e.target.value})}
-                                    className="border-gray-300 rounded-lg p-2 w-full focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Enter target amount"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Time Horizon (years)</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="50"
-                                    value={editFormData.timeHorizon || ''}
-                                    onChange={(e) => setEditFormData({...editFormData, timeHorizon: e.target.value})}
-                                    className="border-gray-300 rounded-lg p-2 w-full focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Enter time horizon in years"
-                                />
-                            </div>
-                            <div className="flex gap-2 mt-4">
-                                <button
-                                    onClick={saveChanges}
-                                    className="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors"
-                                >
-                                    Save Changes
-                                </button>
-                                <button
-                                    onClick={cancelEditing}
-                                    className="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
+                            {goals.map(goal => (
+                                <div key={goal.id} className="border rounded-lg p-4 bg-gray-50">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold text-lg text-gray-800">{goal.name}</h3>
+                                            <div className="mt-2 space-y-1 text-sm text-gray-600">
+                                                <p><strong>Target:</strong> KES {parseFloat(goal.target)?.toLocaleString()}</p>
+                                                <p><strong>Current:</strong> KES {parseFloat(goal.current)?.toLocaleString()}</p>
+                                                <p><strong>Progress:</strong> {goal.progress?.toFixed(1)}%</p>
+                                                {goal.target_date && (
+                                                    <p><strong>Target Date:</strong> {goal.target_date}</p>
+                                                )}
+                                            </div>
+                                            <div className="mt-3">
+                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                    <div 
+                                                        className="bg-green-600 h-2 rounded-full" 
+                                                        style={{ width: `${Math.min(goal.progress || 0, 100)}%` }}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="ml-4 flex flex-col gap-2">
+                                            <button
+                                                onClick={() => openGoalModal(goal)}
+                                                className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (window.confirm('Are you sure you want to delete this goal?')) {
+                                                        deleteGoal(goal.id);
+                                                    }
+                                                }}
+                                                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : (
-                        <div>
-                            <div className="space-y-2 text-gray-700">
-                                <p><strong>Goal Type:</strong> <span className="font-bold text-green-600">{userProfile.goals.type}</span></p>
-                                <p><strong>Target Amount:</strong> <span className="font-bold text-green-600">{userProfile.goals.targetAmount}</span></p>
-                                <p><strong>Time Horizon:</strong> <span className="font-bold text-green-600">{userProfile.goals.timeHorizon}</span></p>
-                                <p><strong>Goal Summary:</strong> {userProfile.goals.description}</p>
-                            </div>
-                            <button
-                                className="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors duration-200 shadow-md mt-4"
-                                onClick={() => startEditing('goals')}
-                            >
-                                Update Financial Goals
-                            </button>
+                        <div className="text-center py-8 text-gray-500">
+                            <p>No goals set yet. Click "Add New Goal" to get started!</p>
                         </div>
                     )}
                 </div>
@@ -752,7 +947,10 @@ const Profile = ({ onNextScreen }) => {
                         <p><strong>Risk Level:</strong> <span className="font-bold text-blue-600">{userProfile.riskProfile.level}</span></p>
                         <p><strong>Questionnaire Completed:</strong> <span className="font-bold text-blue-600">{userProfile.riskProfile.questionnaireCompleted}</span></p>
                     </div>
-                    <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md mt-4" onClick={() => alert('Risk assessment retake functionality coming soon!')}>
+                    <button 
+                        className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md mt-4" 
+                        onClick={() => navigate('/app/onboarding/risk-questionnaire')}
+                    >
                         Retake Risk Assessment
                     </button>
                 </div>
@@ -760,12 +958,36 @@ const Profile = ({ onNextScreen }) => {
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Account Settings</h2>
                     <div className="space-y-2 text-gray-700">
-                        <p><strong>Notifications:</strong> {userProfile.settings.notifications} <button className="ml-2 text-blue-500 hover:text-blue-700 text-xs" onClick={() => showActionMessage('Toggle Notifications')}>Toggle</button></p>
-                        <p><strong>Data Privacy:</strong> {userProfile.settings.dataPrivacy} <button className="ml-2 text-blue-500 hover:text-blue-700 text-xs" onClick={() => showActionMessage('Adjust Data Privacy')}>Adjust</button></p>
-                        <p><strong>Linked Accounts:</strong> {userProfile.settings.linkedAccounts} <button className="ml-2 text-blue-500 hover:text-blue-700 text-xs" onClick={() => showActionMessage('Manage Linked Accounts')}>Manage</button></p>
+                        <div className="flex justify-between items-center">
+                            <span><strong>Email Notifications:</strong></span>
+                            <button className="bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs hover:bg-blue-200 transition-colors">
+                                Enabled ✓
+                            </button>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span><strong>Data Privacy Level:</strong></span>
+                            <button className="bg-green-100 text-green-700 px-3 py-1 rounded text-xs hover:bg-green-200 transition-colors">
+                                High Security ✓
+                            </button>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span><strong>Linked Accounts:</strong></span>
+                            <button 
+                                className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-xs hover:bg-gray-200 transition-colors"
+                                onClick={() => navigate('/app/accounts')}
+                            >
+                                Manage Accounts →
+                            </button>
+                        </div>
                     </div>
                     <div className="flex flex-wrap gap-2 mt-4">
-                        <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md" onClick={() => showActionMessage('Change Password')}>
+                        <button 
+                            className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md"
+                            onClick={() => {
+                                setMessage('Password change functionality will be implemented in the next version. For now, please contact support.');
+                                setShowMessageBox(true);
+                            }}
+                        >
                             Change Password
                         </button>
                         <button className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors duration-200 shadow-md" onClick={handleLogout}>
@@ -839,6 +1061,119 @@ const Profile = ({ onNextScreen }) => {
                                 className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {deleteLoading ? 'Deleting...' : 'Delete Account'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Goal Creation/Edit Modal */}
+            {showGoalModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                {editingGoalId ? 'Edit Goal' : 'Create New Goal'}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                                Set your financial target and track your progress towards achieving it.
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Goal Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={goalModalData.name}
+                                    onChange={(e) => setGoalModalData({...goalModalData, name: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                                    placeholder="e.g., Emergency Fund, House Down Payment"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Target Amount (KES) *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={goalModalData.target}
+                                        onChange={(e) => setGoalModalData({...goalModalData, target: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                                        placeholder="100000"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Current Amount (KES) *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={goalModalData.current}
+                                        onChange={(e) => setGoalModalData({...goalModalData, current: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                                        placeholder="25000"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Target Date (Optional)
+                                </label>
+                                <input
+                                    type="date"
+                                    value={goalModalData.target_date}
+                                    onChange={(e) => setGoalModalData({...goalModalData, target_date: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+                                />
+                            </div>
+
+                            {/* Progress Preview */}
+                            {goalModalData.target && goalModalData.current && (
+                                <div className="bg-gray-50 p-3 rounded-lg">
+                                    <p className="text-sm text-gray-600 mb-2">Progress Preview:</p>
+                                    <div className="flex justify-between text-sm mb-1">
+                                        <span>KES {parseFloat(goalModalData.current || 0).toLocaleString()}</span>
+                                        <span>KES {parseFloat(goalModalData.target || 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div 
+                                            className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                                            style={{ 
+                                                width: `${Math.min(
+                                                    ((parseFloat(goalModalData.current) || 0) / (parseFloat(goalModalData.target) || 1)) * 100, 
+                                                    100
+                                                )}%` 
+                                            }}
+                                        ></div>
+                                    </div>
+                                    <p className="text-center text-sm text-gray-600 mt-1">
+                                        {((parseFloat(goalModalData.current) || 0) / (parseFloat(goalModalData.target) || 1) * 100).toFixed(1)}%
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex space-x-3 mt-6">
+                            <button
+                                onClick={closeGoalModal}
+                                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleGoalSubmit}
+                                disabled={!goalModalData.name || !goalModalData.target || !goalModalData.current}
+                                className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {editingGoalId ? 'Update Goal' : 'Create Goal'}
                             </button>
                         </div>
                     </div>

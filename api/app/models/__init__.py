@@ -46,6 +46,14 @@ class Profile(Base):
     risk_score = Column(Integer)
     risk_level = Column(Integer)
     user_id = Column(Integer, ForeignKey("users.id"))
+    
+    # Advisor-specific fields
+    firm_name = Column(String, nullable=True, index=True)
+    license_number = Column(String, nullable=True, index=True)
+    professional_email = Column(String, nullable=True)
+    service_model = Column(String, nullable=True)  # fee-only, commission, hybrid
+    target_client_type = Column(String, nullable=True)  # high-net-worth, mass-affluent, etc.
+    minimum_aum = Column(String, nullable=True)  # Minimum assets under management
 
     owner = relationship("User", back_populates="profile")
 
