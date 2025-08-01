@@ -72,8 +72,8 @@ export function OnboardingProvider({ children }) {
   };
 
   // Update existing user profile with onboarding data
-  const updateProfile = async () => {
-    const API_BASE = '';
+  const updateProfile = async (skipCompletion = false) => {
+    const API_BASE = 'http://localhost:8000';
     
     try {
       const jwt = localStorage.getItem('jwt');
@@ -87,6 +87,7 @@ export function OnboardingProvider({ children }) {
         date_of_birth: state.personalDetails?.dob,
         nationalId: state.personalDetails?.nationalId,
         kra_pin: state.personalDetails?.kraPin,
+        employment_status: state.personalDetails?.employmentStatus || 'Employed',
         annual_income: Number(state.cashFlowData?.monthlyIncome) * 12 || 600000, // Convert monthly to annual
         dependents: Number(state.personalDetails?.dependents) || 0,
         goals: {
@@ -128,7 +129,12 @@ export function OnboardingProvider({ children }) {
       const data = await response.json();
       console.log('Profile updated successfully:', data);
       
-      completeOnboarding();
+      if (!skipCompletion) {
+        completeOnboarding();
+        // Set flag for profile refresh and emit event
+        localStorage.setItem('profileRefreshNeeded', 'true');
+        window.dispatchEvent(new CustomEvent('onboardingComplete'));
+      }
       return { success: true, data };
       
     } catch (error) {

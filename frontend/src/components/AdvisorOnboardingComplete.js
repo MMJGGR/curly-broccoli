@@ -52,7 +52,8 @@ const AdvisorOnboardingComplete = () => {
       };
 
       // Submit to backend
-      const response = await fetch('/auth/profile', {
+      const API_BASE = 'http://localhost:8000';
+      const response = await fetch(`${API_BASE}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

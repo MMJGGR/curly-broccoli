@@ -5,6 +5,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AuthScreen from './components/AuthScreen';
 import PersonalDetailsForm from './components/PersonalDetailsForm';
 import RiskQuestionnaire from './components/RiskQuestionnaire';
+import RetakeRiskQuestionnaire from './components/RetakeRiskQuestionnaire';
 import OnboardingDataConnection from './components/OnboardingDataConnection';
 import OnboardingCashFlowSetup from './components/OnboardingCashFlowSetup';
 
@@ -56,6 +57,13 @@ function App() {
             <Route path="service-model" element={<AdvisorServiceModel />} />
             <Route path="complete" element={<AdvisorOnboardingComplete />} />
           </Routes>
+        } />
+
+        {/* Retake Risk Assessment - for existing authenticated users */}
+        <Route path="/retake-risk-assessment" element={
+          <PrivateRoute>
+            <RetakeRiskQuestionnaire />
+          </PrivateRoute>
         } />
 
         {/* Main Application - uses MainAppLayout for shared navigation */}

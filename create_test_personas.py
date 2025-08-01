@@ -9,8 +9,21 @@ API_BASE = "http://localhost:8000"
 
 personas = [
     {
+        "email": "jamal@example.com",
+        "password": "jamal12345",
+        "role": "user",
+        "profile": {
+            "first_name": "Jamal",
+            "last_name": "Mwangi",
+            "date_of_birth": "1997-06-10",
+            "annual_income": 480000,
+            "employment_status": "Employed",
+            "dependents": 0
+        }
+    },
+    {
         "email": "aisha@example.com",
-        "password": "aisha123",
+        "password": "aisha12345",
         "role": "user",
         "profile": {
             "first_name": "Aisha",
@@ -23,7 +36,7 @@ personas = [
     },
     {
         "email": "samuel@example.com", 
-        "password": "samuel123",
+        "password": "samuel12345",
         "role": "user",
         "profile": {
             "first_name": "Samuel",
@@ -36,7 +49,7 @@ personas = [
     },
     {
         "email": "emily@advisor.com",
-        "password": "emily123",
+        "password": "emily12345",
         "role": "advisor",
         "profile": {
             "first_name": "Emily",

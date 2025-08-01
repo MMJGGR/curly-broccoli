@@ -5,7 +5,7 @@ import MessageBox from './MessageBox';
 import { useOnboarding } from '../contexts/OnboardingContext';
 
 const PersonalDetailsForm = () => {
-    const { personalDetails, updatePersonalDetails } = useOnboarding();
+    const { personalDetails, updatePersonalDetails, updateProfile } = useOnboarding();
     const [firstName, setFirstName] = useState(personalDetails.firstName || '');
     const [lastName, setLastName] = useState(personalDetails.lastName || '');
     const [dob, setDob] = useState(personalDetails.dob || '');
@@ -21,7 +21,7 @@ const PersonalDetailsForm = () => {
         setMessage('');
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
         // Basic validation
@@ -36,13 +36,39 @@ const PersonalDetailsForm = () => {
         updatePersonalDetails(personalData);
         
         console.log('Saving personal details:', personalData);
-        setMessage('Personal details saved!');
+        setMessage('Saving personal details...');
         setShowMessageBox(true);
         
-        // Navigate to risk questionnaire
-        setTimeout(() => {
-            navigate('/onboarding/risk-questionnaire');
-        }, 1000);
+        // Save to backend immediately
+        try {
+            const result = await updateProfile(true); // Skip onboarding completion
+            if (result && result.success) {
+                setMessage('Personal details saved successfully!');
+                setShowMessageBox(true);
+                
+                // Navigate to risk questionnaire
+                setTimeout(() => {
+                    navigate('/onboarding/risk-questionnaire');
+                }, 1000);
+            } else {
+                setMessage('Personal details saved locally. Will sync when onboarding is complete.');
+                setShowMessageBox(true);
+                
+                // Navigate anyway but data will be saved at the end
+                setTimeout(() => {
+                    navigate('/onboarding/risk-questionnaire');
+                }, 1000);
+            }
+        } catch (error) {
+            console.error('Failed to save personal details to backend:', error);
+            setMessage('Personal details saved locally. Will sync when onboarding is complete.');
+            setShowMessageBox(true);
+            
+            // Navigate anyway but data will be saved at the end
+            setTimeout(() => {
+                navigate('/onboarding/risk-questionnaire');
+            }, 1000);
+        }
     };
 
     return (

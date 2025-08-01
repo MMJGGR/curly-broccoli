@@ -67,6 +67,7 @@ class ProfileOut(BaseModel):
     dependents: Optional[int] = None
     goals: Optional[Dict[str, Any]] = None
     questionnaire: Optional[List[int]] = None
+    
     # Advisor-specific fields
     firm_name: Optional[str] = None
     license_number: Optional[str] = None
@@ -74,6 +75,33 @@ class ProfileOut(BaseModel):
     service_model: Optional[str] = None
     target_client_type: Optional[str] = None
     minimum_aum: Optional[str] = None
+    
+    # Advanced Financial Planning Fields
+    # Tax Planning Fields
+    tax_filing_status: Optional[str] = None
+    estimated_annual_taxes: Optional[float] = None
+    tax_deductions: Optional[Dict[str, Any]] = None
+    
+    # Insurance Planning Fields
+    life_insurance_coverage: Optional[float] = None
+    health_insurance_type: Optional[str] = None
+    insurance_beneficiaries: Optional[Dict[str, Any]] = None
+    
+    # Retirement Planning Fields
+    target_retirement_age: Optional[int] = None
+    expected_retirement_expenses: Optional[float] = None
+    social_security_estimated: Optional[float] = None
+    retirement_accounts: Optional[Dict[str, Any]] = None
+    
+    # Estate Planning Fields
+    will_status: Optional[str] = None
+    beneficiaries: Optional[Dict[str, Any]] = None
+    power_of_attorney: Optional[str] = None
+    
+    # Advanced Investment Data
+    investment_experience: Optional[str] = None
+    investment_preferences: Optional[Dict[str, Any]] = None
+    risk_capacity: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -109,9 +137,11 @@ class ProfileUpdate(ProfileBase):
     nationalId: Optional[str] = None
     phone: Optional[str] = None
     annual_income: Optional[float] = None
+    employment_status: Optional[str] = None
     dependents: Optional[int] = None
     goals: Optional[Dict[str, Any]] = None
     questionnaire: Optional[List[int]] = None
+    
     # Advisor-specific fields
     firm_name: Optional[str] = None
     license_number: Optional[str] = None
@@ -119,6 +149,33 @@ class ProfileUpdate(ProfileBase):
     service_model: Optional[str] = None
     target_client_type: Optional[str] = None
     minimum_aum: Optional[str] = None
+    
+    # Advanced Financial Planning Fields
+    # Tax Planning Fields
+    tax_filing_status: Optional[str] = None
+    estimated_annual_taxes: Optional[float] = None
+    tax_deductions: Optional[Dict[str, Any]] = None
+    
+    # Insurance Planning Fields
+    life_insurance_coverage: Optional[float] = None
+    health_insurance_type: Optional[str] = None
+    insurance_beneficiaries: Optional[Dict[str, Any]] = None
+    
+    # Retirement Planning Fields
+    target_retirement_age: Optional[int] = None
+    expected_retirement_expenses: Optional[float] = None
+    social_security_estimated: Optional[float] = None
+    retirement_accounts: Optional[Dict[str, Any]] = None
+    
+    # Estate Planning Fields
+    will_status: Optional[str] = None
+    beneficiaries: Optional[Dict[str, Any]] = None
+    power_of_attorney: Optional[str] = None
+    
+    # Advanced Investment Data
+    investment_experience: Optional[str] = None
+    investment_preferences: Optional[Dict[str, Any]] = None
+    risk_capacity: Optional[int] = None
 
     class Config:
         from_attributes = True

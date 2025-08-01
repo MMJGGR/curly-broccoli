@@ -54,6 +54,33 @@ class Profile(Base):
     service_model = Column(String, nullable=True)  # fee-only, commission, hybrid
     target_client_type = Column(String, nullable=True)  # high-net-worth, mass-affluent, etc.
     minimum_aum = Column(String, nullable=True)  # Minimum assets under management
+    
+    # Advanced Financial Planning Fields
+    # Tax Planning Fields
+    tax_filing_status = Column(String, nullable=True)  # Single, Married Filing Jointly, etc.
+    estimated_annual_taxes = Column(Float, nullable=True)
+    tax_deductions = Column(JSON, nullable=True)  # Store as JSON for flexibility
+    
+    # Insurance Planning Fields
+    life_insurance_coverage = Column(Float, nullable=True)
+    health_insurance_type = Column(String, nullable=True)
+    insurance_beneficiaries = Column(JSON, nullable=True)
+    
+    # Retirement Planning Fields
+    target_retirement_age = Column(Integer, nullable=True)
+    expected_retirement_expenses = Column(Float, nullable=True)
+    social_security_estimated = Column(Float, nullable=True)
+    retirement_accounts = Column(JSON, nullable=True)  # Store retirement account details
+    
+    # Estate Planning Fields
+    will_status = Column(String, nullable=True)  # None, Basic, Comprehensive
+    beneficiaries = Column(JSON, nullable=True)
+    power_of_attorney = Column(String, nullable=True)
+    
+    # Advanced Investment Data
+    investment_experience = Column(String, nullable=True)  # Beginner, Intermediate, Advanced
+    investment_preferences = Column(JSON, nullable=True)
+    risk_capacity = Column(Integer, nullable=True)  # 1-10 scale
 
     owner = relationship("User", back_populates="profile")
 

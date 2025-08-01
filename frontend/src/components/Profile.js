@@ -23,6 +23,11 @@ const Profile = ({ onNextScreen }) => {
         target_date: ''
     });
     const [editingGoalId, setEditingGoalId] = useState(null);
+    
+    // Account settings state
+    const [emailNotifications, setEmailNotifications] = useState(true);
+    const [dataPrivacyLevel, setDataPrivacyLevel] = useState('High Security');
+    
     const navigate = useNavigate();
 
 
@@ -263,9 +268,11 @@ const Profile = ({ onNextScreen }) => {
 
             const userData = await response.json();
             console.log('Profile API Response:', userData);
+            console.log('userData.profile:', userData.profile);
             
             // Transform backend data to frontend format
             const profile = userData.profile || userData; // Handle both nested and flat structures
+            console.log('Final profile object used for mapping:', profile);
             const profileData = {
                 personal: {
                     firstName: profile.first_name || 'Not provided',
@@ -303,6 +310,7 @@ const Profile = ({ onNextScreen }) => {
                 }
             };
             
+            console.log('Final mapped profileData being set:', profileData);
             setUserProfile(profileData);
             await fetchExpenseCategories();
             await fetchGoals();
@@ -419,6 +427,37 @@ const Profile = ({ onNextScreen }) => {
         setShowDeleteModal(false);
         setDeletePassword('');
         setDeleteConfirmText('');
+    };
+
+    const toggleEmailNotifications = () => {
+        const newValue = !emailNotifications;
+        setEmailNotifications(newValue);
+        setMessage(`Email notifications ${newValue ? 'enabled' : 'disabled'}`);
+        setShowMessageBox(true);
+        // TODO: Save to backend when user settings API is implemented
+    };
+
+    // Debug function to log delete button state
+    const logDeleteButtonState = () => {
+        console.log('Delete Button Debug:', {
+            deletePassword: deletePassword,
+            deleteConfirmText: deleteConfirmText,
+            deleteLoading: deleteLoading,
+            passwordEmpty: deletePassword.trim() === '',
+            confirmTextCorrect: deleteConfirmText === 'DELETE MY ACCOUNT',
+            shouldBeDisabled: deleteLoading || deletePassword.trim() === '' || deleteConfirmText !== 'DELETE MY ACCOUNT'
+        });
+    };
+
+    const cycleDataPrivacyLevel = () => {
+        const levels = ['Basic', 'Standard', 'High Security'];
+        const currentIndex = levels.indexOf(dataPrivacyLevel);
+        const nextIndex = (currentIndex + 1) % levels.length;
+        const newLevel = levels[nextIndex];
+        setDataPrivacyLevel(newLevel);
+        setMessage(`Data privacy level changed to: ${newLevel}`);
+        setShowMessageBox(true);
+        // TODO: Save to backend when user settings API is implemented
     };
 
     const startEditing = (section) => {
@@ -565,6 +604,27 @@ const Profile = ({ onNextScreen }) => {
 
     useEffect(() => {
         fetchUserProfile();
+        
+        // Listen for onboarding completion event
+        const handleOnboardingComplete = () => {
+            console.log('Onboarding completed, refreshing profile...');
+            fetchUserProfile();
+        };
+        
+        window.addEventListener('onboardingComplete', handleOnboardingComplete);
+        
+        // Check for profile refresh flag in localStorage
+        const shouldRefresh = localStorage.getItem('profileRefreshNeeded');
+        if (shouldRefresh) {
+            localStorage.removeItem('profileRefreshNeeded');
+            setTimeout(() => {
+                fetchUserProfile();
+            }, 500);
+        }
+        
+        return () => {
+            window.removeEventListener('onboardingComplete', handleOnboardingComplete);
+        };
     }, [fetchUserProfile, fetchExpenseCategories, fetchGoals]);
 
     if (loading) {
@@ -943,13 +1003,13 @@ const Profile = ({ onNextScreen }) => {
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Risk Profile</h2>
                     <div className="space-y-2 text-gray-700">
-                        <p><strong>Risk Score:</strong> <span className="font-bold text-blue-600">{userProfile.riskProfile.score}</span></p>
-                        <p><strong>Risk Level:</strong> <span className="font-bold text-blue-600">{userProfile.riskProfile.level}</span></p>
-                        <p><strong>Questionnaire Completed:</strong> <span className="font-bold text-blue-600">{userProfile.riskProfile.questionnaireCompleted}</span></p>
+                        <p><strong>Risk Score:</strong> <span className="font-bold text-blue-600">{userProfile?.riskProfile?.score || 'Not assessed'}</span></p>
+                        <p><strong>Risk Level:</strong> <span className="font-bold text-blue-600">{userProfile?.riskProfile?.level || 'Not assessed'}</span></p>
+                        <p><strong>Questionnaire Completed:</strong> <span className="font-bold text-blue-600">{userProfile?.riskProfile?.questionnaireCompleted || 'No'}</span></p>
                     </div>
                     <button 
                         className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md mt-4" 
-                        onClick={() => navigate('/app/onboarding/risk-questionnaire')}
+                        onClick={() => navigate('/retake-risk-assessment')}
                     >
                         Retake Risk Assessment
                     </button>
@@ -960,35 +1020,52 @@ const Profile = ({ onNextScreen }) => {
                     <div className="space-y-2 text-gray-700">
                         <div className="flex justify-between items-center">
                             <span><strong>Email Notifications:</strong></span>
-                            <button className="bg-blue-100 text-blue-700 px-3 py-1 rounded text-xs hover:bg-blue-200 transition-colors">
-                                Enabled ✓
+                            <button 
+                                onClick={toggleEmailNotifications}
+                                className={`px-3 py-1 rounded text-xs transition-colors ${
+                                    emailNotifications 
+                                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                {emailNotifications ? 'Enabled ✓' : 'Disabled ✗'}
                             </button>
                         </div>
                         <div className="flex justify-between items-center">
                             <span><strong>Data Privacy Level:</strong></span>
-                            <button className="bg-green-100 text-green-700 px-3 py-1 rounded text-xs hover:bg-green-200 transition-colors">
-                                High Security ✓
+                            <button 
+                                onClick={cycleDataPrivacyLevel}
+                                className={`px-3 py-1 rounded text-xs transition-colors ${
+                                    dataPrivacyLevel === 'High Security' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                                    dataPrivacyLevel === 'Standard' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' :
+                                    'bg-red-100 text-red-700 hover:bg-red-200'
+                                }`}
+                            >
+                                {dataPrivacyLevel} ✓
                             </button>
                         </div>
                         <div className="flex justify-between items-center">
                             <span><strong>Linked Accounts:</strong></span>
                             <button 
                                 className="bg-gray-100 text-gray-700 px-3 py-1 rounded text-xs hover:bg-gray-200 transition-colors"
-                                onClick={() => navigate('/app/accounts')}
+                                onClick={() => {
+                                    setMessage('Account linking functionality is coming soon. This will allow you to connect bank accounts and other financial services.');
+                                    setShowMessageBox(true);
+                                }}
                             >
-                                Manage Accounts →
+                                Manage Accounts → (Coming Soon)
                             </button>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2 mt-4">
                         <button 
-                            className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md"
+                            className="bg-gray-400 text-white py-2 px-4 rounded-lg cursor-not-allowed transition-colors duration-200 shadow-md opacity-60"
                             onClick={() => {
-                                setMessage('Password change functionality will be implemented in the next version. For now, please contact support.');
+                                setMessage('Password change functionality is coming soon. Please contact support if you need to change your password.');
                                 setShowMessageBox(true);
                             }}
                         >
-                            Change Password
+                            Change Password (Coming Soon)
                         </button>
                         <button className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors duration-200 shadow-md" onClick={handleLogout}>
                             Logout
@@ -1026,7 +1103,10 @@ const Profile = ({ onNextScreen }) => {
                                     type="password"
                                     id="deletePassword"
                                     value={deletePassword}
-                                    onChange={(e) => setDeletePassword(e.target.value)}
+                                    onChange={(e) => {
+                                        setDeletePassword(e.target.value);
+                                        setTimeout(() => logDeleteButtonState(), 0);
+                                    }}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
                                     placeholder="Your password"
                                 />
@@ -1040,7 +1120,10 @@ const Profile = ({ onNextScreen }) => {
                                     type="text"
                                     id="deleteConfirm"
                                     value={deleteConfirmText}
-                                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                    onChange={(e) => {
+                                        setDeleteConfirmText(e.target.value);
+                                        setTimeout(() => logDeleteButtonState(), 0);
+                                    }}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
                                     placeholder="DELETE MY ACCOUNT"
                                 />
@@ -1058,7 +1141,11 @@ const Profile = ({ onNextScreen }) => {
                             <button
                                 onClick={handleDeleteAccount}
                                 disabled={deleteLoading || deletePassword.trim() === '' || deleteConfirmText !== 'DELETE MY ACCOUNT'}
-                                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className={`flex-1 py-2 px-4 rounded-lg transition-colors duration-200 ${
+                                    deleteLoading || deletePassword.trim() === '' || deleteConfirmText !== 'DELETE MY ACCOUNT'
+                                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50' 
+                                        : 'bg-red-600 text-white hover:bg-red-700'
+                                }`}
                             >
                                 {deleteLoading ? 'Deleting...' : 'Delete Account'}
                             </button>

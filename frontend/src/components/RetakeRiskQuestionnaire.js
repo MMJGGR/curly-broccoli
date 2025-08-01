@@ -1,11 +1,8 @@
-// TODO: Submit risk answers to backend risk-profile API (FR Risk Profile, ~70% completion)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';
-import { useOnboarding } from '../contexts/OnboardingContext';
 
-const RiskQuestionnaire = () => {
-    const { updateRiskQuestionnaire, updateProfile } = useOnboarding();
+const RetakeRiskQuestionnaire = () => {
     const [answers, setAnswers] = useState({});
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
@@ -56,39 +53,53 @@ const RiskQuestionnaire = () => {
             const optionIndex = q.options.indexOf(answer);
             return optionIndex >= 0 ? optionIndex + 1 : 1;
         });
-        updateRiskQuestionnaire(answersArray);
         
         console.log('Submitting risk questionnaire:', answersArray);
         console.log('Answers object:', answers);
-        setMessage('Calculating risk score and saving...');
-        setShowMessageBox(true);
+        setMessage('Calculating risk score...');
         
         // Calculate risk score based on answers
-        setTimeout(async () => {
-            const riskScore = calculateRiskScore(answersArray);
-            console.log('Calculated risk score:', riskScore);
-            const riskLevel = riskScore < 30 ? 'Low' : riskScore < 70 ? 'Medium' : 'High';
-            
-            // Save to backend immediately
-            try {
-                const result = await updateProfile(true); // Skip onboarding completion
-                if (result && result.success) {
-                    setMessage(`Your risk score is ${riskScore}, indicating a ${riskLevel} risk level. Data saved successfully!`);
+        const riskScore = calculateRiskScore(answersArray);
+        console.log('Calculated risk score:', riskScore);
+        const riskLevel = riskScore < 30 ? 'Low' : riskScore < 70 ? 'Medium' : 'High';
+        
+        try {
+            // Submit to backend to update user profile
+            const jwt = localStorage.getItem('jwt');
+            if (jwt) {
+                const API_BASE = 'http://localhost:8000';
+                const response = await fetch(`${API_BASE}/auth/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${jwt}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        questionnaire: answersArray,
+                        risk_score: riskScore,
+                        risk_level: riskLevel
+                    })
+                });
+
+                if (response.ok) {
+                    setMessage(`Risk assessment updated! Your risk score is ${riskScore}, indicating a ${riskLevel} risk level.`);
                 } else {
-                    setMessage(`Your risk score is ${riskScore}, indicating a ${riskLevel} risk level. Will sync when onboarding is complete.`);
+                    setMessage(`Risk score calculated: ${riskScore} (${riskLevel} risk level). Profile update may have failed.`);
                 }
-            } catch (error) {
-                console.error('Failed to save risk questionnaire to backend:', error);
-                setMessage(`Your risk score is ${riskScore}, indicating a ${riskLevel} risk level. Will sync when onboarding is complete.`);
+            } else {
+                setMessage(`Your risk score is ${riskScore}, indicating a ${riskLevel} risk level.`);
             }
-            
-            setShowMessageBox(true);
-            
-            // Navigate to data connection
-            setTimeout(() => {
-                navigate('/onboarding/data-connection');
-            }, 2000);
-        }, 1500);
+        } catch (error) {
+            console.error('Error updating risk profile:', error);
+            setMessage(`Your risk score is ${riskScore}, indicating a ${riskLevel} risk level. Profile update may have failed.`);
+        }
+        
+        setShowMessageBox(true);
+        
+        // Navigate back to profile after a delay
+        setTimeout(() => {
+            navigate('/app/profile');
+        }, 3000);
     };
 
     const isFormValid = questions.every(q => answers[q.id]);
@@ -98,12 +109,6 @@ const RiskQuestionnaire = () => {
             <div className="bg-white rounded-xl shadow-2xl p-8 md:p-10 max-w-2xl w-full text-center">
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">Risk Assessment Questionnaire</h1>
                 <p className="text-gray-600 mb-8">Please answer the following questions to help us understand your risk tolerance and investment preferences.</p>
-
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2.5 mb-8">
-                    <div className="bg-blue-600 h-2.5 rounded-full w-[40%]"></div>
-                    <p className="text-sm text-gray-600 mt-2">Step 2 of 5</p>
-                </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6 mb-6 text-left">
                     {questions.map((q) => (
@@ -131,17 +136,17 @@ const RiskQuestionnaire = () => {
                     <div className="flex flex-col md:flex-row gap-4">
                         <button
                             type="button"
-                            onClick={() => navigate('/onboarding/personal-details')}
+                            onClick={() => navigate('/app/profile')}
                             className="bg-gray-300 text-gray-700 py-3 px-8 rounded-lg font-semibold hover:bg-gray-400 transition-all duration-300 shadow-lg flex-1"
                         >
-                            ← Back
+                            ← Back to Profile
                         </button>
                         <button
                             type="submit"
                             className={`py-3 px-8 rounded-lg font-semibold transition-all duration-300 shadow-lg flex-1 ${isFormValid ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
                             disabled={!isFormValid}
                         >
-                            Calculate My Risk Profile
+                            Update My Risk Profile
                         </button>
                     </div>
                 </form>
@@ -152,4 +157,4 @@ const RiskQuestionnaire = () => {
     );
 };
 
-export default RiskQuestionnaire;
+export default RetakeRiskQuestionnaire;

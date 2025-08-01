@@ -46,7 +46,14 @@
       "Bash(docker cp:*)",
       "Bash(timeout 30 docker-compose logs api)",
       "Bash(npm run cy:open:*)",
-      "Bash(npm run cy:run:*)"
+      "Bash(npm run cy:run:*)",
+      "Bash(mv:*)",
+      "Bash(find:*)",
+      "Bash(npx cross-env:*)",
+      "Bash(set REACT_APP_API_BASE_URL=http://localhost:8000)",
+      "Bash(docker compose restart:*)",
+      "Bash(npm start)",
+      "Bash(start /B npm start)"
     ],
     "deny": []
   }
