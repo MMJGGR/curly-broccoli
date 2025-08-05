@@ -38,14 +38,15 @@ def create_account(
     user = User(
         email=data.email,
         hashed_password=hash_password(data.password),
-        is_active=True
+        is_active=True,
+        role=data.user_type
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     
     # Create JWT token
-    access_token = create_access_token(subject=str(user.id))
+    access_token = create_access_token(user)
     
     return CreateAccountResponse(
         access_token=access_token,

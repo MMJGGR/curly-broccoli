@@ -19,3 +19,6 @@ Cypress.Commands.add('hideWebpackOverlay', () => {
     }
   });
 });
+
+// Import accessibility testing commands
+import './accessibility-commands';

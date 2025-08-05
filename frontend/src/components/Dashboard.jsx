@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -7,40 +7,7 @@ export default function Dashboard() {
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    checkUserProfile();
-  }, []);
-
-  // Listen for onboarding completion to refresh profile
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === 'onboardingCompleted') {
-        console.log('Onboarding completed, refreshing profile...');
-        checkUserProfile();
-        localStorage.removeItem('onboardingCompleted'); // Clean up
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also check on focus in case user completed onboarding in same tab
-    const handleFocus = () => {
-      if (localStorage.getItem('onboardingCompleted')) {
-        console.log('Onboarding completed (same tab), refreshing profile...');
-        checkUserProfile();
-        localStorage.removeItem('onboardingCompleted');
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, []);
-
-  const checkUserProfile = async () => {
+  const checkUserProfile = useCallback(async () => {
     try {
       const jwt = localStorage.getItem('jwt');
       if (!jwt) {
@@ -48,7 +15,8 @@ export default function Dashboard() {
         return;
       }
 
-      const response = await fetch('/auth/me', {
+      const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${jwt}`,
           'Content-Type': 'application/json'
@@ -59,6 +27,14 @@ export default function Dashboard() {
         if (response.status === 401) {
           localStorage.removeItem('jwt');
           navigate('/auth');
+          return;
+        }
+        if (response.status === 404) {
+          // Profile not found - new user who hasn't completed onboarding yet
+          // This is expected, show the incomplete profile UI
+          setUser({ email: localStorage.getItem('userEmail') || 'user' });
+          setIsProfileComplete(false);
+          setLoading(false);
           return;
         }
         throw new Error('Failed to fetch profile');
@@ -98,10 +74,49 @@ export default function Dashboard() {
       console.error('Error fetching profile:', error);
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    checkUserProfile();
+  }, [checkUserProfile]);
+
+  // Listen for onboarding completion to refresh profile
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'onboardingCompleted') {
+        console.log('Onboarding completed, refreshing profile...');
+        checkUserProfile();
+        localStorage.removeItem('onboardingCompleted'); // Clean up
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check on focus in case user completed onboarding in same tab
+    const handleFocus = () => {
+      if (localStorage.getItem('onboardingCompleted')) {
+        console.log('Onboarding completed (same tab), refreshing profile...');
+        checkUserProfile();
+        localStorage.removeItem('onboardingCompleted');
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [checkUserProfile]);
 
   const handleCompleteProfile = () => {
-    navigate('/onboarding/personal-details');
+    const userType = localStorage.getItem('userType') || user?.role;
+    
+    if (userType === 'advisor') {
+      navigate('/onboarding/advisor/professional-details');
+    } else {
+      navigate('/onboarding');
+    }
   };
 
   const handleLogout = () => {

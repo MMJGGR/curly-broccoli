@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey, Float, JSON
+from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Float, JSON
+from datetime import datetime
 # Use JSON for portable storage of lists. ARRAY is not supported by SQLite,
 # which is used in tests, so replacing ARRAY(Integer) with JSON ensures the
 # models work across different databases.
@@ -19,6 +20,7 @@ class User(Base):
 
     profile = relationship("Profile", back_populates="owner", uselist=False)
     risk_profile = relationship("RiskProfile", back_populates="owner")
+    onboarding_state = relationship("OnboardingState", back_populates="owner", uselist=False)
     transactions = relationship("Transaction", back_populates="owner")
     milestones = relationship("Milestone", back_populates="owner")
     goals = relationship("Goal", back_populates="owner")
@@ -94,6 +96,34 @@ class RiskProfile(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="risk_profile")
+
+
+class OnboardingState(Base):
+    """Tracks user onboarding progress with step-by-step data persistence"""
+    __tablename__ = "onboarding_states"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, index=True)
+    
+    # Step tracking
+    current_step = Column(Integer, default=1)  # Current onboarding step (1-5)
+    completed_steps = Column(JSON, default=lambda: [])  # List of completed step numbers
+    is_complete = Column(Boolean, default=False)
+    
+    # Step-wise data storage (JSON for flexibility)
+    personal_data = Column(JSON, nullable=True)  # Step 1: Personal info including phone
+    risk_data = Column(JSON, nullable=True)      # Step 2: Risk questionnaire responses
+    financial_data = Column(JSON, nullable=True) # Step 3: Income and expense data
+    goals_data = Column(JSON, nullable=True)     # Step 4: Financial goals
+    preferences_data = Column(JSON, nullable=True) # Step 5: Additional preferences
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    
+    # Relationships
+    owner = relationship("User", back_populates="onboarding_state")
 
 
 class Account(Base):

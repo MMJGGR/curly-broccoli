@@ -26,7 +26,8 @@ const AuthScreen = () => {
         e.preventDefault();
         e.stopPropagation();
         
-        const API_BASE = '';
+        const { API_BASE_URL } = await import('../config');
+        const API_BASE = API_BASE_URL;
         
         try {
             if (isLogin) {
@@ -54,20 +55,42 @@ const AuthScreen = () => {
                 localStorage.setItem('jwt', data.access_token);
                 localStorage.setItem('userType', userType);
                 
-                setMessage('Login successful!');
+                setMessage('Login successful! Checking profile...');
                 setShowMessageBox(true);
-                
-                // Navigate immediately after successful login
-                console.log('Attempting navigation after login...');
-                const storedToken = localStorage.getItem('jwt');
-                console.log('Stored token before navigation:', storedToken ? 'EXISTS' : 'MISSING');
-                
-                if (userType === 'advisor') {
-                    console.log('Navigating to advisor dashboard');
-                    navigate('/advisor/dashboard', { replace: true });
-                } else {
-                    console.log('Navigating to user dashboard');
-                    navigate('/app/dashboard', { replace: true });
+
+                // Check if user has completed onboarding
+                try {
+                    const profileResponse = await fetch(`${API_BASE}/auth/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${data.access_token}`
+                        }
+                    });
+
+                    if (profileResponse.ok) {
+                        // Profile exists, navigate to dashboard
+                        console.log('Profile found, navigating to dashboard');
+                        if (userType === 'advisor') {
+                            navigate('/advisor/dashboard', { replace: true });
+                        } else {
+                            navigate('/app/dashboard', { replace: true });
+                        }
+                    } else if (profileResponse.status === 404) {
+                        // Profile not found, so onboarding is not complete
+                        console.log('Profile not found, navigating to onboarding');
+                        if (userType === 'advisor') {
+                            navigate('/onboarding/advisor/professional-details', { replace: true });
+                        } else {
+                            navigate('/onboarding/personal-details', { replace: true });
+                        }
+                    } else {
+                        // Handle other errors
+                        const errorData = await profileResponse.json();
+                        throw new Error(errorData.detail || 'Failed to fetch profile');
+                    }
+                } catch (profileError) {
+                    console.error('Error during profile check:', profileError);
+                    setMessage(`Login failed: ${profileError.message}. Please try again.`);
+                    setShowMessageBox(true);
                 }
                 
             } else {
@@ -89,23 +112,10 @@ const AuthScreen = () => {
                 const registrationData = {
                     email: email,
                     password: password,
-                    user_type: userType,
-                    // Minimal required fields - detailed info moved to onboarding
-                    first_name: 'New',
-                    last_name: 'User',
-                    dob: '1990-01-01',
-                    nationalId: '12345678',
-                    kra_pin: 'A123456789Z',
-                    annual_income: 50000,
-                    dependents: 0,
-                    goals: {
-                        targetAmount: 10000,
-                        timeHorizon: 12
-                    },
-                    questionnaire: [1, 2, 3, 4, 5]
+                    user_type: userType
                 };
                 
-                const response = await fetch(`${API_BASE}/auth/register`, {
+                const response = await fetch(`${API_BASE}/auth/create-account`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -122,19 +132,25 @@ const AuthScreen = () => {
                 console.log('Registration successful:', data);
                 localStorage.setItem('jwt', data.access_token);
                 localStorage.setItem('userType', userType);
+                localStorage.setItem('userEmail', email);
                 
                 setMessage('Account created successfully!');
                 setShowMessageBox(true);
                 
                 // Navigate to onboarding for new users to complete their profile
-                console.log('Attempting navigation to onboarding...');
+                console.log('🚀 Attempting navigation to onboarding...', {userType, jwt: data.access_token ? 'exists' : 'missing'});
                 if (userType === 'advisor') {
-                    console.log('Navigating to advisor onboarding');
+                    console.log('👔 Navigating to advisor onboarding: /onboarding/advisor/professional-details');
                     navigate('/onboarding/advisor/professional-details', { replace: true });
                 } else {
-                    console.log('Navigating to user onboarding');
-                    navigate('/onboarding/personal-details', { replace: true });
+                    console.log('👤 Navigating to user onboarding: /onboarding');
+                    navigate('/onboarding', { replace: true });
                 }
+                
+                // Add timeout check to see if navigation was successful
+                setTimeout(() => {
+                    console.log('🔍 Navigation check - current location:', window.location.pathname);
+                }, 1000);
             }
         } catch (error) {
             console.error('Authentication error:', error);

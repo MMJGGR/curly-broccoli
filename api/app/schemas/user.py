@@ -195,8 +195,8 @@ class DeleteAccountResponse(BaseModel):
 
 class CreateAccountRequest(BaseModel):
     email: EmailStr
-    password: constr(min_length=8)
-    user_type: str = "user"  # 'user' or 'advisor'
+    password: str
+    user_type: str
 
 class CreateAccountResponse(BaseModel):
     access_token: str

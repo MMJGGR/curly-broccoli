@@ -67,7 +67,7 @@ const RetakeRiskQuestionnaire = () => {
             // Submit to backend to update user profile
             const jwt = localStorage.getItem('jwt');
             if (jwt) {
-                const API_BASE = 'http://localhost:8000';
+                const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
                 const response = await fetch(`${API_BASE}/auth/profile`, {
                     method: 'PUT',
                     headers: {

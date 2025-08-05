@@ -1,6 +1,7 @@
 {
   "name": "curly-broccoli",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "workspaces": [
     "api",
@@ -13,6 +14,7 @@
     "frontend-dev": "npm --prefix frontend run dev"
   },
   "dependencies": {
+    "node-fetch": "^3.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.1",

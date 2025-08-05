@@ -1,18 +1,17 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-// Onboarding components
+// Main components
 import AuthScreen from './components/AuthScreen';
-import PersonalDetailsForm from './components/PersonalDetailsForm';
-import RiskQuestionnaire from './components/RiskQuestionnaire';
 import RetakeRiskQuestionnaire from './components/RetakeRiskQuestionnaire';
-import OnboardingDataConnection from './components/OnboardingDataConnection';
-import OnboardingCashFlowSetup from './components/OnboardingCashFlowSetup';
+
+// NEW Onboarding System
+import OnboardingWizard from './components/onboarding/OnboardingWizard';
+import { OnboardingProvider } from './contexts/OnboardingContext';
 
 // Main application layout
 import MainAppLayout from './components/MainAppLayout';
 import PrivateRoute from './components/PrivateRoute';
-import { OnboardingProvider } from './contexts/OnboardingContext';
 
 // Advisor components (will be nested under a separate layout or route)
 import AdvisorLogin from './components/AdvisorLogin';
@@ -25,29 +24,33 @@ import AdvisorProfessionalDetails from './components/AdvisorProfessionalDetails'
 import AdvisorServiceModel from './components/AdvisorServiceModel';
 import AdvisorOnboardingComplete from './components/AdvisorOnboardingComplete';
 
-function App() {
-  // Check if user is already logged in
+// Initial route component that handles authentication and onboarding checks
+const InitialRoute = () => {
   const isLoggedIn = localStorage.getItem('jwt') !== null;
   
+  if (!isLoggedIn) {
+    return <Navigate to="/auth" replace />;
+  }
+  
+  // User is logged in, let Dashboard handle onboarding status checks
+  return <Navigate to="/app/dashboard" replace />;
+};
+
+function App() {
   return (
     <div className="bg-white min-h-screen">
       <Routes>
-        {/* Initial entry point: Auth Screen or App if logged in */}
-        <Route path="/" element={
-          <Navigate to={isLoggedIn ? "/app/dashboard" : "/auth"} replace />
-        } />
+        {/* Initial entry point: Auth Screen or Dashboard if logged in */}
+        <Route path="/" element={<InitialRoute />} />
         <Route path="/auth" element={<AuthScreen />} />
 
-        {/* Onboarding Flow */}
-        <Route path="/onboarding/*" element={
-          <OnboardingProvider>
-            <Routes>
-              <Route path="personal-details" element={<PersonalDetailsForm />} />
-              <Route path="risk-questionnaire" element={<RiskQuestionnaire />} />
-              <Route path="data-connection" element={<OnboardingDataConnection />} />
-              <Route path="cash-flow-setup" element={<OnboardingCashFlowSetup />} />
-            </Routes>
-          </OnboardingProvider>
+        {/* NEW Onboarding Flow - Bulletproof Data Persistence */}
+        <Route path="/onboarding" element={
+          <PrivateRoute>
+            <OnboardingProvider>
+              <OnboardingWizard />
+            </OnboardingProvider>
+          </PrivateRoute>
         } />
 
         {/* Advisor Onboarding Flow */}

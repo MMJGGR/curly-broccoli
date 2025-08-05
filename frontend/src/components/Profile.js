@@ -41,7 +41,7 @@ const Profile = ({ onNextScreen }) => {
             const jwt = localStorage.getItem('jwt');
             if (!jwt) return;
 
-            const API_BASE = 'http://localhost:8000';
+            const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
             const response = await fetch(`${API_BASE}/expense-categories/`, {
                 headers: {
                     'Authorization': `Bearer ${jwt}`,
@@ -67,7 +67,7 @@ const Profile = ({ onNextScreen }) => {
                 return;
             }
 
-            const API_BASE = 'http://localhost:8000';
+            const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
             const response = await fetch(`${API_BASE}/goals/`, {
                 headers: {
                     'Authorization': `Bearer ${jwt}`,
@@ -93,7 +93,7 @@ const Profile = ({ onNextScreen }) => {
             const jwt = localStorage.getItem('jwt');
             if (!jwt) return;
 
-            const API_BASE = 'http://localhost:8000';
+            const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
             const response = await fetch(`${API_BASE}/expense-categories/${categoryId}`, {
                 method: 'DELETE',
                 headers: {
@@ -121,7 +121,7 @@ const Profile = ({ onNextScreen }) => {
             const jwt = localStorage.getItem('jwt');
             if (!jwt) return;
 
-            const API_BASE = 'http://localhost:8000';
+            const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
             const response = await fetch(`${API_BASE}/goals/${goalId}`, {
                 method: 'DELETE',
                 headers: {
@@ -183,7 +183,7 @@ const Profile = ({ onNextScreen }) => {
             const jwt = localStorage.getItem('jwt');
             if (!jwt) return;
 
-            const API_BASE = 'http://localhost:8000';
+            const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
             
             // Calculate progress
             const targetAmount = parseFloat(goalModalData.target) || 0;
@@ -245,7 +245,7 @@ const Profile = ({ onNextScreen }) => {
             }
 
             // Force use of localhost:8000 for browser-based requests
-            const API_BASE = 'http://localhost:8000';
+            const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
             console.log('API_BASE:', API_BASE);
             console.log('JWT token exists:', !!jwt);
             console.log('Full URL:', `${API_BASE}/auth/me`);
@@ -253,7 +253,8 @@ const Profile = ({ onNextScreen }) => {
             const response = await fetch(`${API_BASE}/auth/me`, {
                 headers: {
                     'Authorization': `Bearer ${jwt}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache'  // Prevent caching
                 }
             });
 
@@ -336,7 +337,7 @@ const Profile = ({ onNextScreen }) => {
         } finally {
             setLoading(false);
         }
-    }, [navigate]);
+    }, [navigate, fetchExpenseCategories, fetchGoals]);
 
     const calculateAge = (dob) => {
         if (!dob) return 'Unknown';
@@ -372,7 +373,7 @@ const Profile = ({ onNextScreen }) => {
                 return;
             }
 
-            const API_BASE = 'http://localhost:8000';
+            const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
             
             // Verify password before deletion
             const loginResponse = await fetch(`${API_BASE}/auth/login`, {
@@ -499,7 +500,7 @@ const Profile = ({ onNextScreen }) => {
                 return;
             }
 
-            const API_BASE = 'http://localhost:8000';
+            const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
             let updatePayload = {};
 
             if (editingSection === 'personal') {

@@ -9,14 +9,21 @@ from typing import Optional, List
 
 import jwt
 from fastapi import Depends, status
-from api.app.core.exceptions import UnauthorizedException, ForbiddenException
+from app.core.exceptions import UnauthorizedException, ForbiddenException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User
 
-SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    if os.getenv("ENVIRONMENT") == "production":
+        raise ValueError("SECRET_KEY environment variable must be set in production")
+    else:
+        # Development fallback with warning
+        SECRET_KEY = "dev-secret-key-change-in-production-" + secrets.token_hex(32)
+        print("⚠️  WARNING: Using auto-generated secret key for development. Set SECRET_KEY env var for production.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 525600
 
