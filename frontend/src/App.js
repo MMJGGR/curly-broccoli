@@ -9,7 +9,9 @@ import RetakeRiskQuestionnaire from './components/RetakeRiskQuestionnaire';
 import OnboardingWizard from './components/onboarding/OnboardingWizard';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 
-// Main application layout
+// Timeline-first application layout
+import TimelineMainAppLayout from './components/TimelineMainAppLayout';
+// Legacy layout for fallback
 import MainAppLayout from './components/MainAppLayout';
 import PrivateRoute from './components/PrivateRoute';
 
@@ -69,8 +71,15 @@ function App() {
           </PrivateRoute>
         } />
 
-        {/* Main Application - uses MainAppLayout for shared navigation */}
+        {/* Main Application - NOW uses Timeline-first layout */}
         <Route path="/app/*" element={
+          <PrivateRoute>
+            <TimelineMainAppLayout />
+          </PrivateRoute>
+        } />
+        
+        {/* Legacy app layout for fallback testing */}
+        <Route path="/app-legacy/*" element={
           <PrivateRoute>
             <MainAppLayout />
           </PrivateRoute>
