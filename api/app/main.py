@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from .database import Base, engine, get_db
+from .database import engine, get_db
 from .auth import router as auth_router
 from .profile import router as profile_router
 from .accounts import router as accounts_router
@@ -16,13 +16,18 @@ from .goals import router as goals_router
 from .income_sources import router as income_sources_router
 from .expense_categories import router as expense_categories_router
 from .dev import router as dev_router
-from .onboarding import router as onboarding_router
+# from .onboarding import router as onboarding_router  # REMOVED - conflicting with v1 API
 from api.app.api.v1.api import api_router
 from api.app.core.exceptions import UnauthorizedException, ForbiddenException, NotFoundException, ConflictException, UnprocessableEntityException
 
-from .models import User
+# Import all models to register them with SQLAlchemy
+from .models import (
+    Base, User, Profile, RiskProfile, OnboardingState, Account, 
+    Transaction, Milestone, Goal, IncomeSource, ExpenseCategory
+)
 
-# Create any tables that don’t yet exist
+# Create any tables that don't yet exist
+Base.metadata.create_all(bind=engine)
 
 
 from pydantic import BaseModel
@@ -144,5 +149,5 @@ app.include_router(goals_router)
 app.include_router(income_sources_router)
 app.include_router(expense_categories_router)
 app.include_router(dev_router)
-app.include_router(onboarding_router)
+# app.include_router(onboarding_router)  # REMOVED - conflicting with v1 API
 app.include_router(api_router, prefix="/api/v1")

@@ -71,7 +71,7 @@ const TimelineDashboard = () => {
   }
 
   return (
-    <div className="timeline-dashboard h-screen flex flex-col bg-gray-50">
+    <div className="timeline-dashboard flex flex-col bg-gray-50" style={{ height: 'calc(100vh - 4rem)' }}>
       {/* Header with persona welcome and alignment score */}
       <div 
         className="dashboard-header p-4 shadow-sm border-b border-gray-200"

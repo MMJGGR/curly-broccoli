@@ -3,7 +3,7 @@
  * Integrates Timeline context and routes to Timeline-first components
  */
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 // Timeline Context
 import { TimelineProvider } from '../contexts/TimelineContext';
@@ -12,9 +12,13 @@ import { TimelineProvider } from '../contexts/TimelineContext';
 import TimelineDashboard from './timeline/TimelineDashboard';
 import TimelineProfile from './timeline/TimelineProfile';
 
-// Legacy components (for fallback/migration)
+// Legacy components (for fallback/migration)  
 import Dashboard from './Dashboard';
 import Profile from './Profile';
+import BottomNavBar from './BottomNavBar';
+
+// Config
+import { API_BASE_URL } from '../config';
 
 // Utility functions
 const isOnboardingComplete = async () => {
@@ -22,7 +26,9 @@ const isOnboardingComplete = async () => {
   if (!token) return false;
 
   try {
-    const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/onboarding/status`, {
+    const url = `${API_BASE_URL}/api/v1/onboarding/status`;
+    console.log('🔧 TimelineMainAppLayout fetching from:', url);
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -44,7 +50,36 @@ const isOnboardingComplete = async () => {
 const TimelineMainAppLayout = () => {
   const [onboardingComplete, setOnboardingComplete] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const location = useLocation();
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const navigate = useNavigate();
+
+  // Handle tab navigation
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    // Navigate to appropriate route based on tab
+    switch (tabId) {
+      case 'dashboard':
+        navigate('/dashboard');
+        break;
+      case 'profile':
+        navigate('/profile');
+        break;
+      case 'cashflows':
+        // TODO: Add cashflows route
+        console.log('Cashflows tab clicked');
+        break;
+      case 'balance-sheet':
+        // TODO: Add balance sheet route  
+        console.log('Balance Sheet tab clicked');
+        break;
+      case 'goals':
+        // TODO: Add goals/tools route
+        console.log('Goals/Tools tab clicked');
+        break;
+      default:
+        break;
+    }
+  };
 
   // Check onboarding status on mount
   useEffect(() => {
@@ -101,6 +136,9 @@ const TimelineMainAppLayout = () => {
           {/* Catch-all redirect */}
           <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
         </Routes>
+
+        {/* Bottom Navigation */}
+        <BottomNavBar onTabClick={handleTabClick} activeTab={activeTab} />
       </div>
     </TimelineProvider>
   );

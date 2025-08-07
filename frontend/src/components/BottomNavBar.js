@@ -1,7 +1,7 @@
 // TODO: Use router to highlight active tab and display counts (Epic 6 Story 1, 100% when wired)
 import React from 'react';
 
-const BottomNavBar = ({ onTabClick }) => {
+const BottomNavBar = ({ onTabClick, activeTab = 'dashboard' }) => {
     const tabs = [
         { id: 'cashflows', name: 'Cashflows', icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -36,7 +36,11 @@ const BottomNavBar = ({ onTabClick }) => {
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
-                        className="flex flex-col items-center justify-center text-gray-600 hover:text-blue-600 transition-colors duration-200 focus:outline-none p-2 rounded-lg"
+                        className={`flex flex-col items-center justify-center transition-colors duration-200 focus:outline-none p-2 rounded-lg ${
+                            activeTab === tab.id 
+                                ? 'text-blue-600' 
+                                : 'text-gray-600 hover:text-blue-600'
+                        }`}
                         onClick={() => onTabClick(tab.id)}
                     >
                         {tab.icon}

@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useTimeline } from '../../contexts/TimelineContext';
+import { API_BASE_URL } from '../../config';
 
 const TimelineProfile = () => {
   const {
@@ -46,11 +47,11 @@ const TimelineProfile = () => {
   }, []);
 
   const loadProfileData = async () => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('jwt');
     if (!token) return;
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/profile/timeline-data`, {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -59,29 +60,30 @@ const TimelineProfile = () => {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.profile) {
-          setProfileData({
-            personalDetails: {
-              name: data.profile.name || '',
-              email: data.profile.email || '',
-              age: data.profile.age?.toString() || '',
-              occupation: data.profile.occupation || '',
-              dependents: data.profile.dependents?.toString() || ''
-            },
-            financialDetails: {
-              monthlyIncome: data.profile.monthly_income?.toString() || '',
-              monthlyExpenses: data.profile.monthly_expenses?.toString() || '',
-              currentSavings: data.profile.current_savings?.toString() || '',
-              monthlyDebtPayments: data.profile.monthly_debt_payments?.toString() || '',
-              riskTolerance: data.profile.risk_tolerance || ''
-            },
-            goals: {
-              retirementAge: data.profile.retirement_age?.toString() || '',
-              emergencyFundTarget: data.profile.emergency_fund_target?.toString() || '',
-              majorGoals: data.profile.major_goals || []
-            }
-          });
-        }
+        console.log('Profile data loaded:', data);
+        setProfileData({
+          personalDetails: {
+            name: data.first_name && data.last_name ? `${data.first_name} ${data.last_name}` : '',
+            email: data.email || '',
+            age: data.age?.toString() || '',
+            occupation: data.occupation || '',
+            dependents: data.dependents?.toString() || ''
+          },
+          financialDetails: {
+            monthlyIncome: data.monthly_income?.toString() || '',
+            monthlyExpenses: data.monthly_expenses?.toString() || '',
+            currentSavings: data.current_savings?.toString() || '',
+            monthlyDebtPayments: data.monthly_debt_payments?.toString() || '',
+            riskTolerance: data.risk_tolerance || ''
+          },
+          goals: {
+            retirementAge: data.retirement_age?.toString() || '',
+            emergencyFundTarget: data.emergency_fund_target?.toString() || '',
+            majorGoals: data.major_goals || []
+          }
+        });
+      } else {
+        console.error('Failed to load profile:', response.status, await response.text());
       }
     } catch (error) {
       console.error('Failed to load profile data:', error);
@@ -89,7 +91,7 @@ const TimelineProfile = () => {
   };
 
   const saveProfileData = async () => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('jwt');
     if (!token) return;
 
     setIsSaving(true);
@@ -110,7 +112,7 @@ const TimelineProfile = () => {
         major_goals: profileData.goals.majorGoals
       };
 
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/profile/update`, {
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -297,7 +299,7 @@ const TimelineProfile = () => {
   );
 
   return (
-    <div className="timeline-profile h-screen flex flex-col bg-gray-50">
+    <div className="timeline-profile flex flex-col bg-gray-50" style={{ height: 'calc(100vh - 4rem)' }}>
       
       {/* Header */}
       <div 

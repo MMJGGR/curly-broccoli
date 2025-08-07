@@ -28,7 +28,6 @@ def get_engine():
 
 engine = get_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-from app.models import Base  # ensure models are registered
 
 def get_db():
     db = SessionLocal()

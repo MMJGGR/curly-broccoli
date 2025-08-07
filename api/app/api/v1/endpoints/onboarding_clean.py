@@ -20,6 +20,58 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/onboarding", tags=["onboarding-clean"])
 
 
+@router.get("/status")
+def get_onboarding_status(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get simple onboarding completion status"""
+    onboarding = db.query(OnboardingState).filter_by(user_id=current_user.id).first()
+    
+    if not onboarding:
+        return {"is_complete": False, "current_step": 1}
+    
+    return {
+        "is_complete": onboarding.is_complete,
+        "current_step": onboarding.current_step,
+        "completed_steps": onboarding.completed_steps
+    }
+
+
+@router.get("/state")
+def get_onboarding_state(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get detailed onboarding state and progress"""
+    onboarding = db.query(OnboardingState).filter_by(user_id=current_user.id).first()
+    
+    if not onboarding:
+        # Create new onboarding state for user
+        onboarding = OnboardingState(
+            user_id=current_user.id,
+            current_step=1,
+            completed_steps=[],
+            is_complete=False
+        )
+        db.add(onboarding)
+        db.commit()
+        db.refresh(onboarding)
+    
+    return {
+        "current_step": onboarding.current_step,
+        "completed_steps": onboarding.completed_steps,
+        "is_complete": onboarding.is_complete,
+        "personal_data": onboarding.personal_data,
+        "risk_data": onboarding.risk_data,
+        "financial_data": onboarding.financial_data,
+        "goals_data": onboarding.goals_data,
+        "preferences_data": onboarding.preferences_data,
+        "created_at": onboarding.created_at,
+        "updated_at": onboarding.updated_at
+    }
+
+
 @router.get("/debug")
 def debug_onboarding_state(
     current_user: User = Depends(get_current_user),

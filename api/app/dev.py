@@ -9,7 +9,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Import Base and engine from the main database configuration
-from app.database import Base, engine as main_app_engine, get_db
+from app.database import engine as main_app_engine, get_db
+from app.models import Base
 
 router = APIRouter(prefix="/dev", tags=["dev"])
 

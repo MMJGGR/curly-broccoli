@@ -70,7 +70,26 @@
       "Bash(timeout 15 docker-compose logs api --tail=20 --follow)",
       "Bash(timeout 10 docker-compose logs api --tail=10)",
       "Bash(timeout 120 npx cypress run:*)",
-      "Bash(timeout 10 docker-compose logs api --tail=30)"
+      "Bash(timeout 10 docker-compose logs api --tail=30)",
+      "Bash(timeout 5 docker-compose logs api --tail=10 --follow)",
+      "Bash(timeout 3 docker-compose logs api --tail=10 --follow)",
+      "Bash(timeout 5 docker-compose logs api --tail=20)",
+      "Bash(timeout 3 docker-compose logs api --tail=5 --follow)",
+      "Bash(timeout 10 docker-compose logs api --follow)",
+      "Bash(timeout 10 docker-compose logs api --tail=20 --follow)",
+      "Bash(timeout 10 docker-compose logs api --tail=10 --follow)",
+      "Bash(timeout 5 docker-compose logs api --tail=10)",
+      "Bash(docker kill:*)",
+      "Bash(docker rm:*)",
+      "Bash(timeout 30 docker-compose logs api --follow)",
+      "Bash(git clean:*)",
+      "Bash(timeout 10 docker-compose logs api --tail=20)",
+      "Bash(winpty docker exec -it curly-broccoli-db-1 psql -U postgres -d postgres -c \"\\dt\")",
+      "Bash(timeout 5 docker-compose logs api --tail=30)",
+      "Bash(timeout 5 docker-compose logs api --tail=50)",
+      "Bash(timeout 15 docker-compose logs api --tail=20)",
+      "Bash(timeout 15 docker-compose logs frontend --tail=20)",
+      "Bash(npm start:*)"
     ],
     "deny": []
   }
