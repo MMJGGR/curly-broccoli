@@ -39,6 +39,7 @@ class Profile(Base):
     kra_pin = Column(String, index=True)
     phone = Column(String, nullable=True)
     annual_income = Column(Float)
+    monthly_income = Column(Float, nullable=True)  # CRITICAL: Missing field for budgets
     employment_status = Column(String)
     dependents = Column(Integer)
     goals = Column(JSON)  # Stored as JSON
@@ -47,6 +48,14 @@ class Profile(Base):
     questionnaire = Column(JSON)
     risk_score = Column(Integer)
     risk_level = Column(Integer)
+    
+    # CRITICAL: Missing financial fields used by Budget and Timeline
+    monthly_expenses = Column(Float, nullable=True)
+    current_savings = Column(Float, nullable=True) 
+    monthly_debt_payments = Column(Float, nullable=True)
+    emergency_fund_target = Column(Float, nullable=True)
+    retirement_age = Column(Integer, nullable=True)
+    
     user_id = Column(Integer, ForeignKey("users.id"))
     
     # Advisor-specific fields
@@ -131,28 +140,49 @@ class Account(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    type = Column(String)
-    balance = Column(Float)
-    institution_name = Column(String) # Added based on PRD review
+    account_number = Column(String, nullable=True)  # Masked account number
+    type = Column(String)  # checking, savings, credit, investment
+    balance = Column(Float, default=0.0)
+    institution_name = Column(String)
+    institution_id = Column(String, nullable=True)  # For banking API integration
+    is_active = Column(Boolean, default=True)
+    last_sync = Column(DateTime, nullable=True)  # Last transaction sync
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="accounts")
-    transactions = relationship("Transaction", back_populates="account_rel")
+    transactions = relationship("Transaction", back_populates="account_rel", cascade="all, delete-orphan")
 
 class Transaction(Base):
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True, index=True)
-    date = Column(String) # Store as string for now, convert to DateTime later
+    date = Column(Date, index=True)  # Proper date type for filtering/sorting
     description = Column(String)
     amount = Column(Float)
+    transaction_type = Column(String)  # debit, credit
     category = Column(String)
-    account = Column(String)
+    subcategory = Column(String, nullable=True)
+    merchant = Column(String, nullable=True)
+    reference_id = Column(String, nullable=True)  # Bank reference ID
+    is_reconciled = Column(Boolean, default=False)
+    is_pending = Column(Boolean, default=False)
+    notes = Column(String, nullable=True)
+    import_source = Column(String, nullable=True)  # manual, csv, bank_api
+    import_batch_id = Column(String, nullable=True)  # For tracking import batches
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Foreign keys
     user_id = Column(Integer, ForeignKey("users.id"))
     account_id = Column(Integer, ForeignKey("accounts.id"))
+    expense_category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=True)
 
+    # Relationships
     owner = relationship("User", back_populates="transactions")
     account_rel = relationship("Account", back_populates="transactions")
+    expense_category_rel = relationship("ExpenseCategory")
 
 class Milestone(Base):
     __tablename__ = "milestones"
@@ -198,7 +228,28 @@ class ExpenseCategory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
-    budgeted_amount = Column(Float)
+    budgeted_amount = Column(Float, default=0.0)
+    actual_amount = Column(Float, default=0.0)  # Running total from transactions
+    category_type = Column(String, default="expense")  # expense, income, transfer
+    is_active = Column(Boolean, default=True)
+    budget_period = Column(String, default="monthly")  # monthly, yearly
+    parent_category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user_id = Column(Integer, ForeignKey("users.id"))
 
+    # Relationships
     owner = relationship("User", back_populates="expense_categories")
+    parent_category = relationship("ExpenseCategory", remote_side="ExpenseCategory.id", backref="subcategories")
+    
+    @property
+    def variance(self):
+        """Calculate budget variance (positive = under budget, negative = over budget)"""
+        return self.budgeted_amount - self.actual_amount
+    
+    @property
+    def variance_percentage(self):
+        """Calculate variance as percentage"""
+        if self.budgeted_amount == 0:
+            return 0
+        return (self.variance / self.budgeted_amount) * 100

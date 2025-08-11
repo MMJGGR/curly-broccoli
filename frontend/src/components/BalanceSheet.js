@@ -16,38 +16,39 @@ const BalanceSheet = ({ onNextScreen }) => {
         setMessage('');
     };
 
+    // TODO: Replace with API calls to fetch user's actual accounts and balances
     const assets = {
         cashEquivalents: {
-            'M-PESA': 50000,
-            'Bank Account (KCB)': 20000,
-            'Savings Account': 15000,
+            'M-PESA': 0, // Will be populated from user's actual account data
+            'Bank Account': 0,
+            'Savings Account': 0,
         },
         investments: {
-            'Unit Trusts': 75000,
-            'Pension Fund (NSSF)': 10000,
-            'Stocks (Local)': 30000,
+            'Unit Trusts': 0,
+            'Pension Fund': 0,
+            'Stocks': 0,
         },
         property: {
-            'Primary Residence': 5000000, // Example: Market value
-            'Investment Land': 1000000,
+            'Primary Residence': 0,
+            'Investment Property': 0,
         },
         otherAssets: {
-            'Vehicle (Motorcycle)': 200000,
-            'Electronics': 50000,
+            'Vehicle': 0,
+            'Electronics': 0,
         }
     };
 
     const liabilities = {
         loans: {
-            'Student Loan': 120000,
-            'Mortgage': 4000000,
-            'Personal Loan': 50000,
+            'Student Loan': 0, // Will be populated from user's actual debt data
+            'Mortgage': 0,
+            'Personal Loan': 0,
         },
         creditCards: {
-            'Visa Card': 15000,
+            'Credit Card': 0,
         },
         otherLiabilities: {
-            'Utility Bills (Pending)': 3000,
+            'Pending Bills': 0,
         }
     };
 

@@ -38,16 +38,13 @@ const AdvisorOnboardingComplete = () => {
         service_model: serviceModel.serviceModel,
         target_client_type: serviceModel.targetClientType,
         minimum_aum: serviceModel.minimumAUM,
-        // Default advisor values
-        date_of_birth: '1980-01-01',
-        nationalId: 'ADV-' + Date.now(),
-        kra_pin: 'A' + Date.now() + 'Z',
-        annual_income: 300000,
-        dependents: 0,
-        goals: {
-          targetAmount: 100000,
-          timeHorizon: 24
-        },
+        // Default advisor values - will be updated during profile completion
+        date_of_birth: null, // To be filled by advisor
+        nationalId: null,     // To be filled by advisor
+        kra_pin: null,        // To be filled by advisor
+        annual_income: null,  // To be filled by advisor
+        dependents: null,     // To be filled by advisor
+        goals: {},            // To be filled by advisor
         questionnaire: [4, 4, 3, 4, 4] // Moderate-aggressive profile for advisors
       };
 

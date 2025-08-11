@@ -214,11 +214,19 @@ def get_current_user_profile(
         profile={
             "first_name": profile.first_name,
             "last_name": profile.last_name,
-            "dob": profile.date_of_birth,
+            "date_of_birth": profile.date_of_birth,  # Add missing field  
+            "dob": profile.date_of_birth,  # Keep for backward compatibility
             "nationalId": profile.nationalId,
+            "national_id": profile.nationalId,  # Add missing field for consistency
             "kra_pin": profile.kra_pin,
             "phone": profile.phone,
             "annual_income": profile.annual_income,
+            "monthly_income": profile.monthly_income or (profile.annual_income / 12 if profile.annual_income else 0),  # Use actual field first
+            "monthly_expenses": profile.monthly_expenses,  # Add missing field
+            "current_savings": profile.current_savings,  # Add missing field  
+            "monthly_debt_payments": profile.monthly_debt_payments,  # Add missing field
+            "retirement_age": profile.retirement_age,  # Add missing field
+            "emergency_fund_target": profile.emergency_fund_target,  # Add missing field
             "employment_status": profile.employment_status,
             "dependents": profile.dependents,
             "goals": profile.goals,
@@ -336,11 +344,14 @@ def update_user_profile(
         profile={
             "first_name": profile.first_name,
             "last_name": profile.last_name,
-            "dob": profile.date_of_birth,
+            "date_of_birth": profile.date_of_birth,  # Add missing field  
+            "dob": profile.date_of_birth,  # Keep for backward compatibility
             "nationalId": profile.nationalId,
+            "national_id": profile.nationalId,  # Add missing field for consistency
             "kra_pin": profile.kra_pin,
             "phone": profile.phone,
             "annual_income": profile.annual_income,
+            "monthly_income": profile.annual_income / 12 if profile.annual_income else 0,  # Add missing field
             "employment_status": profile.employment_status,
             "dependents": profile.dependents,
             "goals": profile.goals,
@@ -373,38 +384,3 @@ def update_user_profile(
         risk_score=profile.risk_score,
         risk_level=profile.risk_level
     )
-
-
-@router.delete("/delete-account", response_model=DeleteAccountResponse)
-def delete_account(
-    request: DeleteAccountRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Delete current user's account permanently"""
-    
-    # Verify password before deletion
-    if not verify_password(request.password, current_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect password"
-        )
-    
-    try:
-        # Delete user's profile first (due to foreign key constraint)
-        profile = db.query(Profile).filter_by(user_id=current_user.id).first()
-        if profile:
-            db.delete(profile)
-        
-        # Delete the user
-        db.delete(current_user)
-        db.commit()
-        
-        return DeleteAccountResponse(message="Account deleted successfully")
-        
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete account"
-        )

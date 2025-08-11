@@ -209,7 +209,13 @@ export function OnboardingProvider({ children }) {
       // Auto-save only steps with meaningful data, but limit to one request at a time
       const autoSaveQueue = [];
       
-      if (state.personalData.firstName || state.personalData.lastName) {
+      // Step 1: Only auto-save if ALL required fields are present
+      const hasCompletePersonalData = state.personalData.firstName && 
+                                     state.personalData.lastName && 
+                                     state.personalData.dateOfBirth && 
+                                     state.personalData.phone;
+      
+      if (hasCompletePersonalData) {
         autoSaveQueue.push({ step: 1, data: state.personalData });
       }
       if (state.riskData.questionnaire.length === 5) {

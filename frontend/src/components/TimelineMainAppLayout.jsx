@@ -7,14 +7,18 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 // Timeline Context
 import { TimelineProvider } from '../contexts/TimelineContext';
+import { BudgetProvider } from '../contexts/BudgetContext';
 
 // Timeline-first components
 import TimelineDashboard from './timeline/TimelineDashboard';
-import TimelineProfile from './timeline/TimelineProfile';
+import ContextualTimelineDashboard from './timeline/ContextualTimelineDashboard';
+
+// Budget components
+import BudgetCashflows from './budget/BudgetCashflows';
 
 // Legacy components (for fallback/migration)  
 import Dashboard from './Dashboard';
-import Profile from './Profile';
+import ProfileDynamic from './ProfileDynamic';
 import BottomNavBar from './BottomNavBar';
 
 // Config
@@ -59,14 +63,13 @@ const TimelineMainAppLayout = () => {
     // Navigate to appropriate route based on tab
     switch (tabId) {
       case 'dashboard':
-        navigate('/dashboard');
+        navigate('dashboard');
         break;
       case 'profile':
-        navigate('/profile');
+        navigate('profile');
         break;
-      case 'cashflows':
-        // TODO: Add cashflows route
-        console.log('Cashflows tab clicked');
+      case 'budget':
+        navigate('budget');
         break;
       case 'balance-sheet':
         // TODO: Add balance sheet route  
@@ -118,28 +121,36 @@ const TimelineMainAppLayout = () => {
 
   return (
     <TimelineProvider>
-      <div className="timeline-app h-screen bg-gray-50">
-        <Routes>
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
-          
-          {/* Timeline-first Dashboard */}
-          <Route path="/dashboard" element={<TimelineDashboard />} />
-          
-          {/* Timeline-first Profile */}
-          <Route path="/profile" element={<TimelineProfile />} />
-          
-          {/* Legacy routes for fallback */}
-          <Route path="/dashboard-legacy" element={<Dashboard />} />
-          <Route path="/profile-legacy" element={<Profile />} />
-          
-          {/* Catch-all redirect */}
-          <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
-        </Routes>
+      <BudgetProvider>
+        <div className="timeline-app h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+          <Routes>
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="dashboard" replace />} />
+            
+            {/* Contextual Timeline Dashboard (New Design) */}
+            <Route path="dashboard" element={<ContextualTimelineDashboard />} />
+            
+            {/* Legacy Timeline Dashboard (Large visualization) */}
+            <Route path="timeline-legacy" element={<TimelineDashboard />} />
+            
+            {/* Dynamic Profile using onboarding data */}
+            <Route path="profile" element={<ProfileDynamic />} />
+            
+            {/* Budget & Cashflows */}
+            <Route path="budget" element={<BudgetCashflows />} />
+            
+            {/* Legacy routes for fallback */}
+            <Route path="dashboard-legacy" element={<Dashboard />} />
+            {/* Legacy profile route removed - use /app/profile */}
+            
+            {/* Catch-all redirect */}
+            <Route path="*" element={<Navigate to="dashboard" replace />} />
+          </Routes>
 
-        {/* Bottom Navigation */}
-        <BottomNavBar onTabClick={handleTabClick} activeTab={activeTab} />
-      </div>
+          {/* Bottom Navigation */}
+          <BottomNavBar onTabClick={handleTabClick} activeTab={activeTab} />
+        </div>
+      </BudgetProvider>
     </TimelineProvider>
   );
 };

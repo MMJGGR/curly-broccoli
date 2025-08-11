@@ -44,9 +44,6 @@ class OnboardingCompleteResponse(BaseModel):
     """Response after completing onboarding"""
     success: bool
     message: str
-    profile_id: int
-    risk_score: Optional[int] = None
-    risk_level: Optional[int] = None
 
 
 # Step-specific validation schemas

@@ -9,17 +9,16 @@ services:
       - db_data:/var/lib/postgresql/data
 
   api:
-    # BUILD FROM REPO ROOT so compute/ is included
     build:
       context: .
-      dockerfile: api/Dockerfile
+      dockerfile: ./api/Dockerfile
     env_file:
       - ./.env
     depends_on:
       - db
     ports:
       - "8000:8000"
-    command: /app/wait-for-it.sh db:5432 -- /usr/local/bin/uvicorn api.app.main:app --host 0.0.0.0 --port 8000 --log-level debug
+    command: python -m uvicorn api.app.main:app --host 0.0.0.0 --port 8000 --log-level debug
 
   frontend:
     build:

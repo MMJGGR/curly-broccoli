@@ -192,12 +192,11 @@ const FinancialInfoStep = () => {
   // Format currency input
   const formatCurrency = (value) => {
     if (!value) return '';
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
+    const formatted = new Intl.NumberFormat('en-KE', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(value).replace('KES', 'KES ');
+    }).format(value);
+    return `KES ${formatted}`;
   };
   
   // Validate field

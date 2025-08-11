@@ -41,13 +41,19 @@ const TimelineVisualization = () => {
     setTimelineScale(newScale);
   };
 
-  // Loading state
+  // Loading state - Enterprise-grade
   if (loading) {
     return (
-      <div className="timeline-visualization h-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your Timeline...</p>
+      <div className="timeline-visualization h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
+        <div className="text-center bg-white p-8 rounded-xl shadow-lg">
+          <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Loading Timeline</h3>
+          <p className="text-gray-600 text-sm">Preparing your financial journey visualization</p>
         </div>
       </div>
     );
@@ -74,34 +80,41 @@ const TimelineVisualization = () => {
     <div 
       className="timeline-visualization h-full w-full relative overflow-x-auto overflow-y-hidden"
       ref={timelineRef}
-      style={{ backgroundColor: personaTheme?.secondary || '#f8fafc' }}
+      style={{ 
+        background: `linear-gradient(135deg, ${personaTheme?.secondary || '#f8fafc'} 0%, #ffffff 100%)`,
+      }}
     >
       {/* Timeline Header */}
-      <div className="timeline-header p-4 border-b border-gray-200">
+      <div className="timeline-header p-6 border-b border-gray-200 bg-white bg-opacity-80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
               Your Financial Journey
             </h2>
-            <p className="text-sm text-gray-600">
-              {currentAge ? `Age ${currentAge} - ${endAge}` : 'Timeline View'}
+            <p className="text-sm text-gray-600 mt-1 font-medium">
+              {currentAge ? `Age ${currentAge} - ${endAge} • Interactive Timeline` : 'Interactive Timeline View'}
             </p>
           </div>
           
           {/* Timeline Controls */}
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => handleZoom(-0.2)}
-              className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Zoom Out
-            </button>
-            <button
-              onClick={() => handleZoom(0.2)}
-              className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              Zoom In
-            </button>
+          <div className="flex items-center space-x-3">
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex">
+              <button
+                onClick={() => handleZoom(-0.2)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-l-lg transition-colors border-r border-gray-200"
+              >
+                🔍- Zoom Out
+              </button>
+              <button
+                onClick={() => handleZoom(0.2)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-r-lg transition-colors"
+              >
+                🔍+ Zoom In
+              </button>
+            </div>
+            <div className="text-xs text-gray-500 bg-white px-3 py-2 rounded-lg border border-gray-200">
+              Scale: {Math.round(timelineScale * 100)}%
+            </div>
           </div>
         </div>
       </div>

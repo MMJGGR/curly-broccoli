@@ -60,9 +60,10 @@ const AuthScreen = () => {
 
                 // Check if user has completed onboarding
                 try {
-                    const profileResponse = await fetch(`${API_BASE}/auth/me`, {
+                    const profileResponse = await fetch(`${API_BASE}/api/v1/onboarding/profile-compatibility`, {
                         headers: {
-                            'Authorization': `Bearer ${data.access_token}`
+                            'Authorization': `Bearer ${data.access_token}`,
+                            'Content-Type': 'application/json'
                         }
                     });
 
@@ -80,7 +81,7 @@ const AuthScreen = () => {
                         if (userType === 'advisor') {
                             navigate('/onboarding/advisor/professional-details', { replace: true });
                         } else {
-                            navigate('/onboarding/personal-details', { replace: true });
+                            navigate('/onboarding', { replace: true });
                         }
                     } else {
                         // Handle other errors

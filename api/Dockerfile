@@ -1,29 +1,37 @@
 # File: api/Dockerfile
-FROM python:3.10-slim
+# Stage 1: Builder
+FROM python:3.10-slim as builder
 
-# 1) Set working dir
 WORKDIR /app
 
-# 2) Install dependencies (use pip cache for faster rebuilds)
+# Install dependencies
 COPY api/requirements.txt .
-RUN pip install -r requirements.txt \
-    && pip install sqlalchemy alembic \
-    && apt-get update && apt-get install -y netcat-traditional iputils-ping \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install sqlalchemy alembic
 
-# 3) Copy your entire repo (api/, compute/, alembic/, etc)
-COPY api/ ./api
+# Copy necessary files from the project root
 COPY compute/ ./compute
 COPY alembic/ ./alembic
 COPY alembic.ini .
-COPY wait-for-it.sh /app/
+COPY wait-for-it.sh .
 RUN chmod +x /app/wait-for-it.sh
 
-# Remove lightweight Pydantic stub so the real library installed above is used
-RUN rm -rf /app/pydantic /app/fastapi /app/sqlalchemy
+# Copy the api directory
+COPY api/ ./api
 
-# 4) Tell Python where to find both app/ and compute/
+# Stage 2: Final Image
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.10/site-packages/ /usr/local/lib/python3.10/site-packages/
+
+# Copy application code from builder
+COPY --from=builder /app/ /app/
+
+# Tell Python where to find both app/ and compute/
 ENV PYTHONPATH=/app:/app/api
 
-# 5) Launch Uvicorn against your FastAPI app
+# Launch Uvicorn against your FastAPI app
 CMD ["uvicorn", "api.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
