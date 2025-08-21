@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTransactions } from '../../contexts/TransactionContext';
+import { validateCategoryData, getCategorySuggestions } from '../../utils/financialUtils';
 
 const BudgetCategoryForm = ({ category = null, onClose, onSuccess }) => {
   const {
@@ -50,18 +51,14 @@ const BudgetCategoryForm = ({ category = null, onClose, onSuccess }) => {
   };
 
   const validateForm = () => {
-    const errors = {};
-
-    if (!formData.name.trim()) {
-      errors.name = 'Category name is required';
-    }
-
-    if (!formData.budgeted_amount || isNaN(parseFloat(formData.budgeted_amount)) || parseFloat(formData.budgeted_amount) < 0) {
-      errors.budgeted_amount = 'Budget amount must be a positive number';
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    const validation = validateCategoryData({
+      name: formData.name,
+      budgeted_amount: formData.budgeted_amount,
+      category_type: formData.category_type
+    });
+    
+    setValidationErrors(validation.errors);
+    return validation.isValid;
   };
 
   const handleSubmit = async (e) => {
@@ -92,7 +89,7 @@ const BudgetCategoryForm = ({ category = null, onClose, onSuccess }) => {
         onClose();
       }
     } catch (error) {
-      console.error('Failed to save budget category:', error);
+      // Error is handled by the context, no need for console.error in production
     }
   };
 
@@ -107,42 +104,11 @@ const BudgetCategoryForm = ({ category = null, onClose, onSuccess }) => {
     { value: 'yearly', label: 'Yearly', description: 'Budget per year' }
   ];
 
+  // Dynamic category suggestions from utility
   const commonCategories = {
-    expense: [
-      'Food & Dining',
-      'Groceries',
-      'Shopping',
-      'Entertainment',
-      'Bills & Utilities',
-      'Transport',
-      'Healthcare',
-      'Travel',
-      'Education',
-      'Rent/Mortgage',
-      'Insurance',
-      'Personal Care',
-      'Home Maintenance',
-      'Subscriptions',
-      'Charity',
-      'Other Expenses'
-    ],
-    income: [
-      'Salary',
-      'Business Income',
-      'Investment Returns',
-      'Rental Income',
-      'Freelance',
-      'Bonus',
-      'Gift/Cash',
-      'Other Income'
-    ],
-    transfer: [
-      'Savings Transfer',
-      'Investment Transfer',
-      'Account Transfer',
-      'Loan Payment',
-      'Credit Card Payment'
-    ]
+    expense: getCategorySuggestions('expense'),
+    income: getCategorySuggestions('income'),
+    transfer: getCategorySuggestions('transfer')
   };
 
   return (

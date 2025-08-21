@@ -38,7 +38,7 @@ const BottomNavBar = ({ onTabClick, activeTab = 'dashboard' }) => {
     ];
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50">
+        <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50 bottom-nav" data-testid="bottom-nav">
             {/* Contextual Timeline Intelligence Bar */}
             <div 
                 className="px-4 py-2 border-b border-gray-200 flex items-center justify-between"
@@ -92,6 +92,7 @@ const BottomNavBar = ({ onTabClick, activeTab = 'dashboard' }) => {
                                 ? 'text-blue-600' 
                                 : 'text-gray-600 hover:text-blue-600'
                         }`}
+                        data-cy={`nav-${tab.id}`}
                         onClick={() => onTabClick(tab.id)}
                     >
                         {tab.icon}

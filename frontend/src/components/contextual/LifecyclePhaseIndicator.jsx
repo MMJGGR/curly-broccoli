@@ -3,7 +3,7 @@
  * Shows current lifecycle phase context throughout the app
  * Provides CFA-level phase information and quick access to phase-specific guidance
  */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import useLifecyclePhase, { LIFECYCLE_PHASES } from '../../hooks/useLifecyclePhase';
 import { useTimeline } from '../../contexts/TimelineContext';
 import { useBudget } from '../../contexts/BudgetContext';
@@ -19,15 +19,24 @@ const LifecyclePhaseIndicator = ({
   const { budgetData } = useBudget();
   const [showPhaseDetails, setShowPhaseDetails] = useState(false);
 
-  // Mock user profile - in real app this would come from context/props
-  const userProfile = {
+  // Memoize user profile to prevent infinite re-renders
+  const userProfile = useMemo(() => ({
     age: currentAge || 30,
     income: budgetData?.monthlyIncome || 0,
     expenses: budgetData?.monthlyExpenses || 0,
     netWorth: budgetData?.netWorth || 0,
     dependents: budgetData?.dependents || 0,
-    goals: budgetData?.goals || []
-  };
+    goals: budgetData?.goals || [],
+    currentAssets: budgetData?.currentAssets || {}
+  }), [
+    currentAge, 
+    budgetData?.monthlyIncome, 
+    budgetData?.monthlyExpenses, 
+    budgetData?.netWorth, 
+    budgetData?.dependents, 
+    JSON.stringify(budgetData?.goals || []),
+    JSON.stringify(budgetData?.currentAssets || {})
+  ]);
 
   const {
     phase,

@@ -175,7 +175,7 @@ export const useLifecyclePhase = (userProfile = {}) => {
     };
 
     return guidance;
-  }, [calculateLifecyclePhase, age, income, expenses, dependents, netWorth, userProfile, phaseRecommendations]);
+  }, [calculateLifecyclePhase, age, income, expenses, dependents, netWorth, phaseRecommendations]);
 
   // Calculate phase health score
   const calculatePhaseHealth = useMemo(() => {
@@ -248,7 +248,7 @@ export const useLifecyclePhase = (userProfile = {}) => {
       factors,
       level: score >= 80 ? 'excellent' : score >= 60 ? 'good' : score >= 40 ? 'fair' : 'needs_attention'
     };
-  }, [calculateLifecyclePhase, phaseRecommendations, income, expenses, currentAssets, goals]);
+  }, [calculateLifecyclePhase, phaseRecommendations, income, expenses, JSON.stringify(currentAssets), JSON.stringify(goals)]);
 
   // Load lifecycle data with memoized values to prevent infinite loops
   const lifecycleAnalysis = useMemo(() => ({
@@ -257,7 +257,6 @@ export const useLifecyclePhase = (userProfile = {}) => {
     guidance: generateGuidance,
     health: calculatePhaseHealth,
     metadata: {
-      calculated_at: new Date().toISOString(),
       user_age: age,
       years_to_retirement: Math.max(0, retirementGoalAge - age)
     }
@@ -287,11 +286,11 @@ export const useLifecyclePhase = (userProfile = {}) => {
     metadata: lifecycleData?.metadata,
     
     // Utility functions
-    isAccumulationPhase: () => lifecycleData?.phase === LIFECYCLE_PHASES.ACCUMULATION,
-    isConsolidationPhase: () => lifecycleData?.phase === LIFECYCLE_PHASES.CONSOLIDATION,
-    isSpendingPhase: () => lifecycleData?.phase === LIFECYCLE_PHASES.SPENDING,
-    getPhaseColor: () => getPhaseColor(lifecycleData?.phase),
-    getPhaseIcon: () => getPhaseIcon(lifecycleData?.phase)
+    isAccumulationPhase: lifecycleData?.phase === LIFECYCLE_PHASES.ACCUMULATION,
+    isConsolidationPhase: lifecycleData?.phase === LIFECYCLE_PHASES.CONSOLIDATION,
+    isSpendingPhase: lifecycleData?.phase === LIFECYCLE_PHASES.SPENDING,
+    getPhaseColor: (phase) => getPhaseColor(phase || lifecycleData?.phase),
+    getPhaseIcon: (phase) => getPhaseIcon(phase || lifecycleData?.phase)
   };
 };
 

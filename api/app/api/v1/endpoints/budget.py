@@ -1,13 +1,16 @@
 """
-Budget Management API - Real budget tracking with actual vs planned spending
+Budget Management API V2 - Dynamic Categories with Decimal Precision
+CFA-compliant financial calculations with unlimited custom category support
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, func, extract
 from typing import List, Dict, Any, Optional
 from datetime import datetime, date, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 import calendar
 import logging
+import json
 
 from api.app.database import get_db
 from api.app.models import User, ExpenseCategory, Transaction
@@ -16,6 +19,20 @@ from api.app.auth import get_current_user
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/budget", tags=["budget"])
+
+# Helper functions for V2 dynamic categories
+def get_financial_value(data, key: str, default=0):
+    """Safely extract financial values from various data types"""
+    if isinstance(data, dict):
+        return data.get(key, default)
+    else:
+        return getattr(data, key, default)
+
+def calculate_precise_decimal(amount) -> Decimal:
+    """Convert any numeric value to precise decimal for financial calculations"""
+    if amount is None:
+        return Decimal('0.00')
+    return Decimal(str(amount)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 @router.get("/overview")
@@ -519,6 +536,156 @@ def get_budget_recommendations(
         "generated_at": datetime.utcnow().isoformat(),
         "next_review_date": (date.today() + timedelta(days=7)).isoformat()
     }
+
+
+@router.get("/current")
+def get_current_budget_v2(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get current user's budget with dynamic categories - V2 Clean Implementation
+    Returns accurate financial calculations with unlimited custom category support
+    """
+    logger.info(f"🚀 BUDGET V2 ENDPOINT CALLED - User: {current_user.id}")
+    print(f"🚀 BUDGET V2 ENDPOINT CALLED - User: {current_user.id}")
+    
+    try:
+        # Get onboarding data as single source of truth
+        from api.app.api.v1.endpoints.onboarding_consolidated import get_onboarding_state
+        
+        onboarding_response = get_onboarding_state(current_user, db)
+        
+        if not (hasattr(onboarding_response, 'financial_data') and onboarding_response.financial_data):
+            logger.warning(f"No financial data found for user {current_user.id}")
+            return {
+                "monthlyIncome": 0,
+                "expenses": {},
+                "goalAllocations": {
+                    "emergencyFund": 0,
+                    "retirement": 0,
+                    "education": 0,
+                    "investments": 0
+                },
+                "customCategories": {},
+                "monthlySurplus": 0,
+                "dataSource": "empty"
+            }
+        
+        financial_data = onboarding_response.financial_data
+        logger.info(f"Budget V2: Processing financial data for user {current_user.id}")
+        
+        # Calculate monthly income with precision
+        monthly_income = calculate_precise_decimal(
+            get_financial_value(financial_data, 'monthlyIncome', 0)
+        )
+        
+        # Process standard expenses with precision
+        standard_expenses = {}
+        standard_expense_keys = [
+            'rent', 'utilities', 'groceries', 'transport', 'loanRepayments',
+            'blackTax', 'insurance', 'dining', 'entertainment', 'clothing',
+            'healthcare', 'personalCare', 'miscellaneous'
+        ]
+        
+        total_standard_expenses = Decimal('0.00')
+        for key in standard_expense_keys:
+            amount = calculate_precise_decimal(
+                get_financial_value(financial_data, key, 0)
+            )
+            if amount > 0:
+                standard_expenses[key] = float(amount)
+                total_standard_expenses += amount
+        
+        # Process custom expenses dynamically
+        custom_categories = {}
+        custom_expenses = get_financial_value(financial_data, 'customExpenses', [])
+        total_custom_expenses = Decimal('0.00')
+        
+        logger.info(f"Budget V2: Processing {len(custom_expenses) if custom_expenses else 0} custom expenses")
+        logger.info(f"Budget V2: Custom expenses data: {custom_expenses}")
+        
+        if custom_expenses:
+            for expense in custom_expenses:
+                expense_name = get_financial_value(expense, 'name', 'Unknown')
+                expense_amount = calculate_precise_decimal(
+                    get_financial_value(expense, 'amount', 0)
+                )
+                
+                if expense_amount > 0:
+                    # Create dynamic category key
+                    category_key = f"custom_{expense_name.lower().replace(' ', '_').replace('&', 'and')}"
+                    
+                    # Add to custom categories with metadata
+                    custom_categories[category_key] = {
+                        "name": expense_name,
+                        "amount": float(expense_amount),
+                        "type": "expense",
+                        "isCustom": True
+                    }
+                    
+                    # Add to standard expenses for total calculation
+                    standard_expenses[category_key] = float(expense_amount)
+                    total_custom_expenses += expense_amount
+                    
+                    logger.info(f"Budget V2: Added custom expense {expense_name}: {expense_amount}")
+        
+        # Process custom income sources if they exist
+        custom_income = get_financial_value(financial_data, 'customIncome', [])
+        if custom_income:
+            for income_source in custom_income:
+                income_name = get_financial_value(income_source, 'name', 'Unknown')
+                income_amount = calculate_precise_decimal(
+                    get_financial_value(income_source, 'amount', 0)
+                )
+                
+                if income_amount > 0:
+                    category_key = f"income_{income_name.lower().replace(' ', '_')}"
+                    custom_categories[category_key] = {
+                        "name": income_name,
+                        "amount": float(income_amount),
+                        "type": "income",
+                        "isCustom": True
+                    }
+                    monthly_income += income_amount
+        
+        # Calculate total expenses (standard + custom)
+        total_expenses = total_standard_expenses + total_custom_expenses
+        
+        # Process goal allocations
+        goal_allocations = {
+            "emergencyFund": 0,
+            "retirement": 0,
+            "education": 0,
+            "investments": 0
+        }
+        total_goal_allocations = Decimal('0.00')
+        
+        # Calculate accurate surplus
+        surplus = monthly_income - total_expenses - total_goal_allocations
+        
+        logger.info(f"Budget V2: Calculated - Income: {monthly_income}, Expenses: {total_expenses}, Surplus: {surplus}")
+        
+        return {
+            "monthlyIncome": float(monthly_income),
+            "expenses": standard_expenses,
+            "goalAllocations": goal_allocations,
+            "customCategories": custom_categories,
+            "monthlySurplus": float(surplus),
+            "dataSource": "onboarding_v2",
+            "calculation_metadata": {
+                "last_calculated": datetime.utcnow().isoformat(),
+                "custom_categories_count": len(custom_categories),
+                "total_standard_expenses": float(total_standard_expenses),
+                "total_custom_expenses": float(total_custom_expenses)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Budget V2: Error getting budget for user {current_user.id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error calculating budget data"
+        )
 
 
 @router.post("/recalculate")

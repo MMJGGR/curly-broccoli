@@ -126,7 +126,20 @@
       "Bash(timeout 180 npx cypress run --spec \"cypress/e2e/data-alignment-validation.cy.js\" --browser chrome --headless)",
       "Bash(timeout 20 docker-compose logs frontend --tail=5)",
       "Bash(timeout 30 docker-compose logs frontend --tail=5)",
-      "Bash(timeout 90 npx cypress run:*)"
+      "Bash(timeout 90 npx cypress run:*)",
+      "Bash(chmod:*)",
+      "Bash(timeout 180 npx cypress run --spec \"cypress/e2e/csv-import-integration-test.cy.js\" --browser chrome --headless)",
+      "Bash(winpty docker exec curly-broccoli-frontend-1 ls /app/src/components/transactions/)",
+      "Bash(timeout 30 docker-compose logs frontend --tail=10 --follow)",
+      "Bash(timeout 30 docker-compose logs frontend --tail=15 --follow)",
+      "Bash(timeout 10 curl -X GET \"http://localhost:8000/budget/current\" -H \"Content-Type: application/json\")",
+      "Bash(timeout:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(NODE_ENV=development npx eslint src --ext .js,.jsx)",
+      "Bash(export JWT_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzU1NTM0OTc5LjQxMDYyNCwiZXhwIjoxNzg3MDcwOTc5LjQxMDYyNCwic2NvcGUiOiJ1c2VyIiwicm9sZSI6InVzZXIifQ.-PQzowcJAZiSIrwO5C1E4yvnygvTrrLNmMj6Z-bwanM\")",
+      "Bash(winpty docker exec curly-broccoli-api-1 python -c \"from api.app.api.v1.endpoints import budget_v2; print(''Import successful'')\")",
+      "Bash(git config:*)"
     ],
     "deny": []
   }

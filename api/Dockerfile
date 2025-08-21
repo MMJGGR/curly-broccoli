@@ -24,8 +24,9 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Copy installed packages from builder
+# Copy installed packages and executables from builder
 COPY --from=builder /usr/local/lib/python3.10/site-packages/ /usr/local/lib/python3.10/site-packages/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 # Copy application code from builder
 COPY --from=builder /app/ /app/

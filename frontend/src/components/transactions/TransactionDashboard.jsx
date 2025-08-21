@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTransactions } from '../../contexts/TransactionContext';
 import TransactionList from './TransactionList';
 import TransactionForm from './TransactionForm';
-import TransactionImport from './TransactionImport';
+import TransactionImportNew from './TransactionImportNew';
 import BudgetOverview from '../budget/BudgetOverview';
 
 const TransactionDashboard = () => {
@@ -366,7 +366,7 @@ const TransactionDashboard = () => {
         )}
 
         {showImportModal && (
-          <TransactionImport
+          <TransactionImportNew
             onClose={() => setShowImportModal(false)}
             onSuccess={() => {
               setShowImportModal(false);

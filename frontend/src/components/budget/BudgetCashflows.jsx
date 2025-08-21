@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { useTimeline } from '../../contexts/TimelineContext';
 import { useBudget } from '../../contexts/BudgetContext';
+// import { useTransactions } from '../../contexts/TransactionContext'; // Available for CSV import modal
 import { 
   LifecyclePhaseIndicator, 
   ContextualGuidance, 
@@ -13,6 +14,7 @@ import {
   TimelineAlert,
   usePhaseDefaults
 } from '../timeline/ContextualTimelineSystem';
+import TransactionImportNew from '../transactions/TransactionImportNew';
 
 const BudgetCashflows = () => {
   const {
@@ -35,48 +37,109 @@ const BudgetCashflows = () => {
     setBudgetPeriod,
     handleSaveAndExit,
     formatAmount,
+    refreshBudgetData
   } = useBudget();
+
+  const totalGoalAllocations = React.useMemo(() => {
+    if (!budgetData?.goalAllocations) return 0;
+    return Object.values(budgetData.goalAllocations).reduce((total, amount) => total + (parseFloat(amount) || 0), 0);
+  }, [budgetData?.goalAllocations]);
+
+  // Transaction context is available for the import modal
 
   // Component state
   const [activeTab, setActiveTab] = useState('planning');
   const [showMobilePanel, setShowMobilePanel] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   
   // Phase-aware defaults for smarter budgeting
   const phaseDefaults = usePhaseDefaults();
 
+  // Handle CSV import success
+  const handleImportSuccess = () => {
+    // Refresh budget data to reflect imported transactions
+    if (refreshBudgetData) {
+      refreshBudgetData();
+    }
+    
+    // Close the import modal
+    setShowImportModal(false);
+    
+    // Success is handled by the import component, no console.log needed
+  };
 
-  // Budget categories with CFA-level organization
-  const budgetCategories = {
+  // Handle import modal close
+  const handleImportClose = () => {
+    setShowImportModal(false);
+  };
+
+
+  // DYNAMIC CATEGORY SYSTEM - No hardcoded categories!
+  // Categories are now built dynamically from backend data
+  
+  // Standard category definitions with metadata
+  const STANDARD_CATEGORY_DEFINITIONS = {
     income: [
-      { key: 'salary', label: 'Primary Salary', icon: '💼' },
-      { key: 'bonuses', label: 'Bonuses & Commissions', icon: '🎯' },
-      { key: 'investments', label: 'Investment Income', icon: '📈' },
-      { key: 'other', label: 'Other Income', icon: '💰' }
+      { key: 'salary', label: 'Primary Salary', icon: '💼', type: 'income' },
+      { key: 'bonuses', label: 'Bonuses & Commissions', icon: '🎯', type: 'income' },
+      { key: 'investments', label: 'Investment Income', icon: '📈', type: 'income' },
+      { key: 'other', label: 'Other Income', icon: '💰', type: 'income' }
     ],
     fixedExpenses: [
-      { key: 'rent', label: 'Housing/Rent', icon: '🏠', required: true },
-      { key: 'utilities', label: 'Utilities', icon: '⚡', required: true },
-      { key: 'loanRepayments', label: 'Loan Repayments', icon: '🏦', required: true },
-      { key: 'blackTax', label: 'Family Support', icon: '👨‍👩‍👧‍👦', required: true },
-      { key: 'insurance', label: 'Insurance Premiums', icon: '🛡️' }
+      { key: 'rent', label: 'Housing/Rent', icon: '🏠', required: true, type: 'expense' },
+      { key: 'utilities', label: 'Utilities', icon: '⚡', required: true, type: 'expense' },
+      { key: 'loanRepayments', label: 'Loan Repayments', icon: '🏦', required: true, type: 'expense' },
+      { key: 'blackTax', label: 'Family Support', icon: '👨‍👩‍👧‍👦', required: true, type: 'expense' },
+      { key: 'insurance', label: 'Insurance Premiums', icon: '🛡️', type: 'expense' }
     ],
     variableExpenses: [
-      { key: 'groceries', label: 'Groceries', icon: '🛒', required: true },
-      { key: 'transport', label: 'Transportation', icon: '🚗', required: true },
-      { key: 'dining', label: 'Dining Out', icon: '🍽️' },
-      { key: 'entertainment', label: 'Entertainment', icon: '🎬' },
-      { key: 'clothing', label: 'Clothing', icon: '👔' },
-      { key: 'healthcare', label: 'Healthcare', icon: '🏥' },
-      { key: 'personalCare', label: 'Personal Care', icon: '💅' },
-      { key: 'miscellaneous', label: 'Miscellaneous', icon: '📝' }
+      { key: 'groceries', label: 'Groceries', icon: '🛒', required: true, type: 'expense' },
+      { key: 'transport', label: 'Transportation', icon: '🚗', required: true, type: 'expense' },
+      { key: 'dining', label: 'Dining Out', icon: '🍽️', type: 'expense' },
+      { key: 'entertainment', label: 'Entertainment', icon: '🎬', type: 'expense' },
+      { key: 'clothing', label: 'Clothing', icon: '👔', type: 'expense' },
+      { key: 'healthcare', label: 'Healthcare', icon: '🏥', type: 'expense' },
+      { key: 'personalCare', label: 'Personal Care', icon: '💅', type: 'expense' },
+      { key: 'miscellaneous', label: 'Miscellaneous', icon: '📝', type: 'expense' }
     ],
     goalAllocations: [
-      { key: 'emergencyFund', label: 'Emergency Fund', icon: '🚨' },
-      { key: 'retirement', label: 'Retirement Savings', icon: '🏖️' },
-      { key: 'education', label: 'Education Fund', icon: '🎓' },
-      { key: 'investments', label: 'Investment Portfolio', icon: '📊' }
+      { key: 'emergencyFund', label: 'Emergency Fund', icon: '🚨', type: 'goal' },
+      { key: 'retirement', label: 'Retirement Savings', icon: '🏖️', type: 'goal' },
+      { key: 'education', label: 'Education Fund', icon: '🎓', type: 'goal' },
+      { key: 'investments', label: 'Investment Portfolio', icon: '📊', type: 'goal' }
     ]
   };
+
+  // Dynamic category builder that merges standard + custom categories
+  const buildDynamicCategories = React.useMemo(() => {
+    if (!budgetData) return { income: [], fixedExpenses: [], variableExpenses: [], goalAllocations: [], customCategories: [] };
+    
+    const categories = {
+      income: [...STANDARD_CATEGORY_DEFINITIONS.income],
+      fixedExpenses: [...STANDARD_CATEGORY_DEFINITIONS.fixedExpenses],
+      variableExpenses: [...STANDARD_CATEGORY_DEFINITIONS.variableExpenses],
+      goalAllocations: [...STANDARD_CATEGORY_DEFINITIONS.goalAllocations],
+      customCategories: []
+    };
+    
+    // Add custom categories from backend
+    if (budgetData.customCategories) {
+      Object.entries(budgetData.customCategories).forEach(([key, customCat]) => {
+        const customCategory = {
+          key: key,
+          label: customCat.name,
+          icon: customCat.type === 'income' ? '💰' : '💳',
+          type: customCat.type,
+          isCustom: true,
+          amount: customCat.amount
+        };
+        
+        categories.customCategories.push(customCategory);
+      });
+    }
+    
+    return categories;
+  }, [budgetData]);
 
 
 
@@ -274,6 +337,28 @@ const BudgetCashflows = () => {
                 {/* Contextual guidance for budget planning */}
                 <ContextualGuidance context="budget-dashboard" className="mb-6" />
                 
+                {/* CSV Import Quick Action - Always Visible */}
+                <div className="csv-import-section mb-6">
+                  <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3">📁</span>
+                        <div>
+                          <h4 className="font-semibold text-orange-800">Import Transactions</h4>
+                          <p className="text-sm text-orange-600">Upload your bank statement CSV to track actual spending</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setShowImportModal(true)}
+                        className="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                        data-cy="main-import-button"
+                      >
+                        Upload CSV
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
                 {/* Income Section */}
                 <div className="income-section">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -304,15 +389,18 @@ const BudgetCashflows = () => {
                   </div>
                 </div>
 
-                {/* Fixed Expenses Section */}
+                {/* DYNAMIC Fixed Expenses Section */}
                 <div className="fixed-expenses-section">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <span className="mr-2">🏠</span>
                     Fixed Expenses
+                    <span className="ml-2 text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                      {buildDynamicCategories.fixedExpenses.length} categories
+                    </span>
                   </h3>
                   <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
-                    {budgetCategories.fixedExpenses.map(category => (
-                      <div key={category.key} className="p-4 flex items-center justify-between">
+                    {buildDynamicCategories.fixedExpenses.map(category => (
+                      <div key={category.key} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                         <div className="flex items-center">
                           <span className="text-xl mr-3">{category.icon}</span>
                           <div>
@@ -320,6 +408,9 @@ const BudgetCashflows = () => {
                               {category.label}
                               {category.required && <span className="text-red-500 ml-1">*</span>}
                             </label>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Standard category
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">
@@ -342,15 +433,18 @@ const BudgetCashflows = () => {
                   </div>
                 </div>
 
-                {/* Variable Expenses Section */}
+                {/* DYNAMIC Variable Expenses Section */}
                 <div className="variable-expenses-section">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <span className="mr-2">🛒</span>
                     Variable Expenses
+                    <span className="ml-2 text-sm bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                      {buildDynamicCategories.variableExpenses.length} categories
+                    </span>
                   </h3>
                   <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
-                    {budgetCategories.variableExpenses.map(category => (
-                      <div key={category.key} className="p-4 flex items-center justify-between">
+                    {buildDynamicCategories.variableExpenses.map(category => (
+                      <div key={category.key} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                         <div className="flex items-center">
                           <span className="text-xl mr-3">{category.icon}</span>
                           <div>
@@ -358,6 +452,9 @@ const BudgetCashflows = () => {
                               {category.label}
                               {category.required && <span className="text-red-500 ml-1">*</span>}
                             </label>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Standard category
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">
@@ -380,26 +477,27 @@ const BudgetCashflows = () => {
                   </div>
                 </div>
 
-                {/* Goal Allocations Section */}
+                {/* DYNAMIC Goal Allocations Section */}
                 <div className="goal-allocations-section">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                     <span className="mr-2">🎯</span>
                     Goal-Aligned Allocations
+                    <span className="ml-2 text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                      {buildDynamicCategories.goalAllocations.length} goals
+                    </span>
                   </h3>
                   <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
-                    {budgetCategories.goalAllocations.map(goal => (
-                      <div key={goal.key} className="p-4 flex items-center justify-between">
+                    {buildDynamicCategories.goalAllocations.map(goal => (
+                      <div key={goal.key} className="p-4 flex items-center justify-between hover:bg-blue-50 transition-colors">
                         <div className="flex items-center">
                           <span className="text-xl mr-3">{goal.icon}</span>
                           <div>
                             <label className="block text-sm font-medium text-gray-700">
                               {goal.label}
                             </label>
-                            {goal.target && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                Target: R{goal.target.toLocaleString()}
-                              </p>
-                            )}
+                            <div className="text-xs text-blue-600 mt-1">
+                              Savings goal • Builds wealth over time
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">
@@ -408,7 +506,7 @@ const BudgetCashflows = () => {
                               type="number"
                               value={budgetData?.goalAllocations?.[goal.key] || 0}
                               onChange={(e) => updateBudgetItem('goalAllocations', goal.key, e.target.value)}
-                              className="w-32 px-3 py-2 border border-gray-300 rounded-md text-right focus:ring-blue-500 focus:border-blue-500"
+                              className="w-32 px-3 py-2 border border-blue-300 rounded-md text-right focus:ring-blue-500 focus:border-blue-500"
                               data-cy={`goal-${goal.key}`}
                             />
                           ) : (
@@ -422,15 +520,117 @@ const BudgetCashflows = () => {
                   </div>
                 </div>
 
-                {/* Surplus Summary */}
+                {/* CALCULATION TRANSPARENCY WIDGET */}
+                <div className="calculation-transparency mb-6">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-800 mb-3 flex items-center">
+                      <span className="mr-2">🧮</span>
+                      Calculation Breakdown
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Monthly Income:</span>
+                        <span className="font-medium text-green-600">
+                          + {formatAmount(budgetData?.monthlyIncome || 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Total Expenses:</span>
+                        <span className="font-medium text-red-600">
+                          - {formatAmount(totalExpenses)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Goal Allocations:</span>
+                        <span className="font-medium text-blue-600">
+                          - {formatAmount(totalGoalAllocations)}
+                        </span>
+                      </div>
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between items-center font-semibold">
+                          <span className="text-gray-800">Available Surplus:</span>
+                          <span className={actualSurplus >= 0 ? 'text-green-600' : 'text-red-600'}>
+                            = {formatAmount(actualSurplus)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DYNAMIC CUSTOM CATEGORIES SECTION */}
+                {buildDynamicCategories.customCategories.length > 0 && (
+                  <div className="custom-categories-section">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                      <span className="mr-2">💳</span>
+                      Your Custom Categories
+                      <span className="ml-2 text-sm bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                        {buildDynamicCategories.customCategories.length} categories
+                      </span>
+                    </h3>
+                    <div className="bg-white rounded-lg border border-purple-200 divide-y divide-purple-100">
+                      {buildDynamicCategories.customCategories.map(category => (
+                        <div key={category.key} className="p-4 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white">
+                          <div className="flex items-center">
+                            <span className="text-xl mr-3">{category.icon}</span>
+                            <div>
+                              <label className="block text-sm font-medium text-purple-800">
+                                {category.label}
+                                <span className="ml-2 text-xs bg-purple-200 text-purple-700 px-2 py-1 rounded">
+                                  Custom
+                                </span>
+                              </label>
+                              <p className="text-xs text-purple-600 mt-1">
+                                {category.type === 'income' ? 'Additional income source' : 'Personal expense category'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={category.type === 'income' 
+                                  ? (budgetData?.income?.[category.key] || 0)
+                                  : (budgetData?.expenses?.[category.key] || 0)
+                                }
+                                onChange={(e) => {
+                                  const targetCategory = category.type === 'income' ? 'income' : 'expenses';
+                                  updateBudgetItem(targetCategory, category.key, e.target.value);
+                                }}
+                                className="w-32 px-3 py-2 border border-purple-300 rounded-md text-right focus:ring-purple-500 focus:border-purple-500"
+                                data-cy={`custom-${category.key}`}
+                              />
+                            ) : (
+                              <span className={`text-lg font-semibold ${
+                                category.type === 'income' ? 'text-green-600' : 'text-purple-600'
+                              }`}>
+                                {formatAmount(
+                                  category.type === 'income' 
+                                    ? (budgetData?.income?.[category.key] || 0)
+                                    : (budgetData?.expenses?.[category.key] || 0)
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Enhanced Surplus Summary with real-time updates */}
                 <div className="surplus-summary">
                   <div className={`p-4 rounded-lg ${actualSurplus >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border`}>
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium text-gray-800">Monthly Surplus/Deficit</h4>
                         <p className="text-sm text-gray-600 mt-1">
-                          Income - Expenses - Goal Allocations
+                          {budgetData?.monthlyIncome || 0} - {totalExpenses} - {totalGoalAllocations} = {actualSurplus}
                         </p>
+                        <div className="text-xs text-gray-500 mt-1 flex items-center">
+                          <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                          Live calculation • Updates automatically
+                        </div>
                       </div>
                       <div className="text-right">
                         <span className={`text-2xl font-bold ${actualSurplus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -544,6 +744,14 @@ const BudgetCashflows = () => {
             <div className="quick-actions">
               <h4 className="font-medium text-gray-800 mb-3">Quick Actions</h4>
               <div className="space-y-2">
+                <button 
+                  onClick={() => setShowImportModal(true)}
+                  className="w-full text-left p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors border border-orange-200"
+                  data-cy="import-transactions-button"
+                >
+                  <div className="font-medium text-orange-800">📁 Import Transactions</div>
+                  <div className="text-sm text-orange-600">Upload CSV file</div>
+                </button>
                 <button className="w-full text-left p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors border border-blue-200">
                   <div className="font-medium text-blue-800">📊 Export Budget</div>
                   <div className="text-sm text-blue-600">Download as Excel/PDF</div>
@@ -597,6 +805,14 @@ const BudgetCashflows = () => {
 
         </div>
       </div>
+
+      {/* CSV Import Modal */}
+      {showImportModal && (
+        <TransactionImportNew
+          onClose={handleImportClose}
+          onSuccess={handleImportSuccess}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTransactions } from '../../contexts/TransactionContext';
 import BudgetCategoryForm from './BudgetCategoryForm';
+import {
+  formatCurrency,
+  getBudgetStatus,
+  getStatusColor,
+  getStatusText,
+  getProgressBarColor,
+  getProgressPercentage
+} from '../../utils/financialUtils';
 
 const BudgetOverview = () => {
   const {
@@ -49,50 +57,14 @@ const BudgetOverview = () => {
         fetchBudgetCategories()
       ]);
     } catch (error) {
-      console.error('Failed to delete budget category:', error);
+      // Error is handled by the context, no need for console.error in production
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(Math.abs(amount || 0));
-  };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'under_budget': return 'text-green-600 bg-green-100';
-      case 'on_budget': return 'text-blue-600 bg-blue-100';
-      case 'over_budget': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'under_budget': return 'Under Budget';
-      case 'on_budget': return 'On Budget';
-      case 'over_budget': return 'Over Budget';
-      default: return 'No Data';
-    }
-  };
 
-  const getProgressBarColor = (status) => {
-    switch (status) {
-      case 'under_budget': return 'bg-green-500';
-      case 'on_budget': return 'bg-blue-500';
-      case 'over_budget': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
 
-  const getProgressPercentage = (budgeted, actual) => {
-    if (budgeted === 0) return 0;
-    return Math.min((actual / budgeted) * 100, 100);
-  };
 
   if (error) {
     return (

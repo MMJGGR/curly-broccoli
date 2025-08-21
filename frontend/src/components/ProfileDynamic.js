@@ -234,31 +234,39 @@ const ProfileDynamic = () => {
                                     </div>
                                 )}
                                 
-                                {/* Calculate total expenses */}
+                                {/* Calculate total expenses - matching Budget calculation */}
                                 {financial.monthlyIncome && (
                                     <div className="border-t pt-2 mt-2">
-                                        <p className="font-semibold">
-                                            Total Monthly Expenses: {formatCurrency(
-                                                (parseFloat(financial.rent) || 0) +
-                                                (parseFloat(financial.utilities) || 0) +
-                                                (parseFloat(financial.groceries) || 0) +
-                                                (parseFloat(financial.transport) || 0) +
-                                                (parseFloat(financial.loanRepayments) || 0) +
-                                                (financial.customExpenses?.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0) || 0)
-                                            )}
-                                        </p>
-                                        <p className="font-semibold text-green-600">
-                                            Net Income: {formatCurrency(
-                                                (parseFloat(financial.monthlyIncome) || 0) - (
-                                                    (parseFloat(financial.rent) || 0) +
-                                                    (parseFloat(financial.utilities) || 0) +
-                                                    (parseFloat(financial.groceries) || 0) +
-                                                    (parseFloat(financial.transport) || 0) +
-                                                    (parseFloat(financial.loanRepayments) || 0) +
-                                                    (financial.customExpenses?.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0) || 0)
-                                                )
-                                            )}
-                                        </p>
+                                        {(() => {
+                                            // Calculate total expenses to match Budget component calculation
+                                            const coreExpenses = (parseFloat(financial.rent) || 0) +
+                                                                (parseFloat(financial.utilities) || 0) +
+                                                                (parseFloat(financial.groceries) || 0) +
+                                                                (parseFloat(financial.transport) || 0) +
+                                                                (parseFloat(financial.loanRepayments) || 0);
+                                            
+                                            const customExpensesTotal = financial.customExpenses?.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0) || 0;
+                                            
+                                            // Add custom expenses to miscellaneous category to match Budget structure
+                                            const totalExpenses = coreExpenses + customExpensesTotal;
+                                            
+                                            const monthlyIncome = parseFloat(financial.monthlyIncome) || 0;
+                                            const availableAfterExpenses = monthlyIncome - totalExpenses;
+                                            
+                                            return (
+                                                <>
+                                                    <p className="font-semibold">
+                                                        Total Monthly Expenses: {formatCurrency(totalExpenses)}
+                                                    </p>
+                                                    <p className="font-semibold">
+                                                        Monthly Income (Net): {formatCurrency(monthlyIncome)}
+                                                    </p>
+                                                    <p className={`font-semibold ${availableAfterExpenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        Available After Expenses: {formatCurrency(availableAfterExpenses)}
+                                                    </p>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>

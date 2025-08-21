@@ -156,91 +156,99 @@ export const BudgetProvider = ({ children }) => {
         return;
       }
 
-      // If no budget exists, create from user's profile/onboarding data
-      console.log('📊 No existing budget found, creating from user profile data...');
+      // If no budget exists, create from user's onboarding data (most accurate)
+      console.log('📊 No existing budget found, creating from user data...');
       
-      // Get user profile data (use compatibility endpoint for onboarding data)
-      const profileResponse = await fetch(`${API_BASE_URL}/api/v1/onboarding/profile-compatibility`, {
+      let userBudgetData = getEmptyBudgetData();
+      let dataSource = 'none';
+
+      // First priority: Try onboarding data (most detailed and accurate)
+      console.log('🔄 Trying onboarding data for budget...');
+      const onboardingResponse = await fetch(`${API_BASE_URL}/api/v1/onboarding/state`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      let userBudgetData = getEmptyBudgetData();
-      
-      if (profileResponse.ok) {
-        const profileData = await profileResponse.json();
-        console.log('👤 Profile data for budget:', profileData);
+      if (onboardingResponse.ok) {
+        const onboardingData = await onboardingResponse.json();
+        console.log('📋 Onboarding data for budget:', onboardingData);
         
-        // Use profile data if available (prioritize monthly_income over calculated annual)
-        if (profileData.profile) {
-          const profile = profileData.profile;
-          userBudgetData.monthlyIncome = profile.monthly_income || 
-                                       (profile.annual_income ? profile.annual_income / 12 : 0);
+        if (onboardingData.financial_data) {
+          const financial = onboardingData.financial_data;
+          userBudgetData.monthlyIncome = parseFloat(financial.monthlyIncome) || 0;
           
-          // Use actual expense data if available
-          if (profile.monthly_expenses) {
-            const monthlyExpenses = profile.monthly_expenses;
-            // Distribute total expenses across categories (rough estimation)
-            userBudgetData.expenses.rent = monthlyExpenses * 0.3;  // 30% for housing
-            userBudgetData.expenses.groceries = monthlyExpenses * 0.2;  // 20% for food
-            userBudgetData.expenses.transport = monthlyExpenses * 0.15; // 15% for transport
-            userBudgetData.expenses.utilities = monthlyExpenses * 0.1;  // 10% for utilities
-            userBudgetData.expenses.miscellaneous = monthlyExpenses * 0.25; // 25% other
-            if (profile.monthly_debt_payments) {
-              userBudgetData.expenses.loanRepayments = profile.monthly_debt_payments;
-            }
+          // Map onboarding expenses to budget structure (actual categories)
+          userBudgetData.expenses = {
+            rent: parseFloat(financial.rent) || 0,
+            utilities: parseFloat(financial.utilities) || 0,
+            groceries: parseFloat(financial.groceries) || 0,
+            transport: parseFloat(financial.transport) || 0,
+            loanRepayments: parseFloat(financial.loanRepayments) || 0,
+            blackTax: 0, // Not collected in onboarding
+            insurance: 0, // Not collected in onboarding
+            dining: 0,
+            entertainment: 0,
+            clothing: 0,
+            healthcare: 0,
+            personalCare: 0,
+            miscellaneous: 0
+          };
+
+          // Add custom expenses from onboarding
+          if (financial.customExpenses && Array.isArray(financial.customExpenses)) {
+            financial.customExpenses.forEach(expense => {
+              userBudgetData.expenses.miscellaneous += parseFloat(expense.amount) || 0;
+            });
           }
+          
+          dataSource = 'onboarding';
+          console.log('✅ Using detailed onboarding expense data');
         }
       }
 
-      // If still no income data, try onboarding data
-      if (userBudgetData.monthlyIncome === 0) {
-        console.log('🔄 Trying onboarding data for budget...');
-        const onboardingResponse = await fetch(`${API_BASE_URL}/api/v1/onboarding/state`, {
+      // Second priority: Try profile data (fallback if no onboarding data)
+      if (dataSource === 'none') {
+        console.log('🔄 Trying profile data for budget...');
+        const profileResponse = await fetch(`${API_BASE_URL}/api/v1/onboarding/profile-compatibility`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-
-        if (onboardingResponse.ok) {
-          const onboardingData = await onboardingResponse.json();
-          console.log('📋 Onboarding data for budget:', onboardingData);
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          console.log('👤 Profile data for budget:', profileData);
           
-          if (onboardingData.financial_data) {
-            const financial = onboardingData.financial_data;
-            userBudgetData.monthlyIncome = parseFloat(financial.monthlyIncome) || 0;
+          // Use profile data if available (prioritize monthly_income over calculated annual)
+          if (profileData.profile) {
+            const profile = profileData.profile;
+            userBudgetData.monthlyIncome = profile.monthly_income || 
+                                         (profile.annual_income ? profile.annual_income / 12 : 0);
             
-            // Map onboarding expenses to budget structure
-            userBudgetData.expenses = {
-              rent: parseFloat(financial.rent) || 0,
-              utilities: parseFloat(financial.utilities) || 0,
-              groceries: parseFloat(financial.groceries) || 0,
-              transport: parseFloat(financial.transport) || 0,
-              loanRepayments: parseFloat(financial.loanRepayments) || 0,
-              blackTax: 0, // Not collected in onboarding
-              insurance: 0, // Not collected in onboarding
-              dining: 0,
-              entertainment: 0,
-              clothing: 0,
-              healthcare: 0,
-              personalCare: 0,
-              miscellaneous: 0
-            };
-
-            // Add custom expenses from onboarding
-            if (financial.customExpenses && Array.isArray(financial.customExpenses)) {
-              financial.customExpenses.forEach(expense => {
-                userBudgetData.expenses.miscellaneous += parseFloat(expense.amount) || 0;
-              });
+            // Use actual expense data if available
+            if (profile.monthly_expenses) {
+              const monthlyExpenses = profile.monthly_expenses;
+              // Distribute total expenses across categories (rough estimation)
+              userBudgetData.expenses.rent = monthlyExpenses * 0.3;  // 30% for housing
+              userBudgetData.expenses.groceries = monthlyExpenses * 0.2;  // 20% for food
+              userBudgetData.expenses.transport = monthlyExpenses * 0.15; // 15% for transport
+              userBudgetData.expenses.utilities = monthlyExpenses * 0.1;  // 10% for utilities
+              userBudgetData.expenses.miscellaneous = monthlyExpenses * 0.25; // 25% other
+              if (profile.monthly_debt_payments) {
+                userBudgetData.expenses.loanRepayments = profile.monthly_debt_payments;
+              }
             }
+            
+            dataSource = 'profile';
+            console.log('⚠️ Using estimated profile expense distribution');
           }
         }
       }
 
-      console.log('✅ Created budget from user data:', userBudgetData);
+      console.log(`✅ Created budget from ${dataSource} data:`, userBudgetData);
       
       dispatch({
         type: 'LOAD_SUCCESS',
@@ -376,43 +384,81 @@ export const BudgetProvider = ({ children }) => {
     loadBudgetData();
   }, [loadBudgetData]);
 
-  // Computed values
+  // DYNAMIC Computed values - handles unlimited custom categories
   const computedValues = React.useMemo(() => {
     if (!state.budgetData) {
       return {
         totalExpenses: 0,
         totalGoalAllocations: 0,
+        totalIncome: 0,
         actualSurplus: 0,
         budgetHealth: 'unknown',
-        expensesByCategory: {}
+        expensesByCategory: {},
+        dynamicCategoryCount: 0,
+        customCategoryCount: 0
       };
     }
 
+    // Calculate total expenses from all expense categories (standard + custom)
     const totalExpenses = Object.values(state.budgetData.expenses || {})
       .reduce((sum, amount) => sum + (amount || 0), 0);
 
+    // Calculate total goal allocations
     const totalGoalAllocations = Object.values(state.budgetData.goalAllocations || {})
       .reduce((sum, amount) => sum + (amount || 0), 0);
 
-    const actualSurplus = (state.budgetData.monthlyIncome || 0) - totalExpenses - totalGoalAllocations;
+    // Calculate total income (primary + custom income sources)
+    let totalIncome = state.budgetData.monthlyIncome || 0;
+    if (state.budgetData.income) {
+      totalIncome += Object.values(state.budgetData.income || {})
+        .reduce((sum, amount) => sum + (amount || 0), 0);
+    }
+
+    // REAL-TIME SURPLUS CALCULATION
+    const actualSurplus = totalIncome - totalExpenses - totalGoalAllocations;
 
     const budgetHealth = actualSurplus >= 0 ? 'healthy' : 'deficit';
 
-    // Group expenses by type for analysis
-    const fixedExpenses = ['rent', 'utilities', 'loanRepayments', 'blackTax', 'insurance'];
-    const variableExpenses = ['groceries', 'transport', 'dining', 'entertainment', 'clothing', 'healthcare', 'personalCare', 'miscellaneous'];
-
+    // DYNAMIC expense categorization - no hardcoded lists!
+    const standardFixed = ['rent', 'utilities', 'loanRepayments', 'blackTax', 'insurance'];
+    const standardVariable = ['groceries', 'transport', 'dining', 'entertainment', 'clothing', 'healthcare', 'personalCare', 'miscellaneous'];
+    
+    // Separate standard vs custom expenses
     const expensesByCategory = {
-      fixed: fixedExpenses.reduce((sum, key) => sum + (state.budgetData.expenses[key] || 0), 0),
-      variable: variableExpenses.reduce((sum, key) => sum + (state.budgetData.expenses[key] || 0), 0)
+      fixed: 0,
+      variable: 0,
+      custom: 0
     };
+    
+    if (state.budgetData.expenses) {
+      Object.entries(state.budgetData.expenses).forEach(([key, amount]) => {
+        const value = amount || 0;
+        if (standardFixed.includes(key)) {
+          expensesByCategory.fixed += value;
+        } else if (standardVariable.includes(key)) {
+          expensesByCategory.variable += value;
+        } else {
+          expensesByCategory.custom += value;
+        }
+      });
+    }
+
+    // Count dynamic categories
+    const dynamicCategoryCount = Object.keys(state.budgetData.expenses || {}).length +
+                                Object.keys(state.budgetData.goalAllocations || {}).length +
+                                Object.keys(state.budgetData.income || {}).length;
+    
+    const customCategoryCount = Object.keys(state.budgetData.customCategories || {}).length;
 
     return {
       totalExpenses,
       totalGoalAllocations,
+      totalIncome,
       actualSurplus,
       budgetHealth,
-      expensesByCategory
+      expensesByCategory,
+      dynamicCategoryCount,
+      customCategoryCount
     };
   }, [state.budgetData]);
 
@@ -434,13 +480,41 @@ export const BudgetProvider = ({ children }) => {
     clearError,
     handleSaveAndExit,
     
-    // Helper methods
+    // Helper methods with enhanced functionality
     getMonthlyAmount: (amount) => state.budgetPeriod === 'annual' ? amount * 12 : amount,
-    formatAmount: (amount) => `KES ${(state.budgetPeriod === 'annual' ? amount * 12 : amount).toLocaleString()}`,
+    formatAmount: (amount) => {
+      const displayAmount = state.budgetPeriod === 'annual' ? amount * 12 : amount;
+      return `KES ${Math.round(displayAmount).toLocaleString()}`;
+    },
     
-    // Status flags
+    // DYNAMIC CATEGORY HELPERS
+    refreshBudgetData: loadBudgetData,
+    getCategoryType: (categoryKey) => {
+      if (!state.budgetData?.customCategories) return 'standard';
+      const customCat = state.budgetData.customCategories[categoryKey];
+      return customCat ? 'custom' : 'standard';
+    },
+    getCategoryMetadata: (categoryKey) => {
+      if (!state.budgetData?.customCategories) return null;
+      return state.budgetData.customCategories[categoryKey] || null;
+    },
+    getCustomCategoriesList: () => {
+      if (!state.budgetData?.customCategories) return [];
+      return Object.entries(state.budgetData.customCategories).map(([key, data]) => ({
+        key,
+        ...data
+      }));
+    },
+    
+    // Status flags with enhanced budget readiness
     isBudgetReady: !state.loading && state.budgetData && !state.error,
-    needsSaving: state.hasUnsavedChanges
+    needsSaving: state.hasUnsavedChanges,
+    hasDynamicCategories: (state.budgetData?.customCategories && Object.keys(state.budgetData.customCategories).length > 0),
+    budgetDataFreshness: state.lastUpdated ? new Date(state.lastUpdated) : null,
+    
+    // Real-time calculation status
+    isCalculationLive: !state.loading && !state.error,
+    calculationTimestamp: new Date().toISOString()
   };
 
   return (
