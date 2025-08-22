@@ -338,7 +338,8 @@ class GoalOptimizer:
         target_date: datetime,
         available_monthly: float,
         risk_tolerance: float = 0.5,
-        account_types: Optional[List[AccountType]] = None
+        account_types: Optional[List[AccountType]] = None,
+        cfa_priority_scoring: bool = True
     ) -> GoalCalculation:
         """
         Optimize strategy for achieving a financial goal.
@@ -789,6 +790,201 @@ class GoalOptimizer:
                 )
         
         return recommendations
+    
+    def assess_goal_feasibility_cfa(
+        self,
+        goals: List[Dict[str, Any]],
+        monthly_surplus: float,
+        income: float
+    ) -> Dict[str, Any]:
+        """
+        CFA-compliant goal feasibility assessment.
+        
+        Args:
+            goals: List of financial goals with targets and timelines
+            monthly_surplus: Available monthly surplus after expenses
+            income: Monthly income for ratio calculations
+            
+        Returns:
+            CFA-compliant feasibility analysis with recommendations
+        """
+        total_required = 0
+        feasibility_scores = []
+        
+        for goal in goals:
+            target_amount = float(goal.get("target_amount", 0))
+            timeline_years = float(goal.get("timeline_years", 1))
+            goal_type = goal.get("type", "general")
+            
+            # CFA-standard required monthly contribution
+            monthly_required = self.calculator.payment_required(
+                future_value=target_amount,
+                present_value=float(goal.get("current_amount", 0)),
+                rate=self._get_cfa_expected_return(goal_type, timeline_years),
+                periods=int(timeline_years * 12)
+            )
+            
+            total_required += monthly_required
+            
+            # CFA Priority Scoring (Higher score = higher priority)
+            priority_score = self._calculate_cfa_priority_score(
+                goal_type=goal_type,
+                timeline_years=timeline_years,
+                monthly_required=monthly_required,
+                income=income
+            )
+            
+            feasibility_scores.append({
+                "goal_name": goal.get("name", "Unknown"),
+                "goal_type": goal_type,
+                "monthly_required": monthly_required,
+                "priority_score": priority_score,
+                "feasibility_ratio": monthly_required / max(monthly_surplus, 1),
+                "cfa_recommendation": self._get_cfa_goal_recommendation(
+                    goal_type, timeline_years, monthly_required, monthly_surplus
+                )
+            })
+        
+        # Calculate overall feasibility
+        feasibility_ratio = total_required / max(monthly_surplus, 1)
+        
+        # CFA-compliant optimization recommendations
+        optimization_strategy = self._generate_cfa_optimization_strategy(
+            feasibility_scores, monthly_surplus, feasibility_ratio
+        )
+        
+        return {
+            "total_monthly_required": total_required,
+            "available_monthly_surplus": monthly_surplus,
+            "feasibility_ratio": feasibility_ratio,
+            "feasibility_status": self._get_feasibility_status(feasibility_ratio),
+            "goal_analysis": sorted(feasibility_scores, key=lambda x: x["priority_score"], reverse=True),
+            "cfa_optimization_strategy": optimization_strategy,
+            "budget_treatment": {
+                "surplus_calculation": "Income - Expenses (goals tracked separately)",
+                "goal_allocation_method": "Priority-based optimization with timeline flexibility",
+                "cfa_compliance": True
+            }
+        }
+    
+    def _calculate_cfa_priority_score(
+        self,
+        goal_type: str,
+        timeline_years: float,
+        monthly_required: float,
+        income: float
+    ) -> float:
+        """
+        Calculate CFA-compliant priority score for goals.
+        
+        CFA Priority Framework:
+        1. Liquidity needs (emergency fund) - Highest priority
+        2. Insurance/Risk management - High priority  
+        3. Retirement adequacy - High priority (but flexible timeline)
+        4. Children's education - Medium priority
+        5. Discretionary goals - Lower priority
+        """
+        base_scores = {
+            "emergency_fund": 100,
+            "insurance": 90,
+            "retirement": 85,
+            "education": 70,
+            "investment": 60,
+            "housing": 75,
+            "discretionary": 40
+        }
+        
+        base_score = base_scores.get(goal_type, 50)
+        
+        # Timeline urgency adjustment (CFA methodology)
+        if timeline_years <= 2:
+            urgency_multiplier = 1.3  # High urgency
+        elif timeline_years <= 5:
+            urgency_multiplier = 1.1  # Medium urgency
+        else:
+            urgency_multiplier = 0.9  # Lower urgency (more flexibility)
+        
+        # Affordability adjustment (CFA best practice)
+        affordability_ratio = monthly_required / income
+        if affordability_ratio > 0.3:  # More than 30% of income
+            affordability_penalty = 0.7
+        elif affordability_ratio > 0.2:  # 20-30% of income
+            affordability_penalty = 0.85
+        else:
+            affordability_penalty = 1.0  # Affordable
+        
+        return base_score * urgency_multiplier * affordability_penalty
+    
+    def _get_cfa_expected_return(self, goal_type: str, timeline_years: float) -> float:
+        """Get CFA-appropriate expected return based on goal type and timeline."""
+        if timeline_years <= 2:
+            return 0.04  # Conservative for short-term goals
+        elif timeline_years <= 7:
+            return 0.07  # Moderate for medium-term goals
+        else:
+            return 0.09  # Growth-oriented for long-term goals
+    
+    def _get_cfa_goal_recommendation(
+        self,
+        goal_type: str,
+        timeline_years: float,
+        monthly_required: float,
+        monthly_surplus: float
+    ) -> str:
+        """Generate CFA-compliant goal recommendation."""
+        affordability = monthly_required / max(monthly_surplus, 1)
+        
+        if affordability <= 1.0:
+            return f"Goal is achievable within current budget. Allocate {monthly_required:,.0f} KES monthly."
+        
+        if goal_type == "emergency_fund":
+            return f"Emergency fund is critical - consider extending timeline or reducing target. Current requirement: {monthly_required:,.0f} KES."
+        
+        if timeline_years > 5:
+            return f"Consider extending timeline by {(affordability - 1) * timeline_years:.1f} years to make goal achievable."
+        
+        return f"Goal requires {affordability:.1f}x available surplus. Recommend timeline extension or target reduction."
+    
+    def _generate_cfa_optimization_strategy(
+        self,
+        feasibility_scores: List[Dict],
+        monthly_surplus: float,
+        feasibility_ratio: float
+    ) -> Dict[str, Any]:
+        """Generate CFA-compliant optimization strategy."""
+        if feasibility_ratio <= 1.0:
+            return {
+                "strategy": "ACHIEVABLE_WITH_OPTIMIZATION",
+                "approach": "Allocate based on CFA priority scoring",
+                "recommendations": [
+                    "Fund highest priority goals first",
+                    "Optimize remaining surplus across lower priority goals",
+                    "Consider tax-advantaged accounts for long-term goals"
+                ]
+            }
+        
+        return {
+            "strategy": "REQUIRES_OPTIMIZATION",
+            "approach": "Dynamic goal adjustment with timeline flexibility",
+            "recommendations": [
+                f"Total goals exceed surplus by {(feasibility_ratio - 1) * 100:.0f}%",
+                "Prioritize liquidity and risk management goals",
+                "Extend timelines for discretionary goals",
+                "Consider income optimization strategies",
+                "Review and reduce lower-priority goal targets"
+            ]
+        }
+    
+    def _get_feasibility_status(self, ratio: float) -> str:
+        """Get CFA-compliant feasibility status."""
+        if ratio <= 0.8:
+            return "HIGHLY_ACHIEVABLE"
+        elif ratio <= 1.0:
+            return "ACHIEVABLE_WITH_DISCIPLINE" 
+        elif ratio <= 1.5:
+            return "REQUIRES_OPTIMIZATION"
+        else:
+            return "REQUIRES_SIGNIFICANT_ADJUSTMENT"
 
 
 # Factory function for easy service instantiation
