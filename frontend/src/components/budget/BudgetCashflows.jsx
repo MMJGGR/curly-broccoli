@@ -56,12 +56,12 @@ const BudgetCashflows = () => {
   // Phase-aware defaults for smarter budgeting
   const phaseDefaults = usePhaseDefaults();
 
-  // Handle CSV import success
-  const handleImportSuccess = () => {
-    // Refresh budget data to reflect imported transactions
-    if (refreshBudgetData) {
-      refreshBudgetData();
-    }
+  // Import success handler temporarily disabled with TransactionImportNew component
+  // const handleImportSuccess = () => {
+  //   if (refreshBudgetData) {
+  //     refreshBudgetData();
+  //   }
+  // };
     
     // Close the import modal
     setShowImportModal(false);

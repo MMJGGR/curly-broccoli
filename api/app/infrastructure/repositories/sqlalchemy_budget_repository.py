@@ -7,7 +7,7 @@ from ...domain.repositories.budget_repository import BudgetRepository
 from ...domain.entities.budget import Budget, BudgetCategory
 from ...domain.value_objects.money import Money
 from ...domain.value_objects.period import Period, PeriodType
-from ...models import User, Profile, ExpenseCategory, Goal
+from ...models import User, Profile, ExpenseCategory, Goal, OnboardingState
 
 
 class SqlAlchemyBudgetRepository(BudgetRepository):
@@ -18,54 +18,96 @@ class SqlAlchemyBudgetRepository(BudgetRepository):
     
     async def get_by_user_id(self, user_id: int) -> Optional[Budget]:
         """
-        Get the current budget for a user by mapping existing data to domain entities.
-        Maps from: Profile (income) + ExpenseCategory (categories) + Goal (goals)
+        Get the current budget for a user by mapping from onboarding financial data.
+        Maps from: OnboardingState.financial_data (expenses) + goals_data
         """
-        # Get user profile for income data
-        profile = self._session.query(Profile).filter(Profile.user_id == user_id).first()
-        if not profile:
-            return None
+        # Get onboarding state which contains the actual financial data
+        onboarding_state = self._session.query(OnboardingState).filter(
+            OnboardingState.user_id == user_id
+        ).first()
         
-        # Get expense categories for budget categories
-        expense_categories = self._session.query(ExpenseCategory).filter(
-            ExpenseCategory.user_id == user_id,
-            ExpenseCategory.is_active == True
-        ).all()
+        if not onboarding_state or not onboarding_state.financial_data:
+            raise ValueError("Budget not found. Please set up your budget first.")
         
-        # Get goals for goal allocations
-        goals = self._session.query(Goal).filter(Goal.user_id == user_id).all()
+        financial_data = onboarding_state.financial_data
+        goals_data = onboarding_state.goals_data or {}
         
-        # Create current month period (defaulting to monthly budgets)
+        # Create current month period
         current_date = date.today()
         period = Period.monthly(current_date.year, current_date.month)
         
-        # Map to domain entities
+        # Map standard expense categories from financial_data
         budget_categories = {}
-        for expense_cat in expense_categories:
-            # Map database fields to domain category
-            budget_categories[expense_cat.name] = BudgetCategory(
-                name=expense_cat.name,
-                allocated_amount=Money(Decimal(str(expense_cat.budgeted_amount or 0))),
-                spent_amount=Money(Decimal(str(expense_cat.actual_amount or 0))),
-                category_type=expense_cat.category_type or "expense"
-            )
         
-        # Map goal allocations
+        # Standard expense categories
+        standard_expenses = {
+            'rent': financial_data.get('rent', 0),
+            'utilities': financial_data.get('utilities', 0), 
+            'groceries': financial_data.get('groceries', 0),
+            'transport': financial_data.get('transport', 0),
+            'loanRepayments': financial_data.get('loanRepayments', 0)
+        }
+        
+        # Add standard expense categories
+        for category_name, amount in standard_expenses.items():
+            if amount > 0:
+                budget_categories[category_name] = BudgetCategory(
+                    name=category_name,
+                    allocated_amount=Money(Decimal(str(amount))),
+                    spent_amount=Money(Decimal('0')),  # No actual spending tracked yet
+                    category_type="expense"
+                )
+        
+        # Add custom expense categories
+        custom_expenses = financial_data.get('customExpenses', [])
+        for custom_expense in custom_expenses:
+            name = custom_expense.get('name', '').strip()
+            amount = custom_expense.get('amount', 0)
+            if name and amount > 0:
+                budget_categories[name] = BudgetCategory(
+                    name=name,
+                    allocated_amount=Money(Decimal(str(amount))),
+                    spent_amount=Money(Decimal('0')),  # No actual spending tracked yet
+                    category_type="expense"
+                )
+        
+        # Map goal allocations from goals_data (convert targets to monthly allocations)
         goal_allocations = {}
-        for goal in goals:
-            try:
-                # Parse target as float and convert to Money
-                target_amount = float(goal.target) if goal.target else 0.0
-                goal_allocations[goal.name] = Money(Decimal(str(target_amount)))
-            except (ValueError, TypeError):
-                # Skip goals with invalid target amounts
-                continue
+        timeframes = goals_data.get('timeframes', {})
+        
+        # Timeframe to months mapping
+        timeframe_months = {
+            '1-year': 12,
+            '3-years': 36,
+            '5-years': 60,
+            '10-years': 120,
+            '30-years': 360
+        }
+        
+        for goal_name, goal_amount in goals_data.items():
+            if goal_name != 'timeframes' and goal_amount:
+                try:
+                    target_amount = float(goal_amount) if goal_amount else 0.0
+                    if target_amount > 0:
+                        # Get timeframe for this goal
+                        timeframe = timeframes.get(goal_name, '10-years')  # Default 10 years
+                        months = timeframe_months.get(timeframe, 120)      # Default 120 months
+                        
+                        # Convert target to monthly allocation
+                        monthly_allocation = target_amount / months
+                        goal_allocations[goal_name] = Money(Decimal(str(monthly_allocation)))
+                except (ValueError, TypeError):
+                    # Skip invalid goal amounts
+                    continue
+        
+        # Get monthly income from financial_data
+        monthly_income = financial_data.get('monthlyIncome', 0)
         
         # Create Budget domain entity
         return Budget(
             user_id=user_id,
             period=period,
-            monthly_income=Money(Decimal(str(profile.monthly_income or 0))),
+            monthly_income=Money(Decimal(str(monthly_income))),
             categories=budget_categories,
             goal_allocations=goal_allocations,
             created_at=datetime.utcnow().isoformat(),

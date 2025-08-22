@@ -139,7 +139,11 @@
       "Bash(NODE_ENV=development npx eslint src --ext .js,.jsx)",
       "Bash(export JWT_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzU1NTM0OTc5LjQxMDYyNCwiZXhwIjoxNzg3MDcwOTc5LjQxMDYyNCwic2NvcGUiOiJ1c2VyIiwicm9sZSI6InVzZXIifQ.-PQzowcJAZiSIrwO5C1E4yvnygvTrrLNmMj6Z-bwanM\")",
       "Bash(winpty docker exec curly-broccoli-api-1 python -c \"from api.app.api.v1.endpoints import budget_v2; print(''Import successful'')\")",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(winpty docker exec curly-broccoli-api-1 find /app -name \"*budget*\" -type f)",
+      "Bash(winpty docker exec curly-broccoli-frontend-1 head -20 /app/src/components/budget/BudgetCashflows.jsx)",
+      "Bash(for f in *.py)",
+      "Bash(done)"
     ],
     "deny": []
   }

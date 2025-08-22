@@ -281,6 +281,55 @@ errorScenarios.forEach((scenario) => {
 
 ## 📊 Test Data Management
 
+### Validated Test User (Recommended)
+
+For reliable testing, use the existing validated user with complete budget data:
+
+```javascript
+const VALIDATED_TEST_USER = {
+  email: 'richard.mmacharia@gmail.com',
+  password: 'jaggerthee',
+  user_id: 1,
+  budget_data: {
+    monthly_income: 324759,
+    standard_expenses: {
+      rent: 41000,
+      utilities: 9000, 
+      groceries: 20000,
+      transport: 12000,
+      loanRepayments: 33251
+    },
+    custom_expenses: [
+      { name: 'Dad Rent', amount: 32000 },
+      { name: 'Kenya bankers', amount: 6400 },
+      { name: 'Salon', amount: 65000 },
+      { name: 'Subscriptions', amount: 13000 }
+    ],
+    goals: {
+      emergencyFund: 3897108,
+      education: 389711,
+      retirement: 58456620,
+      investment: 1169132
+    }
+  },
+  expected_calculations: {
+    total_expenses: 231651, // Standard: 115251 + Custom: 116400
+    surplus: 93108,         // 324759 - 231651
+    expense_ratio: 71.3,    // 231651 / 324759 * 100
+    has_complete_data: true
+  }
+};
+
+// Usage in tests
+cy.request('POST', '/auth/login', {
+  username: VALIDATED_TEST_USER.email,
+  password: VALIDATED_TEST_USER.password
+}).then((response) => {
+  const token = response.body.access_token;
+  // Use token for authenticated requests
+});
+```
+
 ### Test User Setup
 ```javascript
 const createTestUser = (userType = 'standard') => {
