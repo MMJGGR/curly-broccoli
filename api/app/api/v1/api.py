@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from api.app.api.v1.endpoints import (
     profile, onboarding_consolidated, profile_clean, timeline_clean,
-    transactions, accounts, budget, budget_v2_clean, analytics
+    transactions, accounts, budget, budget_v2_clean, analytics, transactions_clean, analytics_clean, accounts_clean, profile_v2_clean, timeline_v2_clean, income_v2_clean, goals_v2_clean
 )
 
 api_router = APIRouter()
@@ -21,6 +21,13 @@ api_router.include_router(budget.router, tags=["budget"])
 
 # Clean Architecture endpoints (New)
 api_router.include_router(budget_v2_clean.router, tags=["budget-v2-clean"])
+api_router.include_router(transactions_clean.router, tags=["transactions-v2-clean"])
+api_router.include_router(analytics_clean.router, tags=["analytics-v2-clean"])
+api_router.include_router(accounts_clean.router, tags=["accounts-v2-clean"])
+api_router.include_router(profile_v2_clean.router, tags=["profile-v2-clean"])
+api_router.include_router(timeline_v2_clean.router, tags=["timeline-v2-clean"])
+api_router.include_router(income_v2_clean.router, tags=["income-v2-clean"])
+api_router.include_router(goals_v2_clean.router, tags=["goals-v2-clean"])
 
 # Predictive Analytics endpoints
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
