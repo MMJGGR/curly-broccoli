@@ -23,7 +23,7 @@ if not SECRET_KEY:
     else:
         # Development fallback with warning
         SECRET_KEY = "dev-secret-key-change-in-production-" + secrets.token_hex(32)
-        print("⚠️  WARNING: Using auto-generated secret key for development. Set SECRET_KEY env var for production.")
+        print("WARNING: Using auto-generated secret key for development. Set SECRET_KEY env var for production.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 525600
 

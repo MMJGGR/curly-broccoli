@@ -589,6 +589,211 @@ logger.info(
 
 ---
 
+## Incremental Development Guidelines
+
+### When to Commit Work
+
+#### Commit Frequency Standards
+- **Feature Development**: Commit every 30-60 minutes of productive work
+- **Bug Fixes**: Commit immediately after fix verification
+- **Refactoring**: Commit each logical refactor step separately
+- **Testing**: Commit tests with corresponding implementation changes
+
+#### Commit Triggers - ALWAYS Commit When:
+1. **Working Code State**: All existing functionality works
+2. **Passing Tests**: Current test suite passes (may be incomplete feature)
+3. **Logical Completion**: Single responsibility completed
+4. **End of Session**: Before switching context or stopping work
+5. **Before Risky Changes**: Before experimental or complex changes
+
+#### Commit Message Standards
+```bash
+# Format: type(scope): description
+feat(budget): add clean architecture domain entities
+fix(auth): resolve Unicode encoding in security.py  
+refactor(api): extract budget calculation use cases
+test(e2e): add comprehensive Cypress test suite
+docs(guide): update technical development standards
+```
+
+#### Types:
+- `feat`: New feature implementation
+- `fix`: Bug fix or issue resolution  
+- `refactor`: Code restructuring without behavior change
+- `test`: Adding or updating tests
+- `docs`: Documentation updates
+- `perf`: Performance improvements
+- `style`: Code formatting/style changes
+- `chore`: Build process, dependency updates
+
+### Error Resolution Best Practices
+
+#### Root Cause Analysis Framework
+1. **Isolate**: Create minimal reproduction case
+2. **Trace**: Follow error from source to manifestation  
+3. **Validate**: Verify assumptions with direct testing
+4. **Fix**: Address root cause, not symptoms
+5. **Prevent**: Add safeguards against recurrence
+
+#### Production-Quality Error Handling
+
+##### ❌ AVOID: Workarounds That Break Production
+```python
+# BAD: Silencing errors
+try:
+    result = risky_calculation()
+except:
+    result = 0  # Hides real issues
+
+# BAD: Quick fixes
+if user_input == "weird_edge_case":
+    return hardcoded_response  # Not scalable
+
+# BAD: Environment-specific patches  
+if os.getenv("DEVELOPMENT"):
+    use_mock_data()  # Different behavior per environment
+```
+
+##### ✅ PRODUCTION-READY: Robust Error Handling
+```python
+# GOOD: Explicit error handling
+try:
+    result = financial_calculation(amount)
+except ValueError as e:
+    logger.error(f"Invalid amount for calculation: {amount}, error: {e}")
+    raise ValidationException(f"Amount must be positive number: {amount}")
+except Exception as e:
+    logger.error(f"Unexpected error in financial calculation: {e}")
+    raise SystemException("Financial calculation unavailable")
+
+# GOOD: Comprehensive validation
+def validate_budget_amount(amount: Decimal) -> Decimal:
+    if amount < Decimal('0'):
+        raise ValueError("Budget amount cannot be negative")
+    if amount > Decimal('1000000'):
+        raise ValueError("Budget amount exceeds maximum allowed")
+    return amount.quantize(Decimal('0.01'))
+
+# GOOD: Graceful degradation
+def get_budget_overview(user_id: int) -> BudgetOverview:
+    try:
+        return full_budget_calculation(user_id)
+    except ExternalServiceException:
+        logger.warning(f"External service unavailable, using cached data for user {user_id}")
+        return cached_budget_overview(user_id)
+```
+
+#### Error Prevention Strategies
+
+##### 1. Input Validation
+```python
+# Validate at boundaries
+@dataclass
+class CreateBudgetRequest:
+    amount: Decimal
+    category: str
+    
+    def __post_init__(self):
+        if self.amount <= 0:
+            raise ValueError("Amount must be positive")
+        if not self.category.strip():
+            raise ValueError("Category name required")
+```
+
+##### 2. Type Safety
+```python
+# Use strong typing
+from typing import NewType, Optional
+
+UserId = NewType('UserId', int)
+Amount = NewType('Amount', Decimal)
+
+def calculate_budget(user_id: UserId, amount: Amount) -> BudgetResult:
+    # Type system prevents wrong parameter types
+    pass
+```
+
+##### 3. Contract Validation
+```python
+# Pre and post conditions
+def transfer_funds(from_account: str, to_account: str, amount: Money) -> None:
+    # Preconditions
+    assert amount > Money(Decimal('0')), "Transfer amount must be positive"
+    assert from_account != to_account, "Cannot transfer to same account"
+    
+    # Business logic here
+    
+    # Postcondition validation
+    assert get_balance(from_account) >= Money(Decimal('0')), "Account balance cannot go negative"
+```
+
+#### Debugging Production Issues
+
+##### Diagnostic Steps
+1. **Reproduce Locally**: Create exact conditions that trigger the issue
+2. **Check Logs**: Trace the complete request lifecycle  
+3. **Verify Data**: Ensure database state matches expectations
+4. **Test Boundaries**: Check edge cases and error conditions
+5. **Monitor Resources**: Check memory, CPU, database connections
+
+##### Logging Standards
+```python
+import logging
+logger = logging.getLogger(__name__)
+
+# Structured logging for production debugging
+logger.info(
+    "Budget calculation completed",
+    extra={
+        "user_id": user_id,
+        "calculation_time_ms": elapsed_time,
+        "total_categories": len(categories),
+        "total_amount": str(total_amount)
+    }
+)
+
+# Error logging with context
+logger.error(
+    "Failed to calculate budget overview", 
+    extra={
+        "user_id": user_id,
+        "error_type": type(e).__name__,
+        "error_message": str(e),
+        "stack_trace": traceback.format_exc()
+    }
+)
+```
+
+#### Preventing Technical Debt
+
+##### Code Quality Checks Before Commit
+```bash
+# Run full validation suite
+npm run validate  # Frontend: lint + format + test
+python -m pytest # Backend: test suite
+python -m mypy .  # Type checking
+```
+
+##### Architecture Validation
+- **Dependency Direction**: Inner layers never import from outer layers
+- **Single Responsibility**: Each module has one clear purpose  
+- **Interface Segregation**: Clean boundaries between layers
+- **Business Logic Isolation**: Domain logic is framework-independent
+
+##### Performance Validation
+```python
+# Performance assertions in tests
+def test_budget_calculation_performance():
+    start = time.time()
+    result = calculate_budget_overview(test_user_id)
+    elapsed = time.time() - start
+    
+    assert elapsed < 2.0, f"Budget calculation too slow: {elapsed:.2f}s"
+    assert len(result.categories) > 0, "Budget should have categories"
+```
+
+---
+
 ## Quick Reference
 
 ### New Feature Checklist
