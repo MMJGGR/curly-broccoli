@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useTransactions } from '../../contexts/TransactionContext';
 import TransactionList from './TransactionList';
 import TransactionForm from './TransactionForm';
-import TransactionImportNew from './TransactionImportNew';
+// Import temporarily disabled - TransactionImportNew component not found
+// import TransactionImportNew from './TransactionImportNew';
 import BudgetOverview from '../budget/BudgetOverview';
 
 const TransactionDashboard = () => {
@@ -366,13 +367,18 @@ const TransactionDashboard = () => {
         )}
 
         {showImportModal && (
-          <TransactionImportNew
-            onClose={() => setShowImportModal(false)}
-            onSuccess={() => {
-              setShowImportModal(false);
-              fetchTransactions();
-            }}
-          />
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Transaction Import</h3>
+              <p className="text-gray-600 mb-4">Import functionality temporarily unavailable.</p>
+              <button 
+                onClick={() => setShowImportModal(false)}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

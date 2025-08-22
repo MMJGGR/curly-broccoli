@@ -14,7 +14,8 @@ import {
   TimelineAlert,
   usePhaseDefaults
 } from '../timeline/ContextualTimelineSystem';
-import TransactionImportNew from '../transactions/TransactionImportNew';
+// Import temporarily disabled - TransactionImportNew component not found
+// import TransactionImportNew from '../transactions/TransactionImportNew';
 
 const BudgetCashflows = () => {
   const {
@@ -806,12 +807,20 @@ const BudgetCashflows = () => {
         </div>
       </div>
 
-      {/* CSV Import Modal */}
+      {/* CSV Import Modal - Temporarily disabled */}
       {showImportModal && (
-        <TransactionImportNew
-          onClose={handleImportClose}
-          onSuccess={handleImportSuccess}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Transaction Import</h3>
+            <p className="text-gray-600 mb-4">Import functionality temporarily unavailable.</p>
+            <button 
+              onClick={handleImportClose}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
