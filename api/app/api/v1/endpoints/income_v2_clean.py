@@ -69,13 +69,47 @@ async def create_income_source_v2(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new income source - SIMPLE version"""
+    """Create a new income source with validation"""
     try:
-        # Basic validation
+        # Input validation
+        if not source_name or len(source_name.strip()) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Source name is required"
+            )
+        
+        if len(source_name) > 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Source name too long (max 100 characters)"
+            )
+        
         if monthly_amount <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Monthly amount must be positive"
+            )
+        
+        if monthly_amount > 10_000_000:  # 10M KES reasonable upper limit
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Monthly amount exceeds reasonable limit"
+            )
+        
+        # Frequency validation
+        valid_frequencies = ["monthly", "bi-weekly", "weekly", "irregular"]
+        if frequency not in valid_frequencies:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid frequency. Must be one of: {', '.join(valid_frequencies)}"
+            )
+        
+        # Source type validation
+        valid_types = ["salary", "freelance", "investment", "business", "other"]
+        if source_type not in valid_types:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid source type. Must be one of: {', '.join(valid_types)}"
             )
         
         # Create new income source

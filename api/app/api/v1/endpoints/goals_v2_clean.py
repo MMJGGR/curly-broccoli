@@ -1,6 +1,16 @@
 """
-Goals Management API V2 - Clean Architecture Implementation (SIMPLE)
-Post-onboarding financial goals CRUD operations
+Goals Management API V2 - Post-onboarding CRUD Operations
+
+Provides endpoints for users to create, track, and manage their financial goals
+after completing the onboarding process. Supports progress tracking and goal
+achievement monitoring.
+
+Key Features:
+- Create and manage financial goals (emergency fund, vacation, etc.)
+- Track progress with percentage calculations
+- Update goal progress in real-time
+- Goal achievement status monitoring
+- Input validation with reasonable limits
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -89,19 +99,50 @@ async def create_goal_v2(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new financial goal - SIMPLE version"""
+    """Create a new financial goal with validation"""
     try:
-        # Basic validation
+        # Input validation
+        if not name or len(name.strip()) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Goal name is required"
+            )
+        
+        if len(name) > 100:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Goal name too long (max 100 characters)"
+            )
+        
         if target_amount <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Target amount must be positive"
             )
         
+        if target_amount > 100_000_000:  # 100M KES reasonable upper limit
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Target amount exceeds reasonable limit"
+            )
+        
         if current_amount < 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Current amount cannot be negative"
+            )
+        
+        if current_amount > target_amount:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current amount cannot exceed target amount"
+            )
+        
+        # Date validation (basic format check)
+        if not target_date or len(target_date.strip()) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Target date is required"
             )
         
         # Calculate initial progress
