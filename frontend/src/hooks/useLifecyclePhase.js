@@ -265,7 +265,7 @@ export const useLifecyclePhase = (userProfile = {}) => {
   useEffect(() => {
     setLifecycleData(lifecycleAnalysis);
     setLoading(false);
-  }, [calculateLifecyclePhase, age, income, expenses, netWorth, dependents, retirementGoalAge]);
+  }, [lifecycleAnalysis]);
 
   return {
     // Core lifecycle data

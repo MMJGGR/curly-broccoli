@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getIncomeOverview, createIncomeSource, listIncomeSources } from '../../api';
 import MessageBox from '../MessageBox';
 
