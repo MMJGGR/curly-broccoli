@@ -225,81 +225,6 @@ export function OnboardingProvider({ children }) {
     loadOnboardingState();
   }, [loadOnboardingState]);
 
-  
-  // Auto-save functionality with improved throttling and connection management
-  useEffect(() => {
-    let globalAutoSaveTimeout = null;
-    let lastAutoSaveTime = 0;
-    const MIN_AUTO_SAVE_INTERVAL = 30000; // 30 seconds minimum between auto-saves
-    
-    // Single global auto-save function to prevent network flooding
-    const performGlobalAutoSave = () => {
-      const now = Date.now();
-      if (now - lastAutoSaveTime < MIN_AUTO_SAVE_INTERVAL) {
-        console.log('⏰ Auto-save throttled - too frequent');
-        return;
-      }
-      
-      lastAutoSaveTime = now;
-      console.log('🔄 Performing global auto-save...');
-      
-      // Auto-save only steps with meaningful data, but limit to one request at a time
-      const autoSaveQueue = [];
-      
-      // Step 1: Only auto-save if ALL required fields are present
-      const hasCompletePersonalData = state.personalData.firstName && 
-                                     state.personalData.lastName && 
-                                     state.personalData.dateOfBirth && 
-                                     state.personalData.phone;
-      
-      if (hasCompletePersonalData) {
-        autoSaveQueue.push({ step: 1, data: state.personalData });
-      }
-      if (state.riskData.questionnaire.length === 5) {
-        autoSaveQueue.push({ step: 2, data: state.riskData });
-      }
-      if (state.financialData.monthlyIncome) {
-        autoSaveQueue.push({ step: 3, data: state.financialData });
-      }
-      if (Object.values(state.goalsData).some(val => val)) {
-        autoSaveQueue.push({ step: 4, data: state.goalsData });
-      }
-      
-      // Process queue sequentially to avoid connection flooding
-      if (autoSaveQueue.length > 0) {
-        processAutoSaveQueue(autoSaveQueue);
-      }
-    };
-    
-    // Process auto-save queue sequentially
-    const processAutoSaveQueue = async (queue) => {
-      for (const item of queue) {
-        try {
-          await saveStep(item.step, item.data, false, false);
-          // Add small delay between saves to prevent connection resets
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (error) {
-          console.warn(`Auto-save failed for step ${item.step}:`, error.message);
-          break; // Stop processing if any save fails
-        }
-      }
-    };
-    
-    // Set up global auto-save timer
-    if (globalAutoSaveTimeout) {
-      clearTimeout(globalAutoSaveTimeout);
-    }
-    
-    globalAutoSaveTimeout = setTimeout(performGlobalAutoSave, MIN_AUTO_SAVE_INTERVAL);
-    
-    return () => {
-      if (globalAutoSaveTimeout) {
-        clearTimeout(globalAutoSaveTimeout);
-      }
-    };
-  }, [state.personalData, state.riskData, state.financialData, state.goalsData, saveStep]);
-  
-  
   // Enhanced retry function for network requests with connection reset handling
   async function retryRequest(requestFn, retries = 3, delay = 1000) {
     for (let i = 0; i < retries; i++) {
@@ -401,6 +326,79 @@ export function OnboardingProvider({ children }) {
       return { success: false, error: error.message };
     }
   }, []);
+
+  // Auto-save functionality with improved throttling and connection management
+  useEffect(() => {
+    let globalAutoSaveTimeout = null;
+    let lastAutoSaveTime = 0;
+    const MIN_AUTO_SAVE_INTERVAL = 30000; // 30 seconds minimum between auto-saves
+    
+    // Single global auto-save function to prevent network flooding
+    const performGlobalAutoSave = () => {
+      const now = Date.now();
+      if (now - lastAutoSaveTime < MIN_AUTO_SAVE_INTERVAL) {
+        console.log('⏰ Auto-save throttled - too frequent');
+        return;
+      }
+      
+      lastAutoSaveTime = now;
+      console.log('🔄 Performing global auto-save...');
+      
+      // Auto-save only steps with meaningful data, but limit to one request at a time
+      const autoSaveQueue = [];
+      
+      // Step 1: Only auto-save if ALL required fields are present
+      const hasCompletePersonalData = state.personalData.firstName && 
+                                     state.personalData.lastName && 
+                                     state.personalData.dateOfBirth && 
+                                     state.personalData.phone;
+      
+      if (hasCompletePersonalData) {
+        autoSaveQueue.push({ step: 1, data: state.personalData });
+      }
+      if (state.riskData.questionnaire.length === 5) {
+        autoSaveQueue.push({ step: 2, data: state.riskData });
+      }
+      if (state.financialData.monthlyIncome) {
+        autoSaveQueue.push({ step: 3, data: state.financialData });
+      }
+      if (Object.values(state.goalsData).some(val => val)) {
+        autoSaveQueue.push({ step: 4, data: state.goalsData });
+      }
+      
+      // Process queue sequentially to avoid connection flooding
+      if (autoSaveQueue.length > 0) {
+        processAutoSaveQueue(autoSaveQueue);
+      }
+    };
+    
+    // Process auto-save queue sequentially
+    const processAutoSaveQueue = async (queue) => {
+      for (const item of queue) {
+        try {
+          await saveStep(item.step, item.data, false, false);
+          // Add small delay between saves to prevent connection resets
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.warn(`Auto-save failed for step ${item.step}:`, error.message);
+          break; // Stop processing if any save fails
+        }
+      }
+    };
+    
+    // Set up global auto-save timer
+    if (globalAutoSaveTimeout) {
+      clearTimeout(globalAutoSaveTimeout);
+    }
+    
+    globalAutoSaveTimeout = setTimeout(performGlobalAutoSave, MIN_AUTO_SAVE_INTERVAL);
+    
+    return () => {
+      if (globalAutoSaveTimeout) {
+        clearTimeout(globalAutoSaveTimeout);
+      }
+    };
+  }, [state.personalData, state.riskData, state.financialData, state.goalsData, saveStep]);
 
   // Force save all required steps before completion with improved sequencing
   async function forceSaveAllSteps() {

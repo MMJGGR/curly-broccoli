@@ -3,7 +3,7 @@
  * Advanced predictive analytics dashboard for financial goal tracking
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import predictiveAnalytics from '../../services/predictiveAnalytics';
 import ProbabilityGauge from './ProbabilityGauge';
 import ConfidenceIntervalChart from './ConfidenceIntervalChart';
