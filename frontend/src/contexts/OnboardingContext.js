@@ -325,7 +325,7 @@ export function OnboardingProvider({ children }) {
       dispatch({ type: 'SET_ERROR', payload: error.message });
       return { success: false, error: error.message };
     }
-  }, []);
+  }, [dispatch]);
 
   // Auto-save functionality with improved throttling and connection management
   useEffect(() => {
