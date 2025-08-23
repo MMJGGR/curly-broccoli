@@ -184,10 +184,47 @@ const OnboardingContext = createContext();
 export function OnboardingProvider({ children }) {
   const [state, dispatch] = useReducer(onboardingReducer, initialState);
   
+  // API Functions - Define before usage
+  const loadOnboardingState = useCallback(async () => {
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
+      const jwt = localStorage.getItem('jwt');
+      if (!jwt) {
+        dispatch({ type: 'SET_LOADING', payload: false });
+        return;
+      }
+      
+      const fetchUrl = `${API_BASE}/api/v1/onboarding/state`;
+      console.log('🌐 About to fetch onboarding state from:', fetchUrl);
+      
+      const response = await fetch(fetchUrl, {
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        dispatch({ type: 'LOAD_ONBOARDING_STATE', payload: data });
+        console.log('✅ Loaded onboarding state:', data);
+      } else {
+        console.log('No existing onboarding state found, starting fresh');
+      }
+    } catch (error) {
+      console.error('Failed to load onboarding state:', error);
+      dispatch({ type: 'SET_ERROR', payload: 'Failed to load previous progress' });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, []);
+  
   // Load existing onboarding state on mount
   useEffect(() => {
     loadOnboardingState();
-  }, []);
+  }, [loadOnboardingState]);
+
   
   // Auto-save functionality with improved throttling and connection management
   useEffect(() => {
@@ -260,43 +297,8 @@ export function OnboardingProvider({ children }) {
         clearTimeout(globalAutoSaveTimeout);
       }
     };
-  }, [state.personalData, state.riskData, state.financialData, state.goalsData]);
+  }, [state.personalData, state.riskData, state.financialData, state.goalsData, saveStep]);
   
-  // API Functions
-  async function loadOnboardingState() {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      
-      const jwt = localStorage.getItem('jwt');
-      if (!jwt) {
-        dispatch({ type: 'SET_LOADING', payload: false });
-        return;
-      }
-      
-      const fetchUrl = `${API_BASE}/api/v1/onboarding/state`;
-      console.log('🌐 About to fetch onboarding state from:', fetchUrl);
-      
-      const response = await fetch(fetchUrl, {
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        dispatch({ type: 'LOAD_ONBOARDING_STATE', payload: data });
-        console.log('✅ Loaded onboarding state:', data);
-      } else {
-        console.log('No existing onboarding state found, starting fresh');
-      }
-    } catch (error) {
-      console.error('Failed to load onboarding state:', error);
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to load previous progress' });
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }
   
   // Enhanced retry function for network requests with connection reset handling
   async function retryRequest(requestFn, retries = 3, delay = 1000) {
@@ -321,7 +323,7 @@ export function OnboardingProvider({ children }) {
     }
   }
 
-  async function saveStep(stepNumber, stepData, showSuccessMessage = false, updateCurrentStep = true) {
+  const saveStep = useCallback(async (stepNumber, stepData, showSuccessMessage = false, updateCurrentStep = true) => {
     try {
       dispatch({ type: 'SET_SAVE_STATUS', stepNumber, status: 'saving' });
       
@@ -398,6 +400,54 @@ export function OnboardingProvider({ children }) {
       dispatch({ type: 'SET_ERROR', payload: error.message });
       return { success: false, error: error.message };
     }
+  }, []);
+
+  // Force save all required steps before completion with improved sequencing
+  async function forceSaveAllSteps() {
+    console.log('🔄 Force saving all required steps...');
+    
+    const results = [];
+    let finalCompletedSteps = [...(state.completedSteps || [])];
+    
+    // Sequential saving with proper error handling and state updates
+    const stepsToSave = [
+      { step: 1, data: state.personalData, valid: state.personalData.firstName && state.personalData.lastName },
+      { step: 2, data: state.riskData, valid: state.riskData.questionnaire?.length === 5 },
+      { step: 3, data: state.financialData, valid: !!state.financialData.monthlyIncome },
+      { step: 4, data: state.goalsData, valid: Object.values(state.goalsData).some(val => val) }
+    ];
+    
+    for (const { step, data, valid } of stepsToSave) {
+      if (valid) {
+        console.log(`💾 Force saving Step ${step}...`);
+        try {
+          const result = await saveStep(step, data, false, true);
+          results.push({ step, success: result.success, error: result.error });
+          
+          if (result.success && result.result?.completed_steps) {
+            finalCompletedSteps = [...result.result.completed_steps];
+            console.log(`✅ Step ${step} saved, updated completed_steps: ${JSON.stringify(finalCompletedSteps)}`);
+          }
+          
+          // Add delay between saves to prevent connection flooding
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error(`❌ Failed to force save step ${step}:`, error);
+          results.push({ step, success: false, error: error.message });
+        }
+      } else {
+        console.log(`⏭️ Skipping Step ${step} - invalid/empty data`);
+        results.push({ step, success: false, error: 'Invalid or missing data' });
+      }
+    }
+    
+    // Update completed steps in state
+    if (finalCompletedSteps.length > 0) {
+      dispatch({ type: 'SET_COMPLETED_STEPS', payload: finalCompletedSteps });
+    }
+    
+    console.log('📊 Force save results:', results);
+    return results;
   }
   
   async function completeOnboarding() {
@@ -530,63 +580,6 @@ export function OnboardingProvider({ children }) {
       default:
         return false;
     }
-  }
-  
-  // Force save all required steps before completion with improved sequencing
-  async function forceSaveAllSteps() {
-    console.log('🔄 Force saving all required steps...');
-    
-    const results = [];
-    let finalCompletedSteps = [...(state.completedSteps || [])];
-    
-    // Sequential saving with proper error handling and state updates
-    const stepsToSave = [
-      { step: 1, data: state.personalData, valid: state.personalData.firstName && state.personalData.lastName },
-      { step: 2, data: state.riskData, valid: state.riskData.questionnaire?.length === 5 },
-      { step: 3, data: state.financialData, valid: !!state.financialData.monthlyIncome },
-      { step: 4, data: state.goalsData, valid: Object.values(state.goalsData).some(val => val) }
-    ];
-    
-    for (const { step, data, valid } of stepsToSave) {
-      if (valid) {
-        console.log(`💾 Force saving Step ${step}...`);
-        try {
-          const result = await saveStep(step, data, false, true);
-          results.push({ step, success: result.success, error: result.error });
-          
-          if (result.success && result.result?.completed_steps) {
-            finalCompletedSteps = [...result.result.completed_steps];
-            console.log(`✅ Step ${step} saved, updated completed_steps: ${JSON.stringify(finalCompletedSteps)}`);
-          }
-          
-          // Add delay between saves to prevent connection flooding
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-        } catch (error) {
-          console.error(`❌ Failed to force save Step ${step}:`, error);
-          results.push({ step, success: false, error: error.message });
-        }
-      } else {
-        console.warn(`⚠️ Step ${step} data invalid, skipping`);
-        results.push({ step, success: false, error: 'Invalid data' });
-      }
-    }
-    
-    console.log('🔄 Force save results:', results);
-    console.log('🔄 Final completed steps:', finalCompletedSteps);
-    
-    // Ensure state is synchronized with the final backend state
-    dispatch({ type: 'SET_COMPLETED_STEPS', payload: finalCompletedSteps });
-    
-    // Verify we have the minimum required steps (1, 2, 3)
-    const requiredSteps = [1, 2, 3];
-    const missingSteps = requiredSteps.filter(step => !finalCompletedSteps.includes(step));
-    
-    if (missingSteps.length > 0) {
-      throw new Error(`Missing required steps: ${missingSteps.join(', ')}`);
-    }
-    
-    return results;
   }
 
   const value = {

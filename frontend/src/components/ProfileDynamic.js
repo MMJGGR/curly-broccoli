@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 import MessageBox from './MessageBox';
@@ -17,11 +17,7 @@ const ProfileDynamic = () => {
 
     const API_BASE = API_BASE_URL;
 
-    useEffect(() => {
-        fetchOnboardingData();
-    }, []);
-
-    const fetchOnboardingData = async () => {
+    const fetchOnboardingData = useCallback(async () => {
         try {
             setLoading(true);
             const jwt = localStorage.getItem('jwt');
@@ -54,7 +50,11 @@ const ProfileDynamic = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [API_BASE, navigate]);
+
+    useEffect(() => {
+        fetchOnboardingData();
+    }, [fetchOnboardingData]);
 
     const handleLogout = () => {
         localStorage.removeItem('jwt');

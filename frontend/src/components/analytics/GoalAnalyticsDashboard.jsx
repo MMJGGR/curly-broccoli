@@ -3,7 +3,7 @@
  * Advanced predictive analytics dashboard for financial goal tracking
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import predictiveAnalytics from '../../services/predictiveAnalytics';
 import ProbabilityGauge from './ProbabilityGauge';
 import ConfidenceIntervalChart from './ConfidenceIntervalChart';
@@ -25,12 +25,7 @@ const GoalAnalyticsDashboard = ({
   const [selectedScenario, setSelectedScenario] = useState('realistic');
   const [refreshing, setRefreshing] = useState(false);
 
-  // Load analytics data
-  useEffect(() => {
-    loadAnalyticsData();
-  }, [goalId, selectedScenario]);
-
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = useCallback(async () => {
     if (!goalId) return;
 
     setLoading(true);
@@ -74,7 +69,7 @@ const GoalAnalyticsDashboard = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [goalId, selectedScenario]);
 
   const refreshAnalytics = async () => {
     setRefreshing(true);

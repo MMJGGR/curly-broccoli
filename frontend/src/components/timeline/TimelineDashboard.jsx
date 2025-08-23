@@ -2,7 +2,7 @@
  * Timeline Dashboard - Main dashboard replacement with Timeline-first design
  * 70% Timeline, 30% contextual information
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimeline } from '../../contexts/TimelineContext';
 import { useBudget } from '../../contexts/BudgetContext';
@@ -60,21 +60,7 @@ const TimelineDashboard = () => {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const navigate = useNavigate();
 
-  // Refresh data on mount
-  useEffect(() => {
-    if (!isTimelineReady) {
-      loadTimelineJourney();
-    }
-  }, [isTimelineReady, loadTimelineJourney]);
-
-  // Load dashboard insights and goal analytics
-  useEffect(() => {
-    if (isTimelineReady && milestones?.length > 0) {
-      loadDashboardAnalytics();
-    }
-  }, [isTimelineReady, milestones]);
-
-  const loadDashboardAnalytics = async () => {
+  const loadDashboardAnalytics = useCallback(async () => {
     setLoadingAnalytics(true);
     try {
       // Load dashboard insights
@@ -112,7 +98,21 @@ const TimelineDashboard = () => {
     } finally {
       setLoadingAnalytics(false);
     }
-  };
+  }, [milestones]);
+
+  // Refresh data on mount
+  useEffect(() => {
+    if (!isTimelineReady) {
+      loadTimelineJourney();
+    }
+  }, [isTimelineReady, loadTimelineJourney]);
+
+  // Load dashboard insights and goal analytics
+  useEffect(() => {
+    if (isTimelineReady && milestones?.length > 0) {
+      loadDashboardAnalytics();
+    }
+  }, [isTimelineReady, milestones, loadDashboardAnalytics]);
 
   const refreshAnalytics = async () => {
     // Clear cache and reload analytics

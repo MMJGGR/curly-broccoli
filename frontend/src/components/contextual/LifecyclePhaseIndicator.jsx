@@ -20,22 +20,27 @@ const LifecyclePhaseIndicator = ({
   const [showPhaseDetails, setShowPhaseDetails] = useState(false);
 
   // Memoize user profile to prevent infinite re-renders
-  const userProfile = useMemo(() => ({
-    age: currentAge || 30,
-    income: budgetData?.monthlyIncome || 0,
-    expenses: budgetData?.monthlyExpenses || 0,
-    netWorth: budgetData?.netWorth || 0,
-    dependents: budgetData?.dependents || 0,
-    goals: budgetData?.goals || [],
-    currentAssets: budgetData?.currentAssets || {}
-  }), [
+  const userProfile = useMemo(() => {
+    const goals = budgetData?.goals || [];
+    const currentAssets = budgetData?.currentAssets || {};
+    
+    return {
+      age: currentAge || 30,
+      income: budgetData?.monthlyIncome || 0,
+      expenses: budgetData?.monthlyExpenses || 0,
+      netWorth: budgetData?.netWorth || 0,
+      dependents: budgetData?.dependents || 0,
+      goals: goals,
+      currentAssets: currentAssets
+    };
+  }, [
     currentAge, 
     budgetData?.monthlyIncome, 
     budgetData?.monthlyExpenses, 
     budgetData?.netWorth, 
     budgetData?.dependents, 
-    JSON.stringify(budgetData?.goals || []),
-    JSON.stringify(budgetData?.currentAssets || {})
+    budgetData?.goals,
+    budgetData?.currentAssets
   ]);
 
   const {

@@ -175,7 +175,7 @@ export const useLifecyclePhase = (userProfile = {}) => {
     };
 
     return guidance;
-  }, [calculateLifecyclePhase, age, income, expenses, dependents, netWorth, phaseRecommendations]);
+  }, [calculateLifecyclePhase, age, income, expenses, dependents, netWorth, phaseRecommendations, userProfile]);
 
   // Calculate phase health score
   const calculatePhaseHealth = useMemo(() => {
@@ -248,7 +248,7 @@ export const useLifecyclePhase = (userProfile = {}) => {
       factors,
       level: score >= 80 ? 'excellent' : score >= 60 ? 'good' : score >= 40 ? 'fair' : 'needs_attention'
     };
-  }, [calculateLifecyclePhase, phaseRecommendations, income, expenses, JSON.stringify(currentAssets), JSON.stringify(goals)]);
+  }, [calculateLifecyclePhase, phaseRecommendations, income, expenses, currentAssets, goals]);
 
   // Load lifecycle data with memoized values to prevent infinite loops
   const lifecycleAnalysis = useMemo(() => ({
@@ -263,10 +263,9 @@ export const useLifecyclePhase = (userProfile = {}) => {
   }), [calculateLifecyclePhase, phaseRecommendations, generateGuidance, calculatePhaseHealth, age, retirementGoalAge]);
 
   useEffect(() => {
-    setLoading(true);
     setLifecycleData(lifecycleAnalysis);
     setLoading(false);
-  }, [lifecycleAnalysis]);
+  }, [calculateLifecyclePhase, age, income, expenses, netWorth, dependents, retirementGoalAge]);
 
   return {
     // Core lifecycle data
