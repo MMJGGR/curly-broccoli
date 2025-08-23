@@ -17,6 +17,9 @@ import ContextualTimelineDashboard from './timeline/ContextualTimelineDashboard'
 // Budget components
 import BudgetCashflows from './budget/BudgetCashflows';
 
+// Tools components
+import ToolsDashboard from './tools/ToolsDashboard';
+
 // Legacy components (for fallback/migration)  
 import Dashboard from './Dashboard';
 import ProfileDynamic from './ProfileDynamic';
@@ -77,8 +80,7 @@ const TimelineMainAppLayout = () => {
         console.log('Balance Sheet tab clicked');
         break;
       case 'goals':
-        // TODO: Add goals/tools route
-        console.log('Goals/Tools tab clicked');
+        navigate('tools');
         break;
       default:
         break;
@@ -140,6 +142,9 @@ const TimelineMainAppLayout = () => {
             
             {/* Budget & Cashflows */}
             <Route path="budget" element={<BudgetCashflows />} />
+            
+            {/* Financial Management Tools */}
+            <Route path="tools" element={<ToolsDashboard />} />
             
             {/* Legacy routes for fallback */}
             <Route path="dashboard-legacy" element={<Dashboard />} />
