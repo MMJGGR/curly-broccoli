@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List
 
 from ....auth import get_current_user
-from ....models import User, IncomeSource as IncomeSourceModel
+from ....models import User, IncomeSource as IncomeSourceModel, OnboardingState
 from ....database import get_db
 
 router = APIRouter(prefix="/income-v2", tags=["income-v2-clean"])
@@ -28,16 +28,46 @@ async def get_income_overview_v2(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get income overview - SIMPLE version"""
+    """Get income overview - integrated with onboarding data"""
     try:
-        # Get all income sources for user
+        # Get income sources from dedicated table
         sources = db.query(IncomeSourceModel).filter(
             IncomeSourceModel.user_id == current_user.id
         ).all()
         
-        total_monthly = sum(float(source.amount) for source in sources)
+        # Get onboarding data for primary income and custom incomes
+        onboarding = db.query(OnboardingState).filter(
+            OnboardingState.user_id == current_user.id
+        ).first()
         
         source_data = []
+        total_monthly = 0
+        
+        # Add onboarding primary income
+        if onboarding and onboarding.financial_data:
+            financial_data = onboarding.financial_data  # Already deserialized by SQLAlchemy
+            
+            if financial_data.get('monthlyIncome'):
+                source_data.append({
+                    "id": "onboarding-primary",
+                    "source_name": "Primary Income (from onboarding)",
+                    "monthly_amount": float(financial_data['monthlyIncome']),
+                    "frequency": financial_data.get('incomeFrequency', 'Monthly').lower()
+                })
+                total_monthly += float(financial_data['monthlyIncome'])
+            
+            # Add custom incomes from onboarding
+            custom_incomes = financial_data.get('customIncomes', [])
+            for custom_income in custom_incomes:
+                source_data.append({
+                    "id": f"onboarding-custom-{custom_income['id']}",
+                    "source_name": custom_income['name'],
+                    "monthly_amount": float(custom_income['amount']),
+                    "frequency": "monthly"
+                })
+                total_monthly += float(custom_income['amount'])
+        
+        # Add sources from dedicated income_sources table
         for source in sources:
             source_data.append({
                 "id": source.id,
@@ -45,12 +75,17 @@ async def get_income_overview_v2(
                 "monthly_amount": float(source.amount),
                 "frequency": source.frequency
             })
+            total_monthly += float(source.amount)
         
         return {
             "user_id": current_user.id,
             "total_monthly_income": total_monthly,
             "income_sources": source_data,
-            "source_count": len(sources)
+            "source_count": len(source_data),
+            "data_sources": {
+                "onboarding_sources": len([s for s in source_data if str(s['id']).startswith('onboarding')]),
+                "dedicated_sources": len(sources)
+            }
         }
         
     except Exception as e:
@@ -149,13 +184,43 @@ async def get_income_sources_v2(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all income sources for user - SIMPLE version"""
+    """Get all income sources for user - integrated with onboarding data"""
     try:
+        # Get income sources from dedicated table
         sources = db.query(IncomeSourceModel).filter(
             IncomeSourceModel.user_id == current_user.id
         ).all()
         
+        # Get onboarding data for primary income and custom incomes
+        onboarding = db.query(OnboardingState).filter(
+            OnboardingState.user_id == current_user.id
+        ).first()
+        
         sources_data = []
+        
+        # Add onboarding primary income
+        if onboarding and onboarding.financial_data:
+            financial_data = onboarding.financial_data  # Already deserialized by SQLAlchemy
+            
+            if financial_data.get('monthlyIncome'):
+                sources_data.append({
+                    "id": "onboarding-primary",
+                    "source_name": "Primary Income (from onboarding)",
+                    "monthly_amount": float(financial_data['monthlyIncome']),
+                    "frequency": financial_data.get('incomeFrequency', 'Monthly').lower()
+                })
+            
+            # Add custom incomes from onboarding
+            custom_incomes = financial_data.get('customIncomes', [])
+            for custom_income in custom_incomes:
+                sources_data.append({
+                    "id": f"onboarding-custom-{custom_income['id']}",
+                    "source_name": custom_income['name'],
+                    "monthly_amount": float(custom_income['amount']),
+                    "frequency": "monthly"
+                })
+        
+        # Add sources from dedicated income_sources table
         for source in sources:
             sources_data.append({
                 "id": source.id,

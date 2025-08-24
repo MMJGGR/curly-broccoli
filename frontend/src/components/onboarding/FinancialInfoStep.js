@@ -37,7 +37,7 @@ const FinancialInfoStep = () => {
   // Update context when form data changes
   useEffect(() => {
     updateFinancialData(formData);
-  }, [formData]);
+  }, [formData, updateFinancialData]);
   
   // Handle input changes with persona-aware validation
   const handleChange = (field, value) => {

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -23,7 +24,7 @@ def create_transaction(
     return tx
 
 
-@router.get("/", response_model=list[TransactionSchema])
+@router.get("/", response_model=List[TransactionSchema])
 def list_transactions(
     skip: int = 0,
     limit: int = 100,

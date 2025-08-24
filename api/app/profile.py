@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 import jwt
-from api.app.core.exceptions import UnprocessableEntityException
+from app.core.exceptions import UnprocessableEntityException
 
 from app.database     import get_db
 from app.models import User, Profile

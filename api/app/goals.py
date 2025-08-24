@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -19,7 +20,7 @@ def create_goal(
     return crud_goal.create_goal(db=db, data=data, user_id=current_user.id)
 
 
-@router.get("/", response_model=list[GoalSchema])
+@router.get("/", response_model=List[GoalSchema])
 def list_goals(
     skip: int = 0,
     limit: int = 100,

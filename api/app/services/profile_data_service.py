@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 import logging
 
-from api.app.models import User, OnboardingState, Profile
-from api.app.utils.risk_calculation import calculate_risk_score, get_risk_level_numeric
+from app.models import User, OnboardingState, Profile
+from app.utils.risk_calculation import calculate_risk_score, get_risk_level_numeric
 
 logger = logging.getLogger(__name__)
 

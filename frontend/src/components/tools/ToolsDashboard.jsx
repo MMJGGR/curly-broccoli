@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import IncomeOverview from '../income/IncomeOverview';
 import GoalsOverview from '../goals/GoalsOverview';
+import ExpenseOverview from '../expense/ExpenseOverview';
 
 const ToolsDashboard = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -23,6 +24,12 @@ const ToolsDashboard = () => {
       name: 'Goals Management', 
       icon: '🎯',
       description: 'SMART goals framework and tracking'
+    },
+    {
+      id: 'expenses',
+      name: 'Expense Management',
+      icon: '💳',
+      description: 'Expense tracking and budget analysis'
     },
     {
       id: 'calculators',
@@ -147,6 +154,7 @@ const ToolsDashboard = () => {
         {activeSection === 'overview' && renderOverview()}
         {activeSection === 'income' && <IncomeOverview />}
         {activeSection === 'goals' && <GoalsOverview />}
+        {activeSection === 'expenses' && <ExpenseOverview />}
         {activeSection === 'calculators' && renderPlaceholder(
           'Financial Calculators',
           'Professional calculators for loan payments, investment returns, retirement planning, and more.'

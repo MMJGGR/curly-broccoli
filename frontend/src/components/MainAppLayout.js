@@ -7,13 +7,17 @@ import BottomNavBar from './BottomNavBar';
 import Dashboard from './Dashboard';
 import AccountsTransactions from './AccountsTransactions';
 import BalanceSheet from './BalanceSheet';
-import GoalsOverview from './GoalsOverview';
+import GoalsOverview from './GoalsOverview'; // Legacy component
 import FIRECalculator from './FIRECalculator';
 import MonteCarloSimulation from './MonteCarloSimulation';
 import DebtRepaymentPlanner from './DebtRepaymentPlanner';
 import AdviceModuleDetail from './AdviceModuleDetail';
 import LifetimeJourneyTimeline from './LifetimeJourneyTimeline';
 import Profile from './Profile';
+
+// Clean Architecture V2 Components
+import IncomeOverview from './income/IncomeOverview';
+import GoalsOverviewV2 from './goals/GoalsOverview';
 
 const MainAppLayout = () => {
   const navigate = useNavigate();
@@ -31,7 +35,9 @@ const MainAppLayout = () => {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="cashflows" element={<AccountsTransactions />} />
           <Route path="balance-sheet" element={<BalanceSheet />} />
-          <Route path="goals" element={<GoalsOverview />} />
+          <Route path="income" element={<IncomeOverview />} />
+          <Route path="goals" element={<GoalsOverviewV2 />} />
+          <Route path="goals-legacy" element={<GoalsOverview />} />
           <Route path="fire-calculator" element={<FIRECalculator />} />
           <Route path="monte-carlo" element={<MonteCarloSimulation />} />
           <Route path="debt-planner" element={<DebtRepaymentPlanner />} />

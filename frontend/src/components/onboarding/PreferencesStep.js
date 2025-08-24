@@ -17,7 +17,7 @@ const PreferencesStep = () => {
   
   useEffect(() => {
     updatePreferencesData(formData);
-  }, [formData]);
+  }, [formData, updatePreferencesData]);
   
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));

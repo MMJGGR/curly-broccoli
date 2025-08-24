@@ -22,13 +22,13 @@ api_router.include_router(budget.router, tags=["budget"])
 
 # Clean Architecture endpoints (New)
 api_router.include_router(budget_v2_clean.router, tags=["budget-v2-clean"])
+api_router.include_router(income_v2_clean.router, tags=["income-v2-clean"])  # Fixed: Income V2 Clean Architecture
+api_router.include_router(goals_v2_clean.router, tags=["goals-v2-clean"])
 # api_router.include_router(transactions_clean.router, tags=["transactions-v2-clean"])  # Temporarily disabled - missing use case
 # api_router.include_router(analytics_clean.router, tags=["analytics-v2-clean"])  # Temporarily disabled - missing use case
 # api_router.include_router(accounts_clean.router, tags=["accounts-v2-clean"])  # Temporarily disabled - missing use case
 # api_router.include_router(profile_v2_clean.router, tags=["profile-v2-clean"])  # Temporarily disabled - missing use case
 # api_router.include_router(timeline_v2_clean.router, tags=["timeline-v2-clean"])  # Temporarily disabled - missing use case
-api_router.include_router(income_v2_clean.router, tags=["income-v2-clean"])
-api_router.include_router(goals_v2_clean.router, tags=["goals-v2-clean"])
 
 # Predictive Analytics endpoints
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])

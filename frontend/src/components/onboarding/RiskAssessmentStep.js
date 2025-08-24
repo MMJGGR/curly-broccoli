@@ -89,7 +89,7 @@ const RiskAssessmentStep = () => {
         riskLevel: level.level
       });
     }
-  }, [answers]);
+  }, [answers, updateRiskData]);
   
   // Handle answer selection
   const handleAnswerChange = (questionIndex, optionIndex) => {

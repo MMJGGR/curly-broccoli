@@ -2,9 +2,9 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://api:8000",
+  "proxy": "http://localhost:8000",
   "scripts": {
-    "start": "cross-env REACT_APP_API_BASE_URL=http://api:8000 react-scripts start",
+    "start": "react-scripts start",
     "dev": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom --coverage",

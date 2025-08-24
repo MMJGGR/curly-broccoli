@@ -12,9 +12,9 @@ import calendar
 import logging
 import json
 
-from api.app.database import get_db
-from api.app.models import User, ExpenseCategory, Transaction
-from api.app.auth import get_current_user
+from app.database import get_db
+from app.models import User, ExpenseCategory, Transaction
+from app.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -551,7 +551,7 @@ def get_current_budget_v2(
     
     try:
         # Get onboarding data as single source of truth
-        from api.app.api.v1.endpoints.onboarding_consolidated import get_onboarding_state
+        from app.api.v1.endpoints.onboarding_consolidated import get_onboarding_state
         
         onboarding_response = get_onboarding_state(current_user, db)
         

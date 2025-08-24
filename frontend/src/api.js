@@ -34,7 +34,7 @@ async function request(method, path, token, body) {
 
 // Get auth token from localStorage or other storage
 function getAuthToken() {
-  return localStorage.getItem('token') || sessionStorage.getItem('token') || null;
+  return localStorage.getItem('jwt') || localStorage.getItem('token') || sessionStorage.getItem('token') || null;
 }
 
 // API client for axios-like usage
@@ -106,7 +106,41 @@ export const listMilestones = (token) => request('GET', '/milestones/', token);
 export const updateMilestone = (token, id, data) => request('PUT', `/milestones/${id}`, token, data);
 export const deleteMilestone = (token, id) => request('DELETE', `/milestones/${id}`, token);
 
-// Goal CRUD
+// Income V2 Clean Architecture CRUD
+export const getIncomeOverview = (token) => request('GET', '/api/v1/income-v2/overview', token || getAuthToken());
+export const createIncomeSource = (token, data) => {
+  // Convert data object to query parameters for backend
+  const params = new URLSearchParams({
+    source_name: data.source_name,
+    monthly_amount: data.monthly_amount.toString(),
+    frequency: data.frequency || 'monthly',
+    source_type: data.source_type || 'salary'
+  });
+  return request('POST', `/api/v1/income-v2/sources?${params.toString()}`, token || getAuthToken());
+};
+export const listIncomeSources = (token) => request('GET', '/api/v1/income-v2/sources', token || getAuthToken());
+
+// Goals V2 Clean Architecture CRUD
+export const getGoalsOverview = (token) => request('GET', '/api/v1/goals-v2/overview', token || getAuthToken());
+export const createGoalV2 = (token, data) => {
+  // Convert data object to query parameters for backend
+  const params = new URLSearchParams({
+    name: data.name,
+    target_amount: data.target_amount.toString(),
+    target_date: data.target_date,
+    current_amount: (data.current_amount || 0).toString()
+  });
+  return request('POST', `/api/v1/goals-v2/?${params.toString()}`, token || getAuthToken());
+};
+export const updateGoalProgress = (token, goalId, data) => {
+  const params = new URLSearchParams({
+    current_amount: data.current_amount.toString()
+  });
+  return request('PUT', `/api/v1/goals-v2/${goalId}/progress?${params.toString()}`, token || getAuthToken());
+};
+export const deleteGoalV2 = (token, goalId) => request('DELETE', `/api/v1/goals-v2/${goalId}`, token || getAuthToken());
+
+// Legacy Goal CRUD (deprecated)
 export const createGoal = (token, data) => request('POST', '/goals/', token, data);
 export const listGoals = (token) => request('GET', '/goals/', token);
 export const updateGoal = (token, id, data) => request('PUT', `/goals/${id}`, token, data);

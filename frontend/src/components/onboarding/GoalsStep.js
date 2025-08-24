@@ -29,7 +29,7 @@ const GoalsStep = () => {
   
   useEffect(() => {
     updateGoalsData({ ...formData, timeframes: selectedTimeframes });
-  }, [formData, selectedTimeframes]);
+  }, [formData, selectedTimeframes, updateGoalsData]);
   
   // Persona detection based on financial data
   const detectPersona = () => {

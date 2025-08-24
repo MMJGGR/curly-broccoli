@@ -17,8 +17,8 @@ from .income_sources import router as income_sources_router
 from .expense_categories import router as expense_categories_router
 from .dev import router as dev_router
 # from .onboarding import router as onboarding_router  # REMOVED - conflicting with v1 API
-from api.app.api.v1.api import api_router
-from api.app.core.exceptions import UnauthorizedException, ForbiddenException, NotFoundException, ConflictException, UnprocessableEntityException
+from app.api.v1.api import api_router
+from app.core.exceptions import UnauthorizedException, ForbiddenException, NotFoundException, ConflictException, UnprocessableEntityException
 
 # Import all models to register them with SQLAlchemy
 from .models import (

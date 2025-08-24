@@ -30,7 +30,7 @@ const PersonalInfoStep = () => {
   // Update context when form data changes
   useEffect(() => {
     updatePersonalData(formData);
-  }, [formData]);
+  }, [formData, updatePersonalData]);
   
   // Handle input changes
   const handleChange = (field, value) => {

@@ -143,7 +143,18 @@
       "Bash(winpty docker exec curly-broccoli-api-1 find /app -name \"*budget*\" -type f)",
       "Bash(winpty docker exec curly-broccoli-frontend-1 head -20 /app/src/components/budget/BudgetCashflows.jsx)",
       "Bash(for f in *.py)",
-      "Bash(done)"
+      "Bash(done)",
+      "WebFetch(domain:)",
+      "Bash(winpty docker exec curly-broccoli-api-1 python -c \"from api.app.infrastructure.repositories.sqlalchemy_budget_repository import SqlAlchemyBudgetRepository; print(''Import successful'')\")",
+      "Bash(for file in *.py)",
+      "Bash(do [ \"$file\" != \"__init__.py\" ])",
+      "Bash(PYTHONPATH=. python -c \"from app.domain.services.validation_service import CFAValidationService; print(''Import successful'')\")",
+      "Bash(PYTHONPATH=. python -c \"from app.application.use_cases.create_budget_category import CreateBudgetCategory; print(''Import successful'')\")",
+      "Bash(PYTHONPATH=/app:/app/api python -c \"from api.app.domain.services.validation_service import CFAValidationService; print(''Import successful with Docker PYTHONPATH'')\")",
+      "Bash(PYTHONPATH=/app:/app/api python -c \"from api.app.domain.services.validation_service import CFAValidationService; print(''Import successful with Docker PYTHONPATH from root'')\")",
+      "Bash(set NODE_ENV=production)",
+      "Bash(export JWT_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzU1OTcxNDE2LjcyMTQxMSwiZXhwIjoxNzg3NTA3NDE2LjcyMTQxMSwic2NvcGUiOiJ1c2VyIiwicm9sZSI6InVzZXIifQ.wnGYbUsoWlqq3Qf2nSMxbV-03eBbEhTxATl5Pp5kSyo\")",
+      "Bash(winpty docker exec curly-broccoli-api-1 python -c \"from api.app.api.v1.endpoints import income_v2_clean; print(''Import successful'')\")"
     ],
     "deny": []
   }

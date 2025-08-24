@@ -93,6 +93,9 @@ const OnboardingWizard = () => {
       case 5:
         stepData = preferencesData;
         break;
+      default:
+        stepData = personalData;
+        break;
     }
     
     if (stepData) {

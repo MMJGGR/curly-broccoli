@@ -9,11 +9,11 @@ from typing import Dict, Any
 from datetime import datetime
 import logging
 
-from api.app.database import get_db
-from api.app.models import User, OnboardingState, Profile
-from api.app.auth import get_current_user
-from api.app.services.profile_data_service import ProfileDataService, ProfileDataTransferError
-from api.app.schemas.onboarding import (
+from app.database import get_db
+from app.models import User, OnboardingState, Profile
+from app.auth import get_current_user
+from app.services.profile_data_service import ProfileDataService, ProfileDataTransferError
+from app.schemas.onboarding import (
     OnboardingStepRequest,
     OnboardingStateResponse,
     OnboardingCompleteRequest,

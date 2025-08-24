@@ -17,8 +17,9 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List
 
 from ....auth import get_current_user
-from ....models import User, Goal as GoalModel
+from ....models import User, Goal as GoalModel, OnboardingState
 from ....database import get_db
+from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/goals-v2", tags=["goals-v2-clean"])
 
@@ -39,17 +40,74 @@ async def get_goals_overview_v2(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get goals overview - SIMPLE version"""
+    """Get goals overview - integrated with onboarding data"""
     try:
-        # Get all goals for user
+        # Get goals from dedicated table
         goals = db.query(GoalModel).filter(
             GoalModel.user_id == current_user.id
         ).all()
+        
+        # Get onboarding goals data
+        onboarding = db.query(OnboardingState).filter(
+            OnboardingState.user_id == current_user.id
+        ).first()
         
         total_target = 0
         total_current = 0
         goals_data = []
         
+        # Add onboarding goals first
+        if onboarding and onboarding.goals_data:
+            goals_data_raw = onboarding.goals_data  # Already deserialized by SQLAlchemy
+            
+            # Map onboarding goals to standardized format
+            onboarding_goals = [
+                {"name": "Emergency Fund", "target": goals_data_raw.get('emergencyFund', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('emergencyFund', '1-year')},
+                {"name": "Home Down Payment", "target": goals_data_raw.get('homeDownPayment', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('homeDownPayment', '5-years')},
+                {"name": "Education", "target": goals_data_raw.get('education', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('education', '10-years')},
+                {"name": "Retirement", "target": goals_data_raw.get('retirement', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('retirement', '30-years')},
+                {"name": "Investment", "target": goals_data_raw.get('investment', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('investment', '10-years')},
+                {"name": "Debt Payoff", "target": goals_data_raw.get('debtPayoff', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('debtPayoff', '3-years')}
+            ]
+            
+            for i, goal in enumerate(onboarding_goals):
+                if goal['target'] and float(goal['target']) > 0:
+                    target_amount = float(goal['target'])
+                    current_amount = 0  # Onboarding doesn't track progress yet
+                    
+                    total_target += target_amount
+                    total_current += current_amount
+                    
+                    # Convert timeframe to actual date
+                    timeframe = goal['timeframe']
+                    target_date = None
+                    if timeframe:
+                        try:
+                            if 'year' in timeframe:
+                                years = int(timeframe.split('-')[0])
+                                target_date = (datetime.now() + timedelta(days=years*365)).strftime('%Y-%m-%d')
+                            elif 'month' in timeframe:
+                                months = int(timeframe.split('-')[0])
+                                target_date = (datetime.now() + timedelta(days=months*30)).strftime('%Y-%m-%d')
+                            else:
+                                target_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
+                        except:
+                            target_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
+                    else:
+                        target_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
+                    
+                    goals_data.append({
+                        "id": f"onboarding-goal-{i}",
+                        "name": f"{goal['name']} (from onboarding)",
+                        "target_amount": target_amount,
+                        "current_amount": current_amount,
+                        "progress_percentage": 0,
+                        "target_date": target_date,
+                        "is_achieved": False,
+                        "source": "onboarding"
+                    })
+        
+        # Add goals from dedicated table
         for goal in goals:
             # Parse target and current as float (they're stored as strings)
             target_amount = float(goal.target) if goal.target and goal.target.replace('.', '').isdigit() else 0
@@ -68,7 +126,8 @@ async def get_goals_overview_v2(
                 "current_amount": current_amount,
                 "progress_percentage": round(progress_pct, 1),
                 "target_date": goal.target_date,
-                "is_achieved": progress_pct >= 100
+                "is_achieved": progress_pct >= 100,
+                "source": "user_created"
             })
         
         # Calculate overall progress
@@ -80,7 +139,11 @@ async def get_goals_overview_v2(
             "total_current_amount": total_current,
             "overall_progress_percentage": round(overall_progress, 1),
             "goals": goals_data,
-            "goals_count": len(goals)
+            "goals_count": len(goals_data),
+            "data_sources": {
+                "onboarding_goals": len([g for g in goals_data if g.get('source') == 'onboarding']),
+                "user_created_goals": len([g for g in goals_data if g.get('source') == 'user_created'])
+            }
         }
         
     except Exception as e:

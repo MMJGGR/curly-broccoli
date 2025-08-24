@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getIncomeOverview, createIncomeSource, listIncomeSources } from '../../api';
+import { getIncomeOverview, createIncomeSource } from '../../api';
 import MessageBox from '../MessageBox';
 
 const IncomeOverview = ({ onNextScreen }) => {
@@ -20,13 +20,10 @@ const IncomeOverview = ({ onNextScreen }) => {
   const fetchIncomeData = React.useCallback(async () => {
     try {
       setLoading(true);
-      const [overviewData, sourcesData] = await Promise.all([
-        getIncomeOverview(),
-        listIncomeSources()
-      ]);
+      const overviewData = await getIncomeOverview();
       
       setOverview(overviewData);
-      setSources(sourcesData.sources || []);
+      setSources(overviewData.income_sources || []);
     } catch (err) {
       console.error('Error fetching income data:', err);
       showActionMessage(`Error: ${err.message}`);
@@ -97,12 +94,12 @@ const IncomeOverview = ({ onNextScreen }) => {
   const calculateIncomeStability = (sources) => {
     if (!sources || sources.length === 0) return 0;
     
-    const totalIncome = sources.reduce((sum, source) => sum + (source.amount || 0), 0);
+    const totalIncome = sources.reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
     if (totalIncome === 0) return 0;
     
     // Calculate Herfindahl-Hirschman Index for income concentration
     const hhi = sources.reduce((sum, source) => {
-      const percentage = (source.amount || 0) / totalIncome;
+      const percentage = (source.monthly_amount || 0) / totalIncome;
       return sum + (percentage * percentage);
     }, 0);
     
@@ -125,14 +122,14 @@ const IncomeOverview = ({ onNextScreen }) => {
   const getIncomeBreakdown = (sources) => {
     if (!sources || sources.length === 0) return [];
     
-    const totalIncome = sources.reduce((sum, source) => sum + (source.amount || 0), 0);
+    const totalIncome = sources.reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
     if (totalIncome === 0) return [];
     
     const breakdown = {};
     sources.forEach(source => {
       const type = source.source_type || 'other';
       const category = getCategoryFromType(type);
-      breakdown[category] = (breakdown[category] || 0) + (source.amount || 0);
+      breakdown[category] = (breakdown[category] || 0) + (source.monthly_amount || 0);
     });
     
     return Object.entries(breakdown).map(([type, amount]) => ({
@@ -156,7 +153,7 @@ const IncomeOverview = ({ onNextScreen }) => {
 
   const getCFARecommendations = (sources) => {
     const recommendations = [];
-    const totalIncome = sources.reduce((sum, source) => sum + (source.amount || 0), 0);
+    const totalIncome = sources.reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
     const stability = calculateIncomeStability(sources);
     
     if (stability < 40) {
@@ -168,7 +165,7 @@ const IncomeOverview = ({ onNextScreen }) => {
     }
     
     const passiveIncome = sources.filter(s => ['investment', 'rental'].includes(s.source_type))
-      .reduce((sum, source) => sum + (source.amount || 0), 0);
+      .reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
     const passivePercentage = totalIncome > 0 ? (passiveIncome / totalIncome) * 100 : 0;
     
     if (passivePercentage < 10) {
@@ -358,14 +355,14 @@ const IncomeOverview = ({ onNextScreen }) => {
             sources.map((source, index) => (
               <div key={source.id || index} className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-lg font-semibold text-gray-800">{source.name}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">{source.source_name || source.name}</h3>
                   <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                     {source.source_type || 'salary'}
                   </span>
                 </div>
                 <div className="mb-4">
                   <p className="text-2xl font-bold text-green-600">
-                    {formatCurrency(source.amount || 0)}
+                    {formatCurrency(source.monthly_amount || 0)}
                   </p>
                   <p className="text-sm text-gray-600">per month</p>
                 </div>

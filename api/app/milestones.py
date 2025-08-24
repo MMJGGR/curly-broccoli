@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -19,7 +20,7 @@ def create_milestone(
     return crud_milestone.create_milestone(db=db, data=data, user_id=current_user.id)
 
 
-@router.get("/", response_model=list[MilestoneSchema])
+@router.get("/", response_model=List[MilestoneSchema])
 def list_milestones(
     skip: int = 0,
     limit: int = 100,

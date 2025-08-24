@@ -16,24 +16,7 @@ const ProjectionChart = ({
 }) => {
   const canvasRef = useRef(null);
 
-  useEffect(() => {
-    if (!projections || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    
-    // Set canvas size for high DPI displays
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    ctx.scale(dpr, dpr);
-    
-    drawChart(ctx);
-  }, [projections, targetAmount, scenario, width, height]);
-
-  const drawChart = (ctx) => {
+  const drawChart = React.useCallback((ctx) => {
     const margin = { top: 30, right: 30, bottom: 60, left: 80 };
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
@@ -243,7 +226,24 @@ const ProjectionChart = ({
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Years from Now', width / 2, height - 10);
-  };
+  }, [projections, targetAmount, scenario, width, height]);
+
+  useEffect(() => {
+    if (!projections || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    
+    // Set canvas size for high DPI displays
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(dpr, dpr);
+    
+    drawChart(ctx);
+  }, [projections, targetAmount, scenario, width, height, drawChart]);
 
   const getScenarioColor = (scenario) => {
     switch (scenario) {

@@ -3,7 +3,7 @@
  * Visualizes probability distribution and confidence intervals from Monte Carlo simulation
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import predictiveAnalytics from '../../services/predictiveAnalytics';
 
 const ConfidenceIntervalChart = ({ 
@@ -16,24 +16,7 @@ const ConfidenceIntervalChart = ({
 }) => {
   const canvasRef = useRef(null);
 
-  useEffect(() => {
-    if (!intervals || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    
-    // Set canvas size for high DPI displays
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
-    ctx.scale(dpr, dpr);
-    
-    drawChart(ctx);
-  }, [intervals, targetAmount, currentAmount, width, height]);
-
-  const drawChart = (ctx) => {
+  const drawChart = useCallback((ctx) => {
     const margin = { top: 20, right: 20, bottom: 40, left: 60 };
     const chartWidth = width - margin.left - margin.right;
     const chartHeight = height - margin.top - margin.bottom;
@@ -193,7 +176,24 @@ const ConfidenceIntervalChart = ({
       ctx.fillText(item.label, legendX + 20, legendY + 3);
       legendY += 15;
     });
-  };
+  }, [intervals, targetAmount, currentAmount, width, height]);
+
+  useEffect(() => {
+    if (!intervals || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    
+    // Set canvas size for high DPI displays
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.scale(dpr, dpr);
+    
+    drawChart(ctx);
+  }, [intervals, targetAmount, currentAmount, width, height, drawChart]);
 
   const formatTooltip = (value) => {
     return predictiveAnalytics.formatCurrency(value);

@@ -2,7 +2,7 @@ from ..dto.budget_dto import CreateBudgetCategoryRequest
 from ...domain.repositories.budget_repository import BudgetRepository
 from ...domain.entities.budget import BudgetCategory
 from ...domain.value_objects.money import Money
-from ...domain.services.validation_service import CFAValidationService
+from app.domain.services.validation_service import CFAValidationService
 from ..exceptions import ValidationException, BusinessRuleViolationException, raise_validation_error
 from decimal import Decimal
 

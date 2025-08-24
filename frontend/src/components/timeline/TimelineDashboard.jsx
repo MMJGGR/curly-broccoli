@@ -58,6 +58,7 @@ const TimelineDashboard = () => {
   const [dashboardInsights, setDashboardInsights] = useState(null);
   const [goalAnalytics, setGoalAnalytics] = useState({});
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [timelineCollapsed, setTimelineCollapsed] = useState(false);
   const navigate = useNavigate();
 
   const loadDashboardAnalytics = useCallback(async () => {
@@ -170,7 +171,7 @@ const TimelineDashboard = () => {
   }
 
   return (
-    <div className="timeline-dashboard flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100" style={{ height: 'calc(100vh - 4rem)' }}>
+    <div className="timeline-dashboard flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100 min-h-0 overflow-hidden" style={{ height: 'calc(100vh - 8rem)' }}>
       {/* Header with persona welcome and alignment score */}
       <div 
         className="dashboard-header p-6 bg-white shadow-lg border-b border-gray-200 rounded-t-xl mx-4 mt-4"
@@ -222,6 +223,23 @@ const TimelineDashboard = () => {
                 </div>
               )}
             </div>
+
+            {/* Timeline Collapse Toggle */}
+            <button
+              onClick={() => setTimelineCollapsed(!timelineCollapsed)}
+              className={`p-2 rounded-lg transition-all duration-200 border border-gray-200 ${
+                timelineCollapsed ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+              title={timelineCollapsed ? 'Expand Timeline' : 'Collapse Timeline'}
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {timelineCollapsed ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                )}
+              </svg>
+            </button>
 
             {/* View Toggle */}
             <div className="flex bg-white rounded-xl p-1 border border-gray-200 shadow-md">
@@ -286,23 +304,35 @@ const TimelineDashboard = () => {
           style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}
         >
         
-        {/* Timeline Area (70% on desktop, full on mobile) */}
-        <div className={`timeline-area ${showMobilePanel ? 'hidden md:flex' : 'flex'} md:w-7/10 w-full flex-col`}>
+        {/* Timeline Area (70% on desktop, full on mobile, collapsible) */}
+        <div className={`timeline-area transition-all duration-300 ${
+          timelineCollapsed 
+            ? 'hidden' 
+            : showMobilePanel 
+              ? 'hidden md:flex md:w-7/10' 
+              : 'flex md:w-7/10'
+        } w-full flex-col`}>
           <TimelineVisualization />
         </div>
 
-        {/* Context Panel (30% on desktop, overlay on mobile) */}
+        {/* Context Panel (30% on desktop, full width when timeline collapsed, overlay on mobile) */}
         <div className={`
-          context-panel bg-white border-l border-gray-200
-          ${showMobilePanel ? 'fixed inset-y-0 right-0 w-80 shadow-xl z-50 md:relative md:inset-auto md:w-3/10 md:shadow-none' : 'hidden md:flex md:w-3/10'}
-          flex flex-col
+          context-panel bg-white transition-all duration-300
+          ${timelineCollapsed 
+            ? 'flex w-full' 
+            : showMobilePanel 
+              ? 'fixed inset-y-0 right-0 w-80 shadow-xl z-50 md:relative md:inset-auto md:w-3/10 md:shadow-none border-l border-gray-200' 
+              : 'hidden md:flex md:w-3/10 border-l border-gray-200'
+          }
+          flex-col
         `}>
           
           {/* Panel Header */}
           <div className="panel-header p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-800">
-                {activeView === 'overview' && 'Overview'}
+                {timelineCollapsed && <span className="text-blue-600 mr-2">📊</span>}
+                {activeView === 'overview' && (timelineCollapsed ? 'Dashboard Overview' : 'Overview')}
                 {activeView === 'analytics' && 'Predictive Analytics'}
                 {activeView === 'journey' && 'Journey Details'}  
                 {activeView === 'alignment' && 'Alignment Insights'}

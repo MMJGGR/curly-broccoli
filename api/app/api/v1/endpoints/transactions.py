@@ -11,9 +11,9 @@ import io
 import json
 import logging
 
-from api.app.database import get_db
-from api.app.models import User, Transaction, Account, ExpenseCategory
-from api.app.auth import get_current_user
+from app.database import get_db
+from app.models import User, Transaction, Account, ExpenseCategory
+from app.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
