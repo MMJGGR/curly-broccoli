@@ -1,221 +1,130 @@
 """
-SqlAlchemy Account Repository - Full Implementation
-Provides comprehensive account management with balance calculations and categorization
+SqlAlchemy Account Repository - Clean Architecture Implementation  
+Foundation Week: Updated to use new domain entities and proper patterns
 """
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
-from typing import Dict, List, Optional
-from datetime import datetime
+from sqlalchemy import and_
+from typing import List, Optional
+from datetime import datetime, timezone
 from decimal import Decimal
 
-from app.models import Account, Transaction, User
-from app.domain.value_objects.money import Money
+from ...models import Account as AccountModel
+from ...domain.entities.account import Account, AccountType
+from ...domain.entities.money import Money
+from ...domain.repositories.account_repository import AccountRepository
 
 
-class SqlAlchemyAccountRepository:
-    """Full-featured account repository with financial calculations"""
+class SqlAlchemyAccountRepository(AccountRepository):
+    """SQLAlchemy implementation of AccountRepository interface"""
     
     def __init__(self, db: Session):
         self.db = db
     
-    def get_accounts_summary(self, user_id: int) -> Dict:
-        """Get comprehensive accounts summary with net worth calculation"""
-        # Get all user accounts
-        accounts = self.db.query(Account).filter(
-            Account.user_id == user_id
+    async def get_user_accounts(self, user_id: int) -> List[Account]:
+        """Get all accounts for a user as domain entities"""
+        # Get all user accounts from database
+        account_models = self.db.query(AccountModel).filter(
+            AccountModel.user_id == user_id
         ).all()
         
-        # Prepare account data with categorization
-        accounts_data = []
-        total_assets = Decimal('0')
-        total_liabilities = Decimal('0')
-        active_accounts = 0
+        # Convert to domain entities
+        domain_accounts = []
+        for model in account_models:
+            try:
+                # Map database account type to domain AccountType
+                account_type = self._map_account_type(model.type)
+                
+                # Create Money object with proper balance
+                balance = Money(Decimal(str(model.balance)) if model.balance else Decimal('0.00'))
+                
+                # Create domain entity
+                domain_account = Account(
+                    id=model.id,
+                    user_id=model.user_id,
+                    name=model.name,
+                    account_type=account_type,
+                    balance=balance,
+                    institution=model.institution_name or "Unknown",
+                    account_number=f"****{model.account_number[-4:]}" if model.account_number else "****0000",
+                    is_active=model.is_active,
+                    created_at=model.created_at or datetime.now(timezone.utc),
+                    updated_at=model.updated_at
+                )
+                domain_accounts.append(domain_account)
+                
+            except Exception as e:
+                # Log error but continue with other accounts
+                print(f"Error converting account {model.id}: {e}")
+                continue
         
-        for account in accounts:
-            # Determine if account is asset or liability
-            is_asset = account.type in ['checking', 'savings', 'investment', 'money_market', 'cd']
-            is_liability = account.type in ['credit', 'loan', 'line_of_credit', 'mortgage']
-            
-            # Calculate display balance (positive for assets, negative for liabilities)
-            balance = Decimal(str(account.balance))
-            display_balance = balance if is_asset else -abs(balance)
-            
-            # Add to totals
-            if is_asset and account.is_active:
-                total_assets += balance
-                active_accounts += 1
-            elif is_liability and account.is_active:
-                total_liabilities += abs(balance)  # Liabilities are positive amounts owed
-                active_accounts += 1
-            
-            # Get account number last 4 digits
-            last_four = account.account_number[-4:] if account.account_number else "****"
-            
-            accounts_data.append({
-                "id": account.id,
-                "name": account.name,
-                "type": account.type,
-                "balance": Money(balance),
-                "display_balance": Money(display_balance),
-                "is_asset": is_asset,
-                "is_liability": is_liability,
-                "institution": account.institution_name,
-                "last_four": last_four,
-                "is_active": account.is_active,
-                "last_sync": account.last_sync,
-                "created_at": account.created_at,
-                "updated_at": account.updated_at
-            })
-        
-        # Calculate net worth
-        net_worth = total_assets - total_liabilities
-        
-        return {
-            "accounts": accounts_data,
-            "summary": {
-                "total_accounts": len(accounts),
-                "active_accounts": active_accounts,
-                "total_assets": Money(total_assets),
-                "total_liabilities": Money(total_liabilities),
-                "net_worth": Money(net_worth)
-            }
+        return domain_accounts
+    
+    def _map_account_type(self, db_type: str) -> AccountType:
+        """Map database account type to domain AccountType enum"""
+        type_mapping = {
+            'checking': AccountType.CHECKING,
+            'savings': AccountType.SAVINGS,
+            'investment': AccountType.INVESTMENT,
+            'money_market': AccountType.SAVINGS,
+            'cd': AccountType.SAVINGS,
+            'credit': AccountType.CREDIT_CARD,
+            'credit_card': AccountType.CREDIT_CARD,
+            'loan': AccountType.PERSONAL_LOAN,
+            'personal_loan': AccountType.PERSONAL_LOAN,
+            'auto_loan': AccountType.AUTO_LOAN,
+            'student_loan': AccountType.STUDENT_LOAN,
+            'mortgage': AccountType.MORTGAGE,
+            'line_of_credit': AccountType.LINE_OF_CREDIT,
+            'retirement_401k': AccountType.RETIREMENT_401K,
+            'retirement_ira': AccountType.RETIREMENT_IRA,
+            'brokerage': AccountType.BROKERAGE,
+            'real_estate': AccountType.REAL_ESTATE,
+            'cash': AccountType.CASH
         }
+        
+        return type_mapping.get(db_type.lower(), AccountType.OTHER_ASSET)
     
-    def get_account_by_id(self, user_id: int, account_id: int) -> Optional[Account]:
+    async def get_account_by_id(self, user_id: int, account_id: int) -> Optional[Account]:
         """Get specific account by ID"""
-        return self.db.query(Account).filter(
+        account_model = self.db.query(AccountModel).filter(
             and_(
-                Account.id == account_id,
-                Account.user_id == user_id
-            )
-        ).first()
-    
-    def create_account(self, user_id: int, account_data: Dict) -> Account:
-        """Create new account"""
-        account = Account(
-            user_id=user_id,
-            name=account_data.get("name"),
-            account_number=account_data.get("account_number"),
-            type=account_data.get("type"),
-            balance=float(account_data.get("balance", 0.0)),
-            institution_name=account_data.get("institution_name"),
-            institution_id=account_data.get("institution_id"),
-            is_active=account_data.get("is_active", True)
-        )
-        
-        self.db.add(account)
-        self.db.commit()
-        self.db.refresh(account)
-        return account
-    
-    def update_account(self, user_id: int, account_id: int, updates: Dict) -> Optional[Account]:
-        """Update existing account"""
-        account = self.db.query(Account).filter(
-            and_(
-                Account.id == account_id,
-                Account.user_id == user_id
+                AccountModel.id == account_id,
+                AccountModel.user_id == user_id
             )
         ).first()
         
-        if not account:
+        if not account_model:
             return None
         
-        # Update allowed fields
-        allowed_fields = ["name", "balance", "institution_name", "is_active", "last_sync"]
-        for field, value in updates.items():
-            if field in allowed_fields:
-                setattr(account, field, value)
-        
-        account.updated_at = datetime.utcnow()
-        self.db.commit()
-        self.db.refresh(account)
-        return account
-    
-    def delete_account(self, user_id: int, account_id: int) -> bool:
-        """Delete account (soft delete by marking inactive)"""
-        account = self.db.query(Account).filter(
-            and_(
-                Account.id == account_id,
-                Account.user_id == user_id
+        # Convert to domain entity
+        try:
+            account_type = self._map_account_type(account_model.type)
+            balance = Money(Decimal(str(account_model.balance)) if account_model.balance else Decimal('0.00'))
+            
+            return Account(
+                id=account_model.id,
+                user_id=account_model.user_id,
+                name=account_model.name,
+                account_type=account_type,
+                balance=balance,
+                institution=account_model.institution_name or "Unknown",
+                account_number=f"****{account_model.account_number[-4:]}" if account_model.account_number else "****0000",
+                is_active=account_model.is_active,
+                created_at=account_model.created_at or datetime.now(timezone.utc),
+                updated_at=account_model.updated_at
             )
-        ).first()
-        
-        if not account:
-            return False
-        
-        # Soft delete by marking inactive
-        account.is_active = False
-        account.updated_at = datetime.utcnow()
-        self.db.commit()
-        return True
-    
-    def get_account_transactions(self, user_id: int, account_id: int, limit: int = 50) -> List[Transaction]:
-        """Get recent transactions for specific account"""
-        return self.db.query(Transaction).filter(
-            and_(
-                Transaction.account_id == account_id,
-                Transaction.user_id == user_id
-            )
-        ).order_by(Transaction.date.desc()).limit(limit).all()
-    
-    def calculate_account_balance(self, user_id: int, account_id: int) -> Decimal:
-        """Calculate account balance from transactions"""
-        # Get account
-        account = self.get_account_by_id(user_id, account_id)
-        if not account:
-            return Decimal('0')
-        
-        # Calculate balance from transactions
-        transactions = self.db.query(Transaction).filter(
-            and_(
-                Transaction.account_id == account_id,
-                Transaction.user_id == user_id,
-                Transaction.is_reconciled == True
-            )
-        ).all()
-        
-        balance = Decimal('0')
-        for transaction in transactions:
-            if transaction.transaction_type == 'credit':
-                balance += Decimal(str(transaction.amount))
-            else:  # debit
-                balance -= Decimal(str(transaction.amount))
-        
-        return balance
-    
-    def sync_account_balance(self, user_id: int, account_id: int) -> Optional[Account]:
-        """Sync account balance with transaction history"""
-        account = self.get_account_by_id(user_id, account_id)
-        if not account:
+        except Exception as e:
+            print(f"Error converting account {account_model.id}: {e}")
             return None
-        
-        calculated_balance = self.calculate_account_balance(user_id, account_id)
-        account.balance = float(calculated_balance)
-        account.last_sync = datetime.utcnow()
-        account.updated_at = datetime.utcnow()
-        
-        self.db.commit()
-        self.db.refresh(account)
-        return account
     
-    def get_accounts_by_type(self, user_id: int, account_type: str) -> List[Account]:
-        """Get accounts filtered by type"""
-        return self.db.query(Account).filter(
-            and_(
-                Account.user_id == user_id,
-                Account.type == account_type,
-                Account.is_active == True
-            )
-        ).all()
+    async def create_account(self, account: Account) -> Account:
+        """Create new account - TODO: Implement for Foundation Week"""
+        raise NotImplementedError("Create account not implemented yet")
     
-    def get_net_worth_history(self, user_id: int, months: int = 12) -> List[Dict]:
-        """Get net worth calculation over time (placeholder for future implementation)"""
-        # This would require historical balance snapshots
-        # For now, return current net worth
-        summary = self.get_accounts_summary(user_id)
-        return [{
-            "date": datetime.now().date(),
-            "net_worth": summary["summary"]["net_worth"].amount,
-            "total_assets": summary["summary"]["total_assets"].amount,
-            "total_liabilities": summary["summary"]["total_liabilities"].amount
-        }]
+    async def update_account(self, account: Account) -> Account:
+        """Update existing account - TODO: Implement for Foundation Week"""
+        raise NotImplementedError("Update account not implemented yet")
+    
+    async def delete_account(self, user_id: int, account_id: int) -> bool:
+        """Delete account - TODO: Implement for Foundation Week"""
+        raise NotImplementedError("Delete account not implemented yet")

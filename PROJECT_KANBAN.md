@@ -29,29 +29,52 @@
 
 ---
 
-## 🔥 **IMMEDIATE PRIORITY - ENTERPRISE DATA FOUNDATION** 
+## 🔥 **IMMEDIATE PRIORITY - USER FINANCIAL FOUNDATION (CFA-Compliant Client-First)** 
 
-### 🎯 **PHASE 1: HISTORICAL ASSET RETURNS DATA INGESTION** (Next 4 Weeks)
-**CRITICAL**: Foundation for ALL professional financial calculations
+### 🎯 **PHASE 1: COMPLETE USER FINANCIAL PROFILE** (Next 4 Weeks)
+**CFA STANDARD**: Client discovery and suitability assessment before advanced tools
 
-#### **Data Pipeline Architecture**
-- **Historical Returns Database** - Build enterprise-grade data warehouse
-  - Ingest S&P 500 daily returns (30+ years from Yahoo Finance/FRED APIs)
-  - International equity indices (FTSE, MSCI EAFE, Emerging Markets)
-  - Fixed income series (10-Year Treasury, Corporate bonds, TIPS)
-  - Alternative assets (REITs, Commodities, Gold)
-  - Currency exchange rates for international diversification
+#### **Complete Expense Tracking System** (Week 1-2)
+- **Comprehensive Expense Management** - Foundation for cash flow analysis
+  - Complete ExpenseOverview.jsx with full onboarding integration (41K rent, 20K groceries, etc.)
+  - Add CFA-standard expense categorization (fixed, variable, discretionary)
+  - Implement expense ratio calculations (housing, transportation, debt service)
+  - Build budget variance analysis and spending pattern recognition
 
-- **Market Data Infrastructure** - Professional-grade data pipeline
-  - Build automated data ingestion services with error handling and retry logic
-  - Implement data quality validation (outlier detection, missing data interpolation)
-  - Create normalized data models for different asset classes and timeframes
-  - Add data freshness monitoring and alert systems
-  - Build historical correlation and volatility calculation engines
+#### **Balance Sheet & Net Worth Module** (Week 2-3)
+- **Asset Inventory System** - Track user's complete financial picture
+  - Build savings account tracking with real-time balances
+  - Implement investment account integration (401k, IRA, taxable accounts)
+  - Add property value tracking and other asset categories
+  - Create comprehensive liability tracking (mortgages, credit cards, loans)
+  - Build real-time net worth calculation and historical trending
 
-#### **Economic Indicators Integration**
-- **Inflation & Interest Rate Series** - Core macroeconomic data
-  - Consumer Price Index (CPI) monthly data back to 1990
+#### **Cash Flow Analysis Engine** (Week 3-4)
+- **Investment Allocation Foundation** - Determine surplus available for goals
+  - Build monthly cash flow statement generation (Income - Expenses = Free Cash Flow)
+  - Implement surplus allocation by goal priority and time horizon
+  - Create cash flow forecasting for goal funding feasibility
+  - Add emergency fund adequacy analysis (3-6 months expenses)
+
+### 🎯 **PHASE 2: BASIC INVESTMENT ALLOCATION & TRACKING** (Weeks 5-8)
+**CFA STANDARD**: Implement basic portfolio recommendations before sophisticated modeling
+
+#### **Investment Allocation Framework** 
+- **Goal-Based Asset Allocation** - CFA-compliant basic allocation models
+  - Implement age-based allocation guidelines (100 - age = equity percentage)
+  - Build risk tolerance-based model portfolios (Conservative, Moderate, Aggressive)
+  - Create target-date fund methodology for different time horizons
+  - Add basic diversification recommendations by asset class
+
+#### **Basic Performance Tracking**
+- **Portfolio Monitoring Without Monte Carlo** - Foundation tracking system
+  - Build simple portfolio allocation tracking and rebalancing alerts
+  - Implement basic risk metrics (standard deviation, Sharpe ratio calculations)
+  - Create goal progress tracking with basic projection models
+  - Add benchmark comparison (S&P 500 index fund performance proxy)
+
+### 🎯 **PHASE 3: HISTORICAL DATA & ADVANCED ANALYTICS** (Weeks 9-12)
+**FUTURE**: After solid client foundation, add sophisticated tools
   - Federal Funds Rate and yield curve data
   - Real GDP growth rates and recession indicators
   - Employment statistics and wage growth data

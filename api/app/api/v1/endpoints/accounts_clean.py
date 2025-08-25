@@ -6,15 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Dict, Any
 
-from ....auth import get_current_user
-from ....models import User
-from ....database import get_db
+from app.auth import get_current_user
+from app.models import User
+from app.database import get_db
 
 # Import use cases
-from ....application.use_cases.get_accounts_summary import GetAccountsSummary
+from app.application.use_cases.get_accounts_summary import GetAccountsSummary
 
 # Import repositories
-from ....infrastructure.repositories.sqlalchemy_account_repository import SqlAlchemyAccountRepository
+from app.infrastructure.repositories.sqlalchemy_account_repository import SqlAlchemyAccountRepository
 
 router = APIRouter(prefix="/accounts-v2", tags=["accounts-v2-clean"])
 

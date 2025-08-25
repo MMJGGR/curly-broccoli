@@ -2,8 +2,9 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     profile, onboarding_consolidated, profile_clean, timeline_clean,
-    transactions, accounts, budget, budget_v2_clean, analytics, income_v2_clean, goals_v2_clean
-    # transactions_clean, analytics_clean, accounts_clean, profile_v2_clean, timeline_v2_clean  # Temporarily disabled - missing use cases
+    transactions, accounts, budget, budget_v2_clean, analytics, income_v2_clean, goals_v2_clean,
+    accounts_clean
+    # transactions_clean, analytics_clean, profile_v2_clean, timeline_v2_clean  # Temporarily disabled - missing use cases
 )
 
 api_router = APIRouter()
@@ -26,7 +27,7 @@ api_router.include_router(income_v2_clean.router, tags=["income-v2-clean"])  # F
 api_router.include_router(goals_v2_clean.router, tags=["goals-v2-clean"])
 # api_router.include_router(transactions_clean.router, tags=["transactions-v2-clean"])  # Temporarily disabled - missing use case
 # api_router.include_router(analytics_clean.router, tags=["analytics-v2-clean"])  # Temporarily disabled - missing use case
-# api_router.include_router(accounts_clean.router, tags=["accounts-v2-clean"])  # Temporarily disabled - missing use case
+api_router.include_router(accounts_clean.router, tags=["accounts-v2-clean"])
 # api_router.include_router(profile_v2_clean.router, tags=["profile-v2-clean"])  # Temporarily disabled - missing use case
 # api_router.include_router(timeline_v2_clean.router, tags=["timeline-v2-clean"])  # Temporarily disabled - missing use case
 

@@ -154,7 +154,9 @@
       "Bash(PYTHONPATH=/app:/app/api python -c \"from api.app.domain.services.validation_service import CFAValidationService; print(''Import successful with Docker PYTHONPATH from root'')\")",
       "Bash(set NODE_ENV=production)",
       "Bash(export JWT_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzU1OTcxNDE2LjcyMTQxMSwiZXhwIjoxNzg3NTA3NDE2LjcyMTQxMSwic2NvcGUiOiJ1c2VyIiwicm9sZSI6InVzZXIifQ.wnGYbUsoWlqq3Qf2nSMxbV-03eBbEhTxATl5Pp5kSyo\")",
-      "Bash(winpty docker exec curly-broccoli-api-1 python -c \"from api.app.api.v1.endpoints import income_v2_clean; print(''Import successful'')\")"
+      "Bash(winpty docker exec curly-broccoli-api-1 python -c \"from api.app.api.v1.endpoints import income_v2_clean; print(''Import successful'')\")",
+      "Bash(winpty docker exec curly-broccoli-api-1 python -c \"from api.app.api.v1.endpoints import accounts_clean; print(''Import successful'')\")",
+      "Bash(winpty docker exec curly-broccoli-api-1 find /app -name \"get_accounts_summary.py\")"
     ],
     "deny": []
   }
