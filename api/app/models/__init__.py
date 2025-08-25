@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Float, JSON
+from sqlalchemy import Column, Integer, String, Boolean, Date, DateTime, ForeignKey, Float, JSON, Numeric, Text
 from datetime import datetime
 # Use JSON for portable storage of lists. ARRAY is not supported by SQLite,
 # which is used in tests, so replacing ARRAY(Integer) with JSON ensures the
@@ -27,6 +27,8 @@ class User(Base):
     accounts = relationship("Account", back_populates="owner")
     income_sources = relationship("IncomeSource", back_populates="owner")
     expense_categories = relationship("ExpenseCategory", back_populates="owner")
+    assets = relationship("Asset", back_populates="owner")
+    expenses = relationship("Expense", back_populates="owner")
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -253,3 +255,52 @@ class ExpenseCategory(Base):
         if self.budgeted_amount == 0:
             return 0
         return (self.variance / self.budgeted_amount) * 100
+
+
+class Asset(Base):
+    """SQLAlchemy model for assets table"""
+    __tablename__ = "assets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    asset_type = Column(String(50), nullable=False, index=True)
+    current_value = Column(Numeric(precision=15, scale=2), nullable=False)
+    acquisition_cost = Column(Numeric(precision=15, scale=2), nullable=False)
+    acquisition_date = Column(DateTime(timezone=True), nullable=False)
+    useful_life_years = Column(Integer, nullable=True)
+    related_liability_id = Column(Integer, nullable=True)
+    description = Column(Text, nullable=True)
+    location = Column(String(255), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    owner = relationship("User", back_populates="assets")
+    expenses = relationship("Expense", back_populates="related_asset", foreign_keys="Expense.related_asset_id")
+
+
+class Expense(Base):
+    """SQLAlchemy model for expenses table"""
+    __tablename__ = "expenses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    description = Column(String(500), nullable=False)
+    amount = Column(Numeric(precision=15, scale=2), nullable=False)
+    expense_type = Column(String(50), nullable=False, index=True)
+    expense_date = Column(DateTime(timezone=True), nullable=False, index=True)
+    is_recurring = Column(Boolean, nullable=False, default=False, index=True)
+    frequency_months = Column(Integer, nullable=True)
+    related_asset_id = Column(Integer, ForeignKey("assets.id", ondelete="SET NULL"), nullable=True)
+    vendor = Column(String(255), nullable=True)
+    category_override = Column(String(50), nullable=True)
+    notes = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    owner = relationship("User", back_populates="expenses")
+    related_asset = relationship("Asset", back_populates="expenses", foreign_keys=[related_asset_id])

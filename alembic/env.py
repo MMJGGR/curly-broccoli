@@ -6,8 +6,8 @@ from sqlalchemy import pool
 from alembic import context
 
 # Import your Base from your SQLAlchemy models
-from api.app.models.__init__ import Base
-from api.app.core.config import settings
+from app.models import Base
+import os
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -28,8 +28,9 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-# Set the SQLAlchemy URL from your settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Set the SQLAlchemy URL from environment variable
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:pass@db:5432/finance_app")
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.

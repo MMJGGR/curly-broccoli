@@ -159,7 +159,8 @@
       "Bash(winpty docker exec curly-broccoli-api-1 find /app -name \"get_accounts_summary.py\")",
       "Read(/C:\\c\\Users\\Richard\\curly-broccoli/**)",
       "Read(/C:\\c\\Users\\Richard\\curly-broccoli/**)",
-      "Read(/C:\\c\\Users\\Richard\\curly-broccoli/**)"
+      "Read(/C:\\c\\Users\\Richard\\curly-broccoli/**)",
+      "Bash(winpty docker exec curly-broccoli-api-1 head -15 /app/alembic/env.py)"
     ],
     "deny": []
   }
