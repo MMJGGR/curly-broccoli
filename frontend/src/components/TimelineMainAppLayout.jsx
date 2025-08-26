@@ -20,6 +20,11 @@ import BudgetCashflows from './budget/BudgetCashflows';
 // Tools components
 import ToolsDashboard from './tools/ToolsDashboard';
 
+// Balance Sheet components (includes Assets and Expenses)
+import BalanceSheetDashboard from './balance-sheet/BalanceSheetDashboard';
+import { AssetDashboard } from './assets';
+import { ExpenseDashboard } from './expenses';
+
 // Legacy components (for fallback/migration)  
 import Dashboard from './Dashboard';
 import ProfileDynamic from './ProfileDynamic';
@@ -76,8 +81,7 @@ const TimelineMainAppLayout = () => {
         navigate('budget');
         break;
       case 'balance-sheet':
-        // TODO: Add balance sheet route  
-        console.log('Balance Sheet tab clicked');
+        navigate('balance-sheet');
         break;
       case 'goals':
         navigate('tools');
@@ -142,6 +146,11 @@ const TimelineMainAppLayout = () => {
             
             {/* Budget & Cashflows */}
             <Route path="budget" element={<BudgetCashflows />} />
+            
+            {/* Balance Sheet - Assets and Expenses */}
+            <Route path="balance-sheet" element={<BalanceSheetDashboard />} />
+            <Route path="assets" element={<AssetDashboard />} />
+            <Route path="expenses" element={<ExpenseDashboard />} />
             
             {/* Financial Management Tools */}
             <Route path="tools" element={<ToolsDashboard />} />

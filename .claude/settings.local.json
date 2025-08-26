@@ -160,7 +160,9 @@
       "Read(/C:\\c\\Users\\Richard\\curly-broccoli/**)",
       "Read(/C:\\c\\Users\\Richard\\curly-broccoli/**)",
       "Read(/C:\\c\\Users\\Richard\\curly-broccoli/**)",
-      "Bash(winpty docker exec curly-broccoli-api-1 head -15 /app/alembic/env.py)"
+      "Bash(winpty docker exec curly-broccoli-api-1 head -15 /app/alembic/env.py)",
+      "Bash(winpty docker exec curly-broccoli-frontend-1 ls /app/src/components/ui/)",
+      "Bash(winpty docker exec curly-broccoli-db-1 psql -U postgres -d postgres -c \"SELECT id, email FROM profiles WHERE email = ''richard.mmacharia@gmail.com'';\")"
     ],
     "deny": []
   }

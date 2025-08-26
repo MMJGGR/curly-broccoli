@@ -1,0 +1,13 @@
+/**
+ * UI Components Export Index
+ * Centralized exports for all UI components
+ */
+
+export * from './card';
+export * from './button';
+export * from './input';
+export * from './label';
+export * from './textarea';
+export * from './badge';
+export * from './select';
+export * from './icons';

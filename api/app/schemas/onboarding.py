@@ -13,7 +13,7 @@ class OnboardingStepRequest(BaseModel):
     
     @validator('step_number')
     def validate_step_number(cls, v):
-        if v < 1 or v > 5:
+        if v < 1 or v > 5:  # Keep at 5 steps, replace preferences with employment
             raise ValueError('Step number must be between 1 and 5')
         return v
 
@@ -27,7 +27,7 @@ class OnboardingStateResponse(BaseModel):
     risk_data: Optional[Dict[str, Any]] = None
     financial_data: Optional[Dict[str, Any]] = None
     goals_data: Optional[Dict[str, Any]] = None
-    preferences_data: Optional[Dict[str, Any]] = None
+    employment_data: Optional[Dict[str, Any]] = None  # Replaces preferences_data as Step 5
     created_at: datetime
     updated_at: datetime
     
@@ -117,9 +117,85 @@ class GoalsData(BaseModel):
     other: Optional[str] = None
 
 
-class PreferencesData(BaseModel):
-    """Schema for preferences step (Step 5) - Optional"""
-    notifications: bool = True
-    dataSharing: bool = False
-    marketingEmails: bool = False
-    newsletterSubscription: bool = True
+class EmploymentProfileData(BaseModel):
+    """Schema for employment profile step (Step 5) - CFA-compliant career data"""
+    
+    # Core Industry Classification
+    industry_sector: str  # Required for discount rate calculation
+    job_role_level: str   # entry, mid, senior, executive, owner
+    employment_type: str  # permanent, contract, freelance, business_owner
+    company_size: Optional[str] = "medium"  # startup, small, medium, large, enterprise
+    
+    # Stability & Experience Factors
+    years_current_employer: float
+    years_current_industry: float
+    total_work_experience: float
+    employment_gaps_months: int = 0  # Total months of unemployment in last 5 years
+    
+    # Income Characteristics
+    income_variability: str = "fixed"  # fixed, commission_based, seasonal, project_based
+    bonus_percentage: float = 0.0  # Percentage of total comp from bonuses/commissions
+    stock_compensation_percentage: float = 0.0  # Percentage from equity/stock options
+    
+    # Career Outlook
+    promotion_frequency_years: float = 3.0  # Average years between promotions
+    skill_obsolescence_risk: str = "medium"  # low, medium, high
+    industry_growth_outlook: str = "stable"  # declining, stable, growing, high_growth
+    career_change_likelihood: str = "low"  # low, medium, high
+    
+    # Location & Professional Standing
+    work_location: str  # nairobi, mombasa, kisumu, nakuru, rural, remote
+    professional_certifications: List[str] = []  # CPA, CFA, PE, etc.
+    union_membership: bool = False
+    professional_licenses_required: bool = False
+    
+    # Additional Context
+    job_security_perception: str = "stable"  # very_secure, stable, uncertain, at_risk
+    remote_work_percentage: int = 0  # Percentage of work done remotely
+    
+    @validator('industry_sector')
+    def validate_industry_sector(cls, v):
+        valid_sectors = [
+            'government', 'education', 'healthcare', 'legal', 'accounting',
+            'financial_services', 'consulting', 'technology', 'manufacturing',
+            'energy', 'construction', 'entertainment', 'startup', 'gig_economy',
+            'agriculture', 'tourism', 'telecommunications', 'retail', 'other'
+        ]
+        if v.lower() not in valid_sectors:
+            raise ValueError(f'Industry sector must be one of: {", ".join(valid_sectors)}')
+        return v.lower()
+    
+    @validator('job_role_level')
+    def validate_job_role_level(cls, v):
+        valid_levels = ['entry', 'mid', 'senior', 'executive', 'owner']
+        if v.lower() not in valid_levels:
+            raise ValueError(f'Job role level must be one of: {", ".join(valid_levels)}')
+        return v.lower()
+    
+    @validator('employment_type')
+    def validate_employment_type(cls, v):
+        valid_types = ['permanent', 'contract', 'freelance', 'business_owner']
+        if v.lower() not in valid_types:
+            raise ValueError(f'Employment type must be one of: {", ".join(valid_types)}')
+        return v.lower()
+    
+    @validator('years_current_employer', 'years_current_industry', 'total_work_experience')
+    def validate_years_positive(cls, v):
+        if v < 0:
+            raise ValueError('Years of experience cannot be negative')
+        if v > 60:  # Reasonable career length limit
+            raise ValueError('Years of experience seems unrealistically high')
+        return v
+    
+    @validator('bonus_percentage', 'stock_compensation_percentage')
+    def validate_percentage(cls, v):
+        if v < 0 or v > 100:
+            raise ValueError('Percentage must be between 0 and 100')
+        return v
+    
+    @validator('work_location')
+    def validate_work_location(cls, v):
+        valid_locations = ['nairobi', 'mombasa', 'kisumu', 'nakuru', 'eldoret', 'thika', 'rural', 'remote', 'other']
+        if v.lower() not in valid_locations:
+            raise ValueError(f'Work location must be one of: {", ".join(valid_locations)}')
+        return v.lower()

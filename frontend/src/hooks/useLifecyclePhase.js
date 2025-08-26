@@ -266,7 +266,7 @@ export const useLifecyclePhase = (userProfile = {}) => {
     setLoading(true);
     setLifecycleData(lifecycleAnalysis);
     setLoading(false);
-  }, [age, income, expenses, netWorth, dependents, retirementGoalAge]);
+  }, [age, income, expenses, netWorth, dependents, retirementGoalAge, lifecycleAnalysis]);
 
   return {
     // Core lifecycle data

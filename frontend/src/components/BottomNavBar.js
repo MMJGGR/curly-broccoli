@@ -1,13 +1,7 @@
-// Enhanced Bottom Navigation with Contextual Timeline Intelligence
+// Enhanced Bottom Navigation
 import React from 'react';
-import LifecyclePhaseIndicator from './contextual/LifecyclePhaseIndicator';
-import TimelineStatusBadge from './contextual/TimelineStatusBadge';
-import { useTimeline } from '../contexts/TimelineContext';
-import { useBudget } from '../contexts/BudgetContext';
 
 const BottomNavBar = ({ onTabClick, activeTab = 'dashboard' }) => {
-    const { persona, personaTheme } = useTimeline();
-    const { actualSurplus, formatAmount } = useBudget();
 
     const tabs = [
         { id: 'budget', name: 'Budget', icon: (
@@ -39,48 +33,6 @@ const BottomNavBar = ({ onTabClick, activeTab = 'dashboard' }) => {
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50 bottom-nav" data-testid="bottom-nav">
-            {/* Contextual Timeline Intelligence Bar */}
-            <div 
-                className="px-4 py-2 border-b border-gray-200 flex items-center justify-between"
-                style={{ 
-                    backgroundColor: personaTheme?.secondary || '#f8fafc',
-                    borderColor: `${personaTheme?.primary}20` || '#e2e8f020'
-                }}
-            >
-                <div className="flex items-center space-x-3">
-                    <LifecyclePhaseIndicator 
-                        size="small" 
-                        showDetails={false} 
-                        showGuidance={false}
-                    />
-                    <TimelineStatusBadge 
-                        size="small" 
-                        showPercentage={false}
-                        showDetails={false}
-                        position="top"
-                    />
-                </div>
-                
-                {/* Smart Budget Status */}
-                <div className="flex items-center space-x-2">
-                    {actualSurplus !== undefined && (
-                        <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
-                            actualSurplus >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                            <span>{actualSurplus >= 0 ? '💰' : '⚠️'}</span>
-                            <span>{formatAmount ? formatAmount(Math.abs(actualSurplus)) : Math.abs(actualSurplus)}</span>
-                        </div>
-                    )}
-                    
-                    {persona && (
-                        <div 
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: personaTheme?.primary || '#3b82f6' }}
-                            title={`${persona} Profile`}
-                        ></div>
-                    )}
-                </div>
-            </div>
             
             {/* Navigation Tabs */}
             <div className="flex justify-around items-center h-16">
@@ -98,23 +50,6 @@ const BottomNavBar = ({ onTabClick, activeTab = 'dashboard' }) => {
                         {tab.icon}
                         <span className="text-xs mt-1">{tab.name}</span>
                         
-                        {/* Smart Status Indicators */}
-                        {tab.id === 'budget' && activeTab !== 'budget' && actualSurplus !== undefined && (
-                            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-                                actualSurplus >= 0 ? 'bg-green-500' : 'bg-red-500'
-                            }`}></div>
-                        )}
-                        
-                        {tab.id === 'dashboard' && activeTab !== 'dashboard' && (
-                            <div 
-                                className="absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white"
-                                style={{ backgroundColor: personaTheme?.primary || '#3b82f6' }}
-                            ></div>
-                        )}
-                        
-                        {tab.id === 'goals' && activeTab !== 'goals' && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full border-2 border-white"></div>
-                        )}
                     </button>
                 ))}
             </div>
