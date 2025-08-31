@@ -34,7 +34,8 @@ export const Select = ({ children, value, onValueChange, ...props }) => {
         if (child.type === SelectTrigger) {
           return React.cloneElement(child, {
             onClick: () => setIsOpen(!isOpen),
-            selectedValue
+            selectedValue,
+            selectContent: children.find(c => c.type === SelectContent)
           });
         }
         if (child.type === SelectContent && isOpen) {
@@ -49,32 +50,57 @@ export const Select = ({ children, value, onValueChange, ...props }) => {
   );
 };
 
-export const SelectTrigger = ({ children, onClick, selectedValue, className = '', ...props }) => (
+export const SelectTrigger = ({ children, onClick, selectedValue, selectContent, className = '', ...props }) => (
   <button
     type="button"
     className={`flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
     onClick={onClick}
     {...props}
   >
-    {children}
+    {React.Children.map(children, (child) => {
+      if (child.type === SelectValue) {
+        return React.cloneElement(child, {
+          selectedValue,
+          children: selectContent ? selectContent.props.children : null
+        });
+      }
+      return child;
+    })}
     <ChevronDownIcon />
   </button>
 );
 
-export const SelectValue = ({ placeholder, selectedValue }) => {
-  // const findSelectedLabel = (children) => {
-  //   let selectedLabel = placeholder || 'Select...';
-  //   
-  //   React.Children.forEach(children, (child) => {
-  //     if (child && child.props && child.props.value === selectedValue) {
-  //       selectedLabel = child.props.children;
-  //     }
-  //   });
-  //   
-  //   return selectedLabel;
-  // };
+export const SelectValue = ({ placeholder, selectedValue, children }) => {
+  const findSelectedLabel = (children) => {
+    let selectedLabel = placeholder || 'Select...';
+    
+    const searchChildren = (childrenToSearch) => {
+      React.Children.forEach(childrenToSearch, (child) => {
+        if (child && child.props && child.props.value === selectedValue) {
+          // Extract text content from complex children
+          if (typeof child.props.children === 'string') {
+            selectedLabel = child.props.children;
+          } else if (Array.isArray(child.props.children)) {
+            // Get the first text span which should be the main label
+            const textChild = child.props.children.find(c => 
+              c && typeof c === 'object' && c.props && typeof c.props.children === 'string'
+            );
+            if (textChild) {
+              selectedLabel = textChild.props.children;
+            }
+          }
+        } else if (child && child.props && child.props.children) {
+          searchChildren(child.props.children);
+        }
+      });
+    };
+    
+    searchChildren(children);
+    return selectedLabel;
+  };
 
-  return <span>{selectedValue || placeholder || 'Select...'}</span>;
+  const displayValue = selectedValue ? findSelectedLabel(children) : (placeholder || 'Select...');
+  return <span>{displayValue}</span>;
 };
 
 export const SelectContent = ({ children, onSelect, selectedValue, className = '', ...props }) => (

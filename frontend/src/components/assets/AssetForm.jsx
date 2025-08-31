@@ -398,31 +398,15 @@ const AssetForm = ({ asset, onAssetCreated, onAssetUpdated, onCancel }) => {
                       </div>
                       {types.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
-                          <div className="flex flex-col w-full">
-                            <div className="flex items-center justify-between w-full">
-                              <span className="font-medium">{type.label}</span>
-                              <div className="flex space-x-1 ml-2">
-                                {type.is_liquid && (
-                                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">Liquid</Badge>
-                                )}
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-xs ${
-                                    type.risk_level === 'low' ? 'bg-green-50 text-green-700' :
-                                    type.risk_level === 'high' ? 'bg-red-50 text-red-700' :
-                                    'bg-yellow-50 text-yellow-700'
-                                  }`}
-                                >
-                                  {type.risk_level} risk
-                                </Badge>
-                              </div>
-                            </div>
-                            {type.minimum_investment > 0 && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                Min. Investment: KES {type.minimum_investment.toLocaleString()}
-                              </div>
-                            )}
-                          </div>
+                          <span className="font-medium">{type.label}</span>
+                          {type.is_liquid && <span className="ml-2 text-xs text-blue-600">[Liquid]</span>}
+                          <span className={`ml-2 text-xs ${
+                            type.risk_level === 'low' ? 'text-green-600' :
+                            type.risk_level === 'high' ? 'text-red-600' :
+                            'text-yellow-600'
+                          }`}>
+                            [{type.risk_level} risk]
+                          </span>
                         </SelectItem>
                       ))}
                     </div>
