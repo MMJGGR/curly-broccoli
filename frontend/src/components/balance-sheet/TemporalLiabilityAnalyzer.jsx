@@ -69,7 +69,7 @@ const TemporalLiabilityAnalyzer = ({
     } finally {
       setLoading(false);
     }
-  }, [expensesData, profileData, customRates]);
+  }, [expensesData, profileData, customRates]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const extractTemporalExpenses = (expensesData) => {
     const temporalItems = [];

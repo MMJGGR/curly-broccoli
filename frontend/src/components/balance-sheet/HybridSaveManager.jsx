@@ -69,7 +69,7 @@ const HybridSaveManager = ({
   }, [data]);
 
   // Manual save as defaults
-  const handleSaveAsDefaults = async () => {
+  const handleSaveAsDefaults = useCallback(async () => {
     if (!data) return;
 
     try {
@@ -86,10 +86,10 @@ const HybridSaveManager = ({
       setDefaultsSaveStatus('error');
       setError(err.message || 'Save as defaults failed');
     }
-  };
+  }, [data, onSaveAsDefaults]);
 
   // Force manual save (bypass auto-save delay)
-  const handleManualSave = async () => {
+  const handleManualSave = useCallback(async () => {
     if (!data) return;
 
     try {
@@ -109,7 +109,7 @@ const HybridSaveManager = ({
       setAutoSaveStatus('error');
       setError(err.message || 'Manual save failed');
     }
-  };
+  }, [data, onSave]);
 
   // Keyboard shortcuts
   useEffect(() => {

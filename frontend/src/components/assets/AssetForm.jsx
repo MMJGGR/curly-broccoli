@@ -151,7 +151,6 @@ const AssetForm = ({ asset, onAssetCreated, onAssetUpdated, onCancel }) => {
       };
       
       localStorage.setItem('asset_form_defaults', JSON.stringify(defaults));
-      setAssetDefaults(defaults);
       
       // Show success message
       setTimeout(() => {
