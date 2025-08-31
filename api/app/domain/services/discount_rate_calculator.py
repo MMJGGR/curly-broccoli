@@ -8,7 +8,7 @@ from typing import Dict, Optional, List, Tuple
 from datetime import datetime
 from enum import Enum
 
-from ..entities.financial_event import EmploymentProfileData
+# EmploymentProfileData will be imported when needed to avoid circular imports
 
 
 class RiskLevel(Enum):
@@ -251,7 +251,7 @@ class DiscountRateCalculator:
     
     def calculate_human_capital_discount_rate(
         self, 
-        employment_profile: EmploymentProfileData,
+        employment_profile,  # EmploymentProfileData - imported locally to avoid circular imports
         user_age: Optional[int] = None
     ) -> Tuple[Decimal, DiscountRateComponents]:
         """
@@ -318,7 +318,7 @@ class DiscountRateCalculator:
     def calculate_expense_liability_discount_rate(
         self,
         expense_type: str,  # 'essential' or 'discretionary'
-        employment_profile: EmploymentProfileData,
+        employment_profile,  # EmploymentProfileData
         user_age: Optional[int] = None
     ) -> Tuple[Decimal, DiscountRateComponents]:
         """
@@ -366,7 +366,7 @@ class DiscountRateCalculator:
         self,
         rate: Decimal,
         rate_type: str,  # 'human_capital' or 'expense_liability'
-        employment_profile: EmploymentProfileData
+        employment_profile  # EmploymentProfileData
     ) -> DiscountRateValidation:
         """
         Validate a discount rate against CFA professional standards
@@ -417,13 +417,13 @@ class DiscountRateCalculator:
             cfa_notes=f"Validated against CFA standards for {employment_profile.industry_sector} professionals"
         )
     
-    def _calculate_stability_adjustment(self, profile: EmploymentProfileData) -> Decimal:
+    def _calculate_stability_adjustment(self, profile) -> Decimal:
         """Calculate adjustment based on employment stability"""
         # More tenure = lower risk
         tenure_factor = min(profile.years_current_employer / 5.0, 1.0)  # Max benefit at 5 years
         return Decimal('-0.010') * Decimal(str(tenure_factor))  # Up to -1% for stability
     
-    def _calculate_experience_adjustment(self, profile: EmploymentProfileData, user_age: Optional[int]) -> Decimal:
+    def _calculate_experience_adjustment(self, profile, user_age: Optional[int]) -> Decimal:
         """Calculate adjustment based on experience and age"""
         if user_age is None:
             return Decimal('0.000')
@@ -436,7 +436,7 @@ class DiscountRateCalculator:
         else:
             return Decimal('0.000')
     
-    def _calculate_income_variability_premium(self, profile: EmploymentProfileData) -> Decimal:
+    def _calculate_income_variability_premium(self, profile) -> Decimal:
         """Calculate premium based on income variability"""
         variability_premiums = {
             'fixed': Decimal('0.000'),
@@ -453,7 +453,7 @@ class DiscountRateCalculator:
         
         return base_premium + bonus_adjustment + stock_adjustment
     
-    def _calculate_career_outlook_adjustment(self, profile: EmploymentProfileData) -> Decimal:
+    def _calculate_career_outlook_adjustment(self, profile) -> Decimal:
         """Calculate adjustment based on career and industry outlook"""
         outlook_adjustments = {
             'declining': Decimal('0.015'),    # 1.5% premium for declining industry
@@ -473,7 +473,7 @@ class DiscountRateCalculator:
         
         return industry_adj + skill_risk_adj
     
-    def _calculate_location_adjustment(self, profile: EmploymentProfileData) -> Decimal:
+    def _calculate_location_adjustment(self, profile) -> Decimal:  # EmploymentProfileData
         """Calculate adjustment based on work location"""
         location_adjustments = {
             'nairobi': Decimal('0.000'),     # No adjustment (base)
@@ -487,7 +487,7 @@ class DiscountRateCalculator:
     def _get_expected_rate_range(
         self, 
         industry_profile: IndustryRiskProfile, 
-        employment_profile: EmploymentProfileData
+        employment_profile  # EmploymentProfileData
     ) -> Tuple[Decimal, Decimal]:
         """Get expected rate range for validation"""
         base_rate = self.REGIONAL_RATES['nairobi'].base_discount_rate

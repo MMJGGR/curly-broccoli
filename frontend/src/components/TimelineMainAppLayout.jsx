@@ -20,9 +20,12 @@ import BudgetCashflows from './budget/BudgetCashflows';
 // Tools components
 import ToolsDashboard from './tools/ToolsDashboard';
 
-// Balance Sheet components (includes Assets and Expenses)
+// Balance Sheet components (Assets and Liabilities) - CFA-compliant structure
 import BalanceSheetDashboard from './balance-sheet/BalanceSheetDashboard';
 import { AssetDashboard } from './assets';
+
+// Income Statement components (Income and Expenses) - Separate from Balance Sheet
+import { IncomeDashboard } from './income';
 import { ExpenseDashboard } from './expenses';
 
 // Legacy components (for fallback/migration)  
@@ -147,9 +150,12 @@ const TimelineMainAppLayout = () => {
             {/* Budget & Cashflows */}
             <Route path="budget" element={<BudgetCashflows />} />
             
-            {/* Balance Sheet - Assets and Expenses */}
+            {/* Balance Sheet - Assets and Liabilities (CFA-compliant structure) */}
             <Route path="balance-sheet" element={<BalanceSheetDashboard />} />
             <Route path="assets" element={<AssetDashboard />} />
+            
+            {/* Income Statement - Revenue and Expenses (separate from Balance Sheet) */}
+            <Route path="income" element={<IncomeDashboard />} />
             <Route path="expenses" element={<ExpenseDashboard />} />
             
             {/* Financial Management Tools */}

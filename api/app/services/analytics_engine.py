@@ -617,7 +617,7 @@ class PredictiveAnalytics:
             # Retirement: investment and retirement accounts
             return sum(balance for account_type, balance in account_balances.items() 
                       if any(keyword in account_type.lower() 
-                            for keyword in ["investment", "retirement", "401k", "ira"]))
+                            for keyword in ["investment", "retirement", "nssf", "pension"]))
         
         elif "education" in goal_type:
             # Education: education savings accounts

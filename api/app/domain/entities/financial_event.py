@@ -100,18 +100,14 @@ class FinancialEvent:
     
     # Context & Reasoning
     change_reason: str
+    created_by: str  # user_id, system, advisor_id
+    
+    # Optional fields with defaults
     change_notes: Optional[str] = None
     correlation_id: Optional[str] = None  # Link related events
-    
-    # Impact Analysis
     impact_analysis: Optional[ImpactAnalysis] = None
-    
-    # Metadata
-    created_by: str  # user_id, system, advisor_id
     source_system: str = "curly_broccoli"
     api_version: str = "v2"
-    
-    # CFA Compliance
     professional_review_required: bool = False
     cfa_compliance_notes: Optional[str] = None
     
@@ -175,13 +171,13 @@ class FinancialSnapshot:
     # Goal Progress
     goal_progress: Dict[str, float]  # goal_id -> completion_percentage
     
-    # Metadata
+    # Source Events - Required field
+    last_event_id: str  # Last event included in this snapshot
+    
+    # Metadata - Optional fields with defaults
     calculation_method: str = "clean_architecture"
     data_quality_score: float = 1.0  # 0.0 to 1.0
     cfa_compliant: bool = True
-    
-    # Source Events
-    last_event_id: str  # Last event included in this snapshot
     event_count_since_last_snapshot: int = 0
 
 

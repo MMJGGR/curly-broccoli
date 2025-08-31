@@ -11,15 +11,18 @@ import json
 
 from app.models import Profile, RiskProfile, User
 from app.domain.value_objects.money import Money
+from app.domain.entities.profile import UserProfile, RiskProfile as RiskProfileEntity
+from app.application.interfaces.profile_repository import ProfileRepositoryInterface
+from app.application.interfaces.risk_profile_repository import RiskProfileRepositoryInterface
 
 
-class SqlAlchemyProfileRepository:
+class SqlAlchemyProfileRepository(ProfileRepositoryInterface):
     """Full-featured profile repository with financial planning capabilities"""
     
     def __init__(self, db: Session):
         self.db = db
     
-    def get_user_profile(self, user_id: int) -> Tuple[Optional['UserProfileEntity'], Dict]:
+    def get_user_profile(self, user_id: int) -> Tuple[Optional[UserProfile], Dict]:
         """Get user profile with financial planning insights"""
         # Get profile from database
         profile = self.db.query(Profile).filter(Profile.user_id == user_id).first()
@@ -28,7 +31,7 @@ class SqlAlchemyProfileRepository:
             return None, {}
         
         # Create profile entity
-        profile_entity = UserProfileEntity(
+        profile_entity = UserProfile(
             id=profile.id,
             user_id=profile.user_id,
             full_name=f"{profile.first_name or ''} {profile.last_name or ''}".strip(),
@@ -45,7 +48,7 @@ class SqlAlchemyProfileRepository:
         
         return profile_entity, financial_planning
     
-    def update_user_profile(self, profile_entity: 'UserProfileEntity') -> 'UserProfileEntity':
+    def update_user_profile(self, profile_entity: UserProfile) -> UserProfile:
         """Update user profile with validation"""
         # Get existing profile
         profile = self.db.query(Profile).filter(Profile.user_id == profile_entity.user_id).first()
@@ -69,7 +72,7 @@ class SqlAlchemyProfileRepository:
         self.db.refresh(profile)
         
         # Return updated entity
-        return UserProfileEntity(
+        return UserProfile(
             id=profile.id,
             user_id=profile.user_id,
             full_name=f"{profile.first_name or ''} {profile.last_name or ''}".strip(),
@@ -157,48 +160,75 @@ class SqlAlchemyRiskProfileRepository:
             return "long_term"
 
 
-class UserProfileEntity:
-    """User profile domain entity"""
+class SqlAlchemyRiskProfileRepository(RiskProfileRepositoryInterface):
+    """Risk profile repository implementation"""
     
-    def __init__(self, id: int, user_id: int, full_name: str, age: Optional[int],
-                 location: str, phone_number: Optional[str], monthly_income: Money,
-                 created_at: datetime, updated_at: datetime):
-        self.id = id
-        self.user_id = user_id
-        self.full_name = full_name
-        self.age = age
-        self.location = location
-        self.phone_number = phone_number
-        self.monthly_income = monthly_income
-        self.created_at = created_at
-        self.updated_at = updated_at
-        
-        # Validation
-        self._validate()
+    def __init__(self, db: Session):
+        self.db = db
     
-    def _validate(self):
-        """Validate profile data"""
-        if not self.full_name or len(self.full_name.strip()) < 2:
-            raise ValueError("Full name must be at least 2 characters")
+    def get_user_risk_profile(self, user_id: int) -> Optional[RiskProfileEntity]:
+        """Get user risk profile"""
+        risk_profile = self.db.query(RiskProfile).filter(RiskProfile.user_id == user_id).first()
         
-        if self.age is not None and (self.age < 18 or self.age > 120):
-            raise ValueError("Age must be between 18 and 120")
+        if not risk_profile:
+            return None
         
-        if self.monthly_income.amount < 0:
-            raise ValueError("Monthly income must be positive")
-
-
-class RiskProfileEntity:
-    """Risk profile domain entity"""
+        return RiskProfileEntity(
+            id=risk_profile.id,
+            user_id=risk_profile.user_id,
+            risk_score=risk_profile.risk_score,
+            risk_level=risk_profile.risk_level,
+            investment_experience=self._get_investment_experience(risk_profile.risk_score),
+            time_horizon=self._get_time_horizon(risk_profile.risk_score),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
     
-    def __init__(self, id: int, user_id: int, risk_score: int, risk_level: str,
-                 investment_experience: str, time_horizon: str,
-                 created_at: datetime, updated_at: datetime):
-        self.id = id
-        self.user_id = user_id
-        self.risk_score = risk_score
-        self.risk_level = risk_level
-        self.investment_experience = investment_experience
-        self.time_horizon = time_horizon
-        self.created_at = created_at
-        self.updated_at = updated_at
+    def update_user_risk_profile(self, risk_profile_entity: RiskProfileEntity) -> RiskProfileEntity:
+        """Update user risk profile"""
+        risk_profile = self.db.query(RiskProfile).filter(RiskProfile.user_id == risk_profile_entity.user_id).first()
+        
+        if not risk_profile:
+            # Create new risk profile
+            risk_profile = RiskProfile(
+                user_id=risk_profile_entity.user_id,
+                risk_score=risk_profile_entity.risk_score,
+                risk_level=risk_profile_entity.risk_level
+            )
+            self.db.add(risk_profile)
+        else:
+            # Update existing risk profile
+            risk_profile.risk_score = risk_profile_entity.risk_score
+            risk_profile.risk_level = risk_profile_entity.risk_level
+        
+        self.db.commit()
+        self.db.refresh(risk_profile)
+        
+        return RiskProfileEntity(
+            id=risk_profile.id,
+            user_id=risk_profile.user_id,
+            risk_score=risk_profile.risk_score,
+            risk_level=risk_profile.risk_level,
+            investment_experience=self._get_investment_experience(risk_profile.risk_score),
+            time_horizon=self._get_time_horizon(risk_profile.risk_score),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+    
+    def _get_investment_experience(self, risk_score: int) -> str:
+        """Map risk score to investment experience"""
+        if risk_score <= 30:
+            return "beginner"
+        elif risk_score <= 70:
+            return "intermediate"
+        else:
+            return "advanced"
+    
+    def _get_time_horizon(self, risk_score: int) -> str:
+        """Map risk score to time horizon"""
+        if risk_score <= 30:
+            return "short_term"
+        elif risk_score <= 70:
+            return "medium_term"
+        else:
+            return "long_term"

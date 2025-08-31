@@ -18,7 +18,7 @@ export const ONBOARDING_STEPS = {
   RISK_ASSESSMENT: 2,
   FINANCIAL_INFO: 3,
   GOALS: 4,
-  PREFERENCES: 5 // Optional
+  EMPLOYMENT_PROFILE: 5
 };
 
 export const STEP_NAMES = {
@@ -26,7 +26,7 @@ export const STEP_NAMES = {
   2: 'Risk Assessment', 
   3: 'Financial Information',
   4: 'Goals Setup',
-  5: 'Preferences'
+  5: 'Employment Profile'
 };
 
 // Initial state
@@ -73,11 +73,19 @@ const initialState = {
     investment: '',
     other: ''
   },
-  preferencesData: {
-    notifications: true,
-    dataSharing: false,
-    marketingEmails: false,
-    newsletterSubscription: true
+  employmentData: {
+    industry_sector: '',
+    job_role_level: '',
+    employment_type: '',
+    company_size: 'medium',
+    years_current_employer: '',
+    years_current_industry: '',
+    total_work_experience: '',
+    income_variability: 'fixed',
+    bonus_percentage: 0,
+    work_location: '',
+    skill_obsolescence_risk: 'medium',
+    job_security_perception: 'stable'
   },
   
   // Auto-save status per step
@@ -141,10 +149,10 @@ function onboardingReducer(state, action) {
         goalsData: { ...state.goalsData, ...action.payload }
       };
       
-    case 'UPDATE_PREFERENCES_DATA':
+    case 'UPDATE_EMPLOYMENT_DATA':
       return {
         ...state,
-        preferencesData: { ...state.preferencesData, ...action.payload }
+        employmentData: { ...state.employmentData, ...action.payload }
       };
       
     case 'LOAD_ONBOARDING_STATE': {
@@ -158,7 +166,7 @@ function onboardingReducer(state, action) {
         riskData: payload.risk_data || state.riskData,
         financialData: payload.financial_data || state.financialData,
         goalsData: payload.goals_data || state.goalsData,
-        preferencesData: payload.preferences_data || state.preferencesData
+        employmentData: payload.employment_data || state.employmentData
       };
     }
       
@@ -522,8 +530,8 @@ export function OnboardingProvider({ children }) {
     dispatch({ type: 'UPDATE_GOALS_DATA', payload: data });
   }, []);
   
-  const updatePreferencesData = useCallback((data) => {
-    dispatch({ type: 'UPDATE_PREFERENCES_DATA', payload: data });
+  const updateEmploymentData = useCallback((data) => {
+    dispatch({ type: 'UPDATE_EMPLOYMENT_DATA', payload: data });
   }, []);
   
   function goToStep(stepNumber) {
@@ -589,7 +597,7 @@ export function OnboardingProvider({ children }) {
     updateRiskData,
     updateFinancialData,
     updateGoalsData,
-    updatePreferencesData,
+    updateEmploymentData,
     
     // Navigation
     goToStep,

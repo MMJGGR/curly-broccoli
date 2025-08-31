@@ -64,7 +64,7 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
 
   const fetchAvailableAssets = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwt');
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -142,7 +142,7 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwt');
       const url = expense 
         ? `${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/${expense.id}`
         : `${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/`;

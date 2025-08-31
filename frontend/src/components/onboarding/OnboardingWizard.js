@@ -16,7 +16,7 @@ import PersonalInfoStep from './PersonalInfoStep';
 import RiskAssessmentStep from './RiskAssessmentStep';
 import FinancialInfoStep from './FinancialInfoStep';
 import GoalsStep from './GoalsStep';
-import PreferencesStep from './PreferencesStep';
+import EmploymentProfileStep from './EmploymentProfileStep';
 import ProgressBar from './ProgressBar';
 import SaveIndicator from './SaveIndicator';
 
@@ -31,7 +31,7 @@ const OnboardingWizard = () => {
     riskData,
     financialData,
     goalsData,
-    preferencesData,
+    employmentData,
     completedSteps,
     nextStep,
     previousStep,
@@ -67,7 +67,7 @@ const OnboardingWizard = () => {
       case 4:
         return <GoalsStep />;
       case 5:
-        return <PreferencesStep />;
+        return <EmploymentProfileStep />;
       default:
         return <PersonalInfoStep />;
     }
@@ -91,7 +91,7 @@ const OnboardingWizard = () => {
         stepData = goalsData;
         break;
       case 5:
-        stepData = preferencesData;
+        stepData = employmentData;
         break;
       default:
         stepData = personalData;

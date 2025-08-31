@@ -75,8 +75,9 @@ class SqlAlchemyAccountRepository(AccountRepository):
             'student_loan': AccountType.STUDENT_LOAN,
             'mortgage': AccountType.MORTGAGE,
             'line_of_credit': AccountType.LINE_OF_CREDIT,
-            'retirement_401k': AccountType.RETIREMENT_401K,
-            'retirement_ira': AccountType.RETIREMENT_IRA,
+            'nssf_account': AccountType.NSSF_ACCOUNT,
+            'individual_pension': AccountType.INDIVIDUAL_PENSION,
+            'occupational_pension': AccountType.OCCUPATIONAL_PENSION,
             'brokerage': AccountType.BROKERAGE,
             'real_estate': AccountType.REAL_ESTATE,
             'cash': AccountType.CASH

@@ -17,8 +17,9 @@ class AccountType(Enum):
     CHECKING = "checking"
     SAVINGS = "savings"
     INVESTMENT = "investment"
-    RETIREMENT_401K = "retirement_401k"
-    RETIREMENT_IRA = "retirement_ira"
+    NSSF_ACCOUNT = "nssf_account"  # National Social Security Fund (Kenya)
+    INDIVIDUAL_PENSION = "individual_pension"  # Individual Pension Scheme (Kenya)
+    OCCUPATIONAL_PENSION = "occupational_pension"  # Employer pension (Kenya)
     BROKERAGE = "brokerage"
     REAL_ESTATE = "real_estate"
     CASH = "cash"
@@ -83,8 +84,9 @@ class Account:
             AccountType.CHECKING,
             AccountType.SAVINGS,
             AccountType.INVESTMENT,
-            AccountType.RETIREMENT_401K,
-            AccountType.RETIREMENT_IRA,
+            AccountType.NSSF_ACCOUNT,
+            AccountType.INDIVIDUAL_PENSION,
+            AccountType.OCCUPATIONAL_PENSION,
             AccountType.BROKERAGE,
             AccountType.REAL_ESTATE,
             AccountType.CASH,
@@ -156,8 +158,9 @@ class Account:
             AccountType.CHECKING: "Cash & Checking",
             AccountType.SAVINGS: "Savings",
             AccountType.INVESTMENT: "Investments",
-            AccountType.RETIREMENT_401K: "Retirement",
-            AccountType.RETIREMENT_IRA: "Retirement", 
+            AccountType.NSSF_ACCOUNT: "NSSF Pension",
+            AccountType.INDIVIDUAL_PENSION: "Individual Pension",
+            AccountType.OCCUPATIONAL_PENSION: "Occupational Pension", 
             AccountType.BROKERAGE: "Investments",
             AccountType.REAL_ESTATE: "Real Estate",
             AccountType.CASH: "Cash & Checking",

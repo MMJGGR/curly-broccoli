@@ -96,7 +96,7 @@ def upgrade() -> None:
     asset_types = [
         'cash_equivalent', 'checking_account', 'savings_account', 'money_market', 
         'certificates_deposit', 'equity_investment', 'bond_investment', 'mutual_funds', 
-        'etf', 'retirement_401k', 'retirement_ira', 'brokerage_account', 'real_estate', 
+        'etf', 'nssf_contribution', 'individual_pension', 'occupational_pension', 'brokerage_account', 'real_estate', 
         'vehicle', 'equipment', 'furniture', 'collectibles', 'precious_metals', 
         'intellectual_property', 'business_ownership', 'other'
     ]

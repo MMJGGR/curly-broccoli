@@ -26,7 +26,7 @@ const AssetDashboard = () => {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwt');
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -71,7 +71,7 @@ const AssetDashboard = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwt');
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/${assetId}`, {
         method: 'DELETE',
         headers: {

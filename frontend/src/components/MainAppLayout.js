@@ -6,7 +6,7 @@ import BottomNavBar from './BottomNavBar';
 // Main application components
 import Dashboard from './Dashboard';
 import AccountsTransactions from './AccountsTransactions';
-import BalanceSheet from './BalanceSheet';
+import { BalanceSheetDashboard } from './balance-sheet';
 import GoalsOverview from './GoalsOverview'; // Legacy component
 import FIRECalculator from './FIRECalculator';
 import MonteCarloSimulation from './MonteCarloSimulation';
@@ -34,7 +34,7 @@ const MainAppLayout = () => {
           <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="cashflows" element={<AccountsTransactions />} />
-          <Route path="balance-sheet" element={<BalanceSheet />} />
+          <Route path="balance-sheet" element={<BalanceSheetDashboard />} />
           <Route path="income" element={<IncomeOverview />} />
           <Route path="goals" element={<GoalsOverviewV2 />} />
           <Route path="goals-legacy" element={<GoalsOverview />} />

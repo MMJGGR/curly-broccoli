@@ -25,8 +25,9 @@ class AssetType(Enum):
     BOND_INVESTMENT = "bond_investment"
     MUTUAL_FUNDS = "mutual_funds"
     ETF = "etf"
-    RETIREMENT_401K = "retirement_401k"
-    RETIREMENT_IRA = "retirement_ira"
+    NSSF_CONTRIBUTION = "nssf_contribution"  # National Social Security Fund (Kenya)
+    INDIVIDUAL_PENSION = "individual_pension"  # Individual Pension Scheme (Kenya)
+    OCCUPATIONAL_PENSION = "occupational_pension"  # Employer-sponsored pension (Kenya)
     BROKERAGE_ACCOUNT = "brokerage_account"
     
     # Fixed Assets (Illiquid)
@@ -127,8 +128,9 @@ class Asset:
             AssetType.BOND_INVESTMENT,
             AssetType.MUTUAL_FUNDS,
             AssetType.ETF,
-            AssetType.RETIREMENT_401K,
-            AssetType.RETIREMENT_IRA,
+            AssetType.NSSF_CONTRIBUTION,
+            AssetType.INDIVIDUAL_PENSION,
+            AssetType.OCCUPATIONAL_PENSION,
             AssetType.BROKERAGE_ACCOUNT
         }
         
@@ -190,8 +192,9 @@ class Asset:
             AssetType.EQUITY_INVESTMENT,
             AssetType.MUTUAL_FUNDS,
             AssetType.ETF,
-            AssetType.RETIREMENT_401K,
-            AssetType.RETIREMENT_IRA,
+            AssetType.NSSF_CONTRIBUTION,
+            AssetType.INDIVIDUAL_PENSION,
+            AssetType.OCCUPATIONAL_PENSION,
             AssetType.COLLECTIBLES,
             AssetType.PRECIOUS_METALS,
             AssetType.INTELLECTUAL_PROPERTY,

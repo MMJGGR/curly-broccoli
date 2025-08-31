@@ -98,6 +98,7 @@ class Expense:
     - Essential vs. discretionary classification
     - Recurring expense projection
     - Expense ratio analysis for financial health
+    - Temporal liability tracking for lifetime balance sheet accuracy
     """
     id: int
     user_id: int
@@ -114,6 +115,13 @@ class Expense:
     is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    
+    # Temporal Characteristics (CFA-compliant finite expense tracking)
+    is_temporal: bool = False  # Has defined end date/payment count
+    end_date: Optional[datetime] = None  # When expense stops (e.g., loan maturity)
+    remaining_payments: Optional[int] = None  # Number of payments left
+    linked_liability_id: Optional[int] = None  # Associated debt obligation
+    temporal_type: Optional[str] = None  # 'finite_payments', 'maturity_based', 'lifecycle_based'
     
     def __post_init__(self):
         """Initialize calculated fields and validate data"""
@@ -315,6 +323,90 @@ class Expense:
         else:
             return "neutral"
     
+    @property
+    def is_temporal_expense(self) -> bool:
+        """
+        Determine if expense has temporal/finite characteristics.
+        
+        CFA Institute Standard: Proper classification of finite vs perpetual cash flows
+        """
+        return (
+            self.is_temporal or
+            self.end_date is not None or
+            (self.remaining_payments is not None and self.remaining_payments > 0) or
+            self.linked_liability_id is not None or
+            self.expense_type in {ExpenseType.DEBT_PAYMENT, ExpenseType.STUDENT_LOAN, ExpenseType.PERSONAL_LOAN}
+        )
+    
+    def calculate_lifetime_expense_pv(self, discount_rate: Decimal = Decimal('0.105'), current_date: Optional[datetime] = None) -> Money:
+        """
+        Calculate present value of remaining expense payments for lifetime balance sheet.
+        
+        CFA-compliant temporal expense valuation methodology.
+        
+        Args:
+            discount_rate: Kenya-specific discount rate (default 10.5%)
+            current_date: Calculation date (default: now)
+            
+        Returns:
+            Money: Present value of future expense payments
+        """
+        if current_date is None:
+            current_date = datetime.now(timezone.utc)
+        
+        if not self.is_temporal_expense:
+            # Infinite/perpetual expense - use perpetuity calculation with lifecycle adjustments
+            annual_expense = self.calculate_annual_projection().amount
+            
+            # Conservative finite assumption for non-temporal expenses (50 years max)
+            pv_amount = Decimal('0.00')
+            for year in range(1, 51):  # 50 years
+                pv_amount += annual_expense / (Decimal('1.0') + discount_rate) ** year
+            
+            return Money(pv_amount, self.amount.currency)
+        
+        # Temporal/finite expense calculation
+        if self.end_date:
+            # End date-based calculation
+            months_remaining = max(0, (self.end_date.replace(tzinfo=timezone.utc) - current_date).days // 30)
+        elif self.remaining_payments:
+            # Payment count-based calculation
+            payment_frequency = self.frequency_months or 1
+            months_remaining = self.remaining_payments * payment_frequency
+        else:
+            # Fallback: assume reasonable finite period
+            months_remaining = 60  # 5 years default
+        
+        # Calculate present value of payment stream
+        monthly_discount = discount_rate / 12
+        pv_payments = Decimal('0.00')
+        monthly_payment = self.calculate_monthly_equivalent().amount
+        
+        for month in range(1, months_remaining + 1):
+            pv_factor = Decimal('1.0') / ((Decimal('1.0') + monthly_discount) ** month)
+            pv_payments += monthly_payment * pv_factor
+        
+        return Money(pv_payments, self.amount.currency)
+    
+    def get_temporal_classification(self) -> str:
+        """
+        Classify temporal characteristics for CFA reporting.
+        
+        Returns:
+            str: Temporal classification type
+        """
+        if not self.is_temporal_expense:
+            return "perpetual"
+        
+        if self.end_date:
+            return "maturity_based"
+        elif self.remaining_payments:
+            return "payment_count_based"
+        elif self.linked_liability_id:
+            return "liability_linked"
+        else:
+            return "finite_assumed"
+
     def to_dict(self) -> dict:
         """Convert expense to dictionary for API serialization"""
         return {
@@ -336,5 +428,11 @@ class Expense:
             "related_asset_id": self.related_asset_id,
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            # Temporal attributes
+            "is_temporal": self.is_temporal_expense,
+            "end_date": self.end_date.isoformat() if self.end_date else None,
+            "remaining_payments": self.remaining_payments,
+            "linked_liability_id": self.linked_liability_id,
+            "temporal_classification": self.get_temporal_classification()
         }

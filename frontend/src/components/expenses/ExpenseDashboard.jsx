@@ -26,7 +26,7 @@ const ExpenseDashboard = () => {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwt');
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -71,7 +71,7 @@ const ExpenseDashboard = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwt');
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/${expenseId}`, {
         method: 'DELETE',
         headers: {

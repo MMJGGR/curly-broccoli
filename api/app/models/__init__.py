@@ -29,6 +29,7 @@ class User(Base):
     expense_categories = relationship("ExpenseCategory", back_populates="owner")
     assets = relationship("Asset", back_populates="owner")
     expenses = relationship("Expense", back_populates="owner")
+    liabilities = relationship("Liability", back_populates="owner")
 
 class Profile(Base):
     __tablename__ = "profiles"
@@ -304,3 +305,69 @@ class Expense(Base):
     # Relationships
     owner = relationship("User", back_populates="expenses")
     related_asset = relationship("Asset", back_populates="expenses", foreign_keys=[related_asset_id])
+
+
+class Liability(Base):
+    """SQLAlchemy model for liabilities table - Debt obligations tracking"""
+    __tablename__ = "liabilities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Basic liability information
+    name = Column(String(255), nullable=False)
+    liability_type = Column(String(50), nullable=False, index=True)
+    category = Column(String(50), nullable=False, index=True)
+    
+    # Financial details
+    current_balance = Column(Numeric(precision=15, scale=2), nullable=False)
+    original_amount = Column(Numeric(precision=15, scale=2), nullable=False)
+    minimum_payment = Column(Numeric(precision=15, scale=2), nullable=False)
+    interest_rate = Column(Numeric(precision=8, scale=6), nullable=False)  # Store as decimal
+    rate_type = Column(String(20), nullable=False, default="fixed")
+    
+    # Terms and timeline
+    term_months = Column(Integer, nullable=True)
+    remaining_payments = Column(Integer, nullable=True)
+    payment_due_date = Column(Integer, nullable=True)  # Day of month
+    maturity_date = Column(DateTime(timezone=True), nullable=True)
+    
+    # Collateral and security
+    is_secured = Column(Boolean, nullable=False, default=False, index=True)
+    collateral_description = Column(String(500), nullable=True)
+    collateral_value = Column(Numeric(precision=15, scale=2), nullable=True)
+    loan_to_value_ratio = Column(Numeric(precision=5, scale=4), nullable=True)
+    
+    # Credit information (for revolving credit)
+    credit_limit = Column(Numeric(precision=15, scale=2), nullable=True)
+    available_credit = Column(Numeric(precision=15, scale=2), nullable=True)
+    
+    # Status and performance
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    is_in_default = Column(Boolean, nullable=False, default=False, index=True)
+    days_past_due = Column(Integer, nullable=False, default=0)
+    payment_history_score = Column(Numeric(precision=5, scale=4), nullable=True)
+    
+    # Professional notes and flags
+    advisor_notes = Column(Text, nullable=True)
+    consolidation_candidate = Column(Boolean, nullable=False, default=False)
+    refinance_candidate = Column(Boolean, nullable=False, default=False)
+    
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    owner = relationship("User", back_populates="liabilities")
+
+
+# Import advanced financial modeling components
+from .financial_modeling import (
+    AssetReturnAssumption,
+    UserAssetAssumptionOverride,
+    LiabilityCostModel,
+    UserLiabilityInstance,
+    LiabilityPaymentHistory,
+    UserFinancialAssumptions,
+    PortfolioOptimizationResult
+)

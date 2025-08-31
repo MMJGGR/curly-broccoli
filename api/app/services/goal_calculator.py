@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 class AccountType(Enum):
     """Types of accounts with different tax treatments"""
     TAXABLE = "taxable"
-    TAX_DEFERRED = "tax_deferred"  # 401k, Traditional IRA
-    TAX_FREE = "tax_free"          # Roth IRA, HSA
+    TAX_DEFERRED = "tax_deferred"  # NSSF, Occupational Pension
+    TAX_FREE = "tax_free"          # Individual Pension Schemes
     EMERGENCY = "emergency"        # High-yield savings
 
 
