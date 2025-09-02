@@ -6,8 +6,8 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { PlusCircle, Edit, Trash2, Calculator, TrendingDown, AlertCircle, Calendar } from 'lucide-react';
-import { formatKESCurrency } from '../../utils/formatters';
+import { Plus, Edit, Trash2, TrendingDown } from '../ui/icons';
+import { formatCurrency } from '../../utils/formatters';
 
 const ExpenseManagement = () => {
   const [expenses, setExpenses] = useState([]);
@@ -241,7 +241,6 @@ const ExpenseManagement = () => {
 
   // Calculate expense analysis
   const totalMonthlyExpenses = expenses.reduce((sum, expense) => sum + calculateMonthlyAmount(expense), 0);
-  const totalAnnualExpenses = totalMonthlyExpenses * 12;
   const assetRelatedExpenses = expenses.filter(expense => expense.related_asset_id).reduce((sum, expense) => sum + calculateMonthlyAmount(expense), 0);
   const liabilityRelatedExpenses = expenses.filter(expense => expense.related_liability_id).reduce((sum, expense) => sum + calculateMonthlyAmount(expense), 0);
   const finiteExpenses = expenses.filter(expense => expense.is_finite_payment).reduce((sum, expense) => sum + calculateMonthlyAmount(expense), 0);
@@ -264,7 +263,7 @@ const ExpenseManagement = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Monthly Expenses</p>
                 <p className="text-2xl font-bold text-red-600" data-testid="monthly-expenses-card">
-                  {formatKESCurrency(totalMonthlyExpenses)}
+                  {formatCurrency(totalMonthlyExpenses)}
                 </p>
               </div>
             </div>
@@ -274,11 +273,11 @@ const ExpenseManagement = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Calculator className="h-8 w-8 text-orange-600" />
+              <TrendingDown className="h-8 w-8 text-orange-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">Asset-Related</p>
                 <p className="text-2xl font-bold text-orange-600" data-testid="asset-related-card">
-                  {formatKESCurrency(assetRelatedExpenses)}
+                  {formatCurrency(assetRelatedExpenses)}
                 </p>
               </div>
             </div>
@@ -288,11 +287,11 @@ const ExpenseManagement = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <AlertCircle className="h-8 w-8 text-purple-600" />
+              <TrendingDown className="h-8 w-8 text-purple-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">Debt Payments</p>
                 <p className="text-2xl font-bold text-purple-600" data-testid="liability-related-card">
-                  {formatKESCurrency(liabilityRelatedExpenses)}
+                  {formatCurrency(liabilityRelatedExpenses)}
                 </p>
               </div>
             </div>
@@ -302,11 +301,11 @@ const ExpenseManagement = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-green-600" />
+              <TrendingDown className="h-8 w-8 text-green-600" />
               <div>
                 <p className="text-sm font-medium text-gray-600">Finite Payments</p>
                 <p className="text-2xl font-bold text-green-600" data-testid="finite-expenses-card">
-                  {formatKESCurrency(finiteExpenses)}
+                  {formatCurrency(finiteExpenses)}
                 </p>
               </div>
             </div>
@@ -319,7 +318,7 @@ const ExpenseManagement = () => {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-xl font-bold">Expense Management</CardTitle>
           <Button onClick={() => setIsFormOpen(true)} data-testid="add-expense-button">
-            <PlusCircle className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2" />
             Add Expense
           </Button>
         </CardHeader>
@@ -353,13 +352,13 @@ const ExpenseManagement = () => {
                         <div>
                           <p className="text-gray-600">Monthly</p>
                           <p className="font-semibold text-red-600" data-testid="monthly-amount">
-                            {formatKESCurrency(calculateMonthlyAmount(expense))}
+                            {formatCurrency(calculateMonthlyAmount(expense))}
                           </p>
                         </div>
                         <div>
                           <p className="text-gray-600">Annual</p>
                           <p className="font-semibold text-red-800" data-testid="annual-amount">
-                            {formatKESCurrency(calculateAnnualAmount(expense))}
+                            {formatCurrency(calculateAnnualAmount(expense))}
                           </p>
                         </div>
                         <div>

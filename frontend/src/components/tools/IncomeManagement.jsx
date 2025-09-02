@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { Badge } from '../ui/badge';
-import { PlusCircle, DollarSign, TrendingUp, Building2, AlertCircle } from '../ui/icons';
+import { Plus, TrendingUp } from '../ui/icons';
 import { formatCurrency } from '../../utils/formatters';
 
 const IncomeManagement = () => {
@@ -223,7 +223,7 @@ const IncomeManagement = () => {
                     {formatCurrency(analysis.total_monthly_income.amount)}
                   </p>
                 </div>
-                <DollarSign className=\"h-8 w-8 text-green-600\" />
+                <TrendingUp className=\"h-8 w-8 text-green-600\" />
               </div>
             </CardContent>
           </Card>
@@ -251,7 +251,7 @@ const IncomeManagement = () => {
                     {formatCurrency(analysis.asset_linked_income.amount)}
                   </p>
                 </div>
-                <Building2 className=\"h-8 w-8 text-purple-600\" />
+                <TrendingUp className=\"h-8 w-8 text-purple-600\" />
               </div>
             </CardContent>
           </Card>
@@ -265,7 +265,7 @@ const IncomeManagement = () => {
                     {analysis.income_diversification_score.toFixed(1)}/10
                   </p>
                 </div>
-                <AlertCircle className=\"h-8 w-8 text-orange-600\" />
+                <TrendingUp className=\"h-8 w-8 text-orange-600\" />
               </div>
             </CardContent>
           </Card>
@@ -280,14 +280,14 @@ const IncomeManagement = () => {
             <p className=\"text-sm text-gray-600\">Manage your income streams with asset linking</p>
           </div>
           <Button onClick={() => setShowAddForm(true)}>
-            <PlusCircle className=\"h-4 w-4 mr-2\" />
+            <Plus className=\"h-4 w-4 mr-2\" />
             Add Income
           </Button>
         </CardHeader>
         <CardContent>
           {incomes.length === 0 ? (
             <div className=\"text-center py-8 text-gray-500\">
-              <DollarSign className=\"h-12 w-12 mx-auto mb-4 text-gray-300\" />
+              <TrendingUp className=\"h-12 w-12 mx-auto mb-4 text-gray-300\" />
               <p>No income sources yet. Add your first income stream!</p>
             </div>
           ) : (

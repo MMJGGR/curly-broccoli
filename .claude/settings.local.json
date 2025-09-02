@@ -9,7 +9,9 @@
       "Bash(npm start:*)",
       "Bash(python:*)",
       "Bash(docker-compose up:*)",
-      "Bash(npx cypress run:*)"
+      "Bash(npx cypress run:*)",
+      "Bash(docker compose logs:*)",
+      "Bash(docker compose restart:*)"
     ],
     "deny": [],
     "ask": []

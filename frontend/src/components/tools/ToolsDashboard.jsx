@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import IncomeOverview from '../income/IncomeOverview';
 import GoalsOverview from '../goals/GoalsOverview';
 import ExpenseManagement from './ExpenseManagement';
+import AssetManagement from './AssetManagement';
+import LiabilityManagement from './LiabilityManagement';
 
 const ToolsDashboard = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -30,6 +32,18 @@ const ToolsDashboard = () => {
       name: 'Expense Management',
       icon: '💳',
       description: 'Expense tracking and budget analysis'
+    },
+    {
+      id: 'assets',
+      name: 'Asset Management',
+      icon: '🏠',
+      description: 'Complete asset portfolio tracking'
+    },
+    {
+      id: 'liabilities',
+      name: 'Liability Management',
+      icon: '📋',
+      description: 'Debt and liability tracking'
     },
     {
       id: 'calculators',
@@ -155,6 +169,8 @@ const ToolsDashboard = () => {
         {activeSection === 'income' && <IncomeOverview />}
         {activeSection === 'goals' && <GoalsOverview />}
         {activeSection === 'expenses' && <ExpenseManagement />}
+        {activeSection === 'assets' && <AssetManagement />}
+        {activeSection === 'liabilities' && <LiabilityManagement />}
         {activeSection === 'calculators' && renderPlaceholder(
           'Financial Calculators',
           'Professional calculators for loan payments, investment returns, retirement planning, and more.'
