@@ -21,19 +21,13 @@ const TemporalLiabilityAnalyzer = ({
   const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (expensesData && profileData) {
-      performTemporalAnalysis();
-    }
-  }, [expensesData, profileData, customRates, performTemporalAnalysis]);
-
   const performTemporalAnalysis = useCallback(() => {
     setLoading(true);
     
     try {
       // Extract temporal expenses from data
       const temporalExpenses = extractTemporalExpenses(expensesData);
-      const infiniteExpenses = extractInfiniteExpenses(expensesData, profileData);
+      const infiniteExpenses = extractInfiniteExpenses(expensesData, profileData, temporalExpenses);
       
       // Calculate present values using CFA methodology
       const temporalPV = calculateTemporalExpensesPV(temporalExpenses, customRates);
@@ -70,6 +64,12 @@ const TemporalLiabilityAnalyzer = ({
       setLoading(false);
     }
   }, [expensesData, profileData, customRates]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (expensesData && profileData) {
+      performTemporalAnalysis();
+    }
+  }, [expensesData, profileData, customRates, performTemporalAnalysis]);
 
   const extractTemporalExpenses = (expensesData) => {
     const temporalItems = [];
@@ -122,9 +122,9 @@ const TemporalLiabilityAnalyzer = ({
     };
   };
 
-  const extractInfiniteExpenses = (expensesData, profileData) => {
+  const extractInfiniteExpenses = (expensesData, profileData, temporalExpenses = null) => {
     const monthlyRecurringTotal = expensesData?.summary?.monthly_recurring_total?.amount || 0;
-    const temporalTotal = analysis?.temporal?.expenses?.monthlyTotal || 0;
+    const temporalTotal = temporalExpenses?.monthlyTotal || 0;
     
     const ongoingExpenses = Math.max(0, monthlyRecurringTotal - temporalTotal);
     

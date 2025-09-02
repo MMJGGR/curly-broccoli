@@ -4,7 +4,12 @@
     "allow": [
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(docker-compose restart:*)"
+      "Bash(docker-compose restart:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm start:*)",
+      "Bash(python:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(npx cypress run:*)"
     ],
     "deny": [],
     "ask": []
