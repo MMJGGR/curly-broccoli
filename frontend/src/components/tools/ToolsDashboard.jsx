@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import IncomeOverview from '../income/IncomeOverview';
 import GoalsOverview from '../goals/GoalsOverview';
-import ExpenseOverview from '../expense/ExpenseOverview';
+import ExpenseManagement from './ExpenseManagement';
 
 const ToolsDashboard = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -154,7 +154,7 @@ const ToolsDashboard = () => {
         {activeSection === 'overview' && renderOverview()}
         {activeSection === 'income' && <IncomeOverview />}
         {activeSection === 'goals' && <GoalsOverview />}
-        {activeSection === 'expenses' && <ExpenseOverview />}
+        {activeSection === 'expenses' && <ExpenseManagement />}
         {activeSection === 'calculators' && renderPlaceholder(
           'Financial Calculators',
           'Professional calculators for loan payments, investment returns, retirement planning, and more.'

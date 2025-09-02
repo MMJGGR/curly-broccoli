@@ -99,6 +99,7 @@ class Expense:
     - Recurring expense projection
     - Expense ratio analysis for financial health
     - Temporal liability tracking for lifetime balance sheet accuracy
+    - KISS user-driven asset/liability linking
     """
     id: int
     user_id: int
@@ -108,7 +109,17 @@ class Expense:
     expense_date: datetime
     is_recurring: bool = False
     frequency_months: Optional[int] = None  # How often it recurs (1=monthly, 3=quarterly, 12=annually)
-    related_asset_id: Optional[int] = None  # Link to related asset (e.g., car expenses)
+    
+    # KISS Asset/Liability Relationship (User-Driven Selection)
+    related_asset_id: Optional[int] = None      # Link to asset (car, property, business)
+    related_liability_id: Optional[int] = None  # Link to liability (loan, mortgage, credit card)
+    relationship_type: Optional[str] = None     # "asset_maintenance", "loan_payment", "business_operating"
+    
+    # Finite vs Infinite Classification (User Confirms)
+    is_finite_payment: bool = False             # User confirms if this expense will end
+    total_payments_remaining: Optional[int] = None  # Number of payments left (user provides)
+    payment_end_date: Optional[datetime] = None     # When payments end (user provides)
+    
     vendor: Optional[str] = None
     category_override: Optional[ExpenseCategory] = None  # Manual category override
     notes: Optional[str] = None
@@ -127,6 +138,8 @@ class Expense:
         """Initialize calculated fields and validate data"""
         if self.created_at is None:
             self.created_at = datetime.now(timezone.utc)
+        if self.updated_at is None:
+            self.updated_at = datetime.now(timezone.utc)
     
     def get_expense_category(self) -> ExpenseCategory:
         """
@@ -407,6 +420,80 @@ class Expense:
         else:
             return "finite_assumed"
 
+    def is_liability_linked_expense(self) -> bool:
+        """
+        Check if expense is linked to a liability (loan payment, etc.).
+        
+        Returns:
+            bool: True if expense represents a liability payment
+        """
+        return (
+            self.related_liability_id is not None or
+            self.is_finite_payment or
+            self.expense_type in {
+                ExpenseType.DEBT_PAYMENT,
+                ExpenseType.CREDIT_CARD,
+                ExpenseType.STUDENT_LOAN,
+                ExpenseType.PERSONAL_LOAN
+            }
+        )
+    
+    def is_asset_linked_expense(self) -> bool:
+        """
+        Check if expense is related to maintaining/operating an asset.
+        
+        Returns:
+            bool: True if expense is asset-related
+        """
+        return (
+            self.related_asset_id is not None or
+            self.expense_type in {
+                ExpenseType.MAINTENANCE_REPAIRS,
+                ExpenseType.VEHICLE_MAINTENANCE,
+                ExpenseType.PROPERTY_TAX,
+                ExpenseType.HOME_INSURANCE,
+                ExpenseType.VEHICLE_INSURANCE,
+                ExpenseType.BUSINESS_EXPENSE
+            }
+        )
+    
+    def should_convert_to_liability(self) -> bool:
+        """
+        Determine if this expense should be converted to a liability.
+        
+        KISS Logic: If user confirms it's finite and represents debt payments,
+        suggest conversion to liability for proper balance sheet treatment.
+        
+        Returns:
+            bool: True if expense should become a liability
+        """
+        return (
+            self.is_finite_payment and
+            self.is_liability_linked_expense() and
+            (self.total_payments_remaining is not None or self.payment_end_date is not None)
+        )
+    
+    def calculate_remaining_liability_balance(self) -> Optional[Money]:
+        """
+        Calculate remaining balance if this expense represents loan payments.
+        
+        Returns:
+            Optional[Money]: Estimated remaining liability balance
+        """
+        if not self.should_convert_to_liability():
+            return None
+        
+        if self.total_payments_remaining:
+            return Money(self.amount.amount * self.total_payments_remaining, self.amount.currency)
+        elif self.payment_end_date:
+            # Estimate payments remaining based on end date
+            months_remaining = max(0, (self.payment_end_date.replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)).days // 30)
+            payment_frequency = self.frequency_months or 1
+            payments_remaining = months_remaining // payment_frequency
+            return Money(self.amount.amount * payments_remaining, self.amount.currency)
+        
+        return None
+
     def to_dict(self) -> dict:
         """Convert expense to dictionary for API serialization"""
         return {
@@ -425,11 +512,24 @@ class Expense:
             "financial_health_impact": self.financial_health_impact,
             "vendor": self.vendor,
             "notes": self.notes,
+            # KISS Asset/Liability Linking
             "related_asset_id": self.related_asset_id,
+            "related_liability_id": self.related_liability_id,
+            "relationship_type": self.relationship_type,
+            # Finite vs Infinite Classification
+            "is_finite_payment": self.is_finite_payment,
+            "total_payments_remaining": self.total_payments_remaining,
+            "payment_end_date": self.payment_end_date.isoformat() if self.payment_end_date else None,
+            # Helper Properties
+            "is_liability_linked": self.is_liability_linked_expense(),
+            "is_asset_linked": self.is_asset_linked_expense(),
+            "should_convert_to_liability": self.should_convert_to_liability(),
+            "remaining_liability_balance": self.calculate_remaining_liability_balance().to_dict() if self.calculate_remaining_liability_balance() else None,
+            # Metadata
             "is_active": self.is_active,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-            # Temporal attributes
+            # Legacy temporal attributes (for backward compatibility)
             "is_temporal": self.is_temporal_expense,
             "end_date": self.end_date.isoformat() if self.end_date else None,
             "remaining_payments": self.remaining_payments,
