@@ -1,0 +1,28 @@
+{
+  "data": {
+    "monthly_net_worth_impact": 37000,
+    "asset_impacts": {
+      "1": 45000,
+      "2": 0
+    },
+    "liability_impacts": {
+      "1": -35000
+    },
+    "total_relationships": 3,
+    "relationship_summary": {
+      "total_relationships": 3,
+      "active_relationships": 3,
+      "total_monthly_impact": 80000,
+      "relationships_by_type": {
+        "asset_income": 1,
+        "asset_expense": 1,
+        "liability_expense": 1
+      }
+    }
+  },
+  "metadata": {
+    "timestamp": "2024-12-29",
+    "user_id": 1,
+    "analysis_type": "net_worth_impact"
+  }
+}

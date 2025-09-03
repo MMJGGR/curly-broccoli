@@ -11,7 +11,8 @@
       "Bash(docker-compose up:*)",
       "Bash(npx cypress run:*)",
       "Bash(docker compose logs:*)",
-      "Bash(docker compose restart:*)"
+      "Bash(docker compose restart:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

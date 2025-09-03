@@ -53,31 +53,32 @@ const BudgetCashflows = () => {
     );
   }
 
-  // Get persona-specific recommendations
+  // Get dynamic recommendations based on actual financial data (NO HARDCODED VALUES)
   const getPersonaRecommendations = () => {
-    const recommendations = {
-      'Jamal': [
-        'Increase investment allocation by 10% for better long-term growth',
-        'Consider tax-advantaged retirement accounts',
-        'Build emergency fund to 6 months of expenses'
-      ],
-      'Aisha': [
-        'Prioritize education fund for children',
-        'Ensure adequate family insurance coverage',
-        'Balance family needs with retirement savings'
-      ],
-      'Samuel': [
-        'Focus on wealth preservation strategies',
-        'Consider healthcare cost inflation in planning',
-        'Optimize tax-efficient withdrawal strategies'
-      ]
-    };
-
-    return recommendations[persona] || [
-      'Review and optimize your budget quarterly',
-      'Align spending with long-term financial goals',
-      'Build emergency fund before aggressive investing'
-    ];
+    const recommendations = [];
+    
+    // Generate recommendations based on actual financial data
+    if (surplus > 0) {
+      recommendations.push('Great job! You have positive cash flow. Consider increasing investments.');
+    } else {
+      recommendations.push('Your expenses exceed income. Review and reduce variable expenses.');
+    }
+    
+    if (monthlyIncome > 0) {
+      const savingsRate = (surplus / monthlyIncome) * 100;
+      if (savingsRate >= 20) {
+        recommendations.push(`Excellent savings rate of ${savingsRate.toFixed(1)}%. You're on track for financial independence.`);
+      } else if (savingsRate >= 10) {
+        recommendations.push(`Good savings rate of ${savingsRate.toFixed(1)}%. Consider increasing to 20% for optimal growth.`);
+      } else {
+        recommendations.push(`Low savings rate of ${savingsRate.toFixed(1)}%. Aim for at least 20% of income.`);
+      }
+    }
+    
+    // Add general recommendation
+    recommendations.push('Review and optimize your budget quarterly for best results.');
+    
+    return recommendations;
   };
 
   // Safely get budget values with defaults

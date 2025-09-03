@@ -78,32 +78,11 @@ const budgetReducer = (state, action) => {
   }
 };
 
-// Get empty initial state - will be populated from user's actual data
+// Get empty initial state - all data comes from APIs (NO HARDCODED VALUES)
 const getEmptyBudgetData = () => ({
   monthlyIncome: 0,
-  expenses: {
-    // Fixed expenses
-    rent: 0,
-    utilities: 0,
-    loanRepayments: 0,
-    blackTax: 0,
-    insurance: 0,
-    // Variable expenses
-    groceries: 0,
-    transport: 0,
-    dining: 0,
-    entertainment: 0,
-    clothing: 0,
-    healthcare: 0,
-    personalCare: 0,
-    miscellaneous: 0
-  },
-  goalAllocations: {
-    emergencyFund: 0,
-    retirement: 0,
-    education: 0,
-    investments: 0
-  }
+  expenses: {}, // Dynamic expenses from API
+  goalAllocations: {} // Dynamic goals from API
 });
 
 const initialState = {
@@ -124,7 +103,7 @@ export const BudgetProvider = ({ children }) => {
     return localStorage.getItem('jwt');
   }, []);
 
-  // Load budget data from API or create from user's actual onboarding/profile data
+  // Load budget data from API - fetch real data from Tools components (NO HARDCODED VALUES)
   const loadBudgetData = useCallback(async () => {
     const token = getAuthToken();
     if (!token) {
@@ -139,116 +118,57 @@ export const BudgetProvider = ({ children }) => {
     dispatch({ type: 'LOADING' });
 
     try {
-      // First try to get existing budget
-      let response = await fetch(`${API_BASE_URL}/api/v1/budget/current`, {
+      // Fetch real income data from Tools API
+      console.log('💰 Fetching real income data from Tools API...');
+      const incomeResponse = await fetch(`${API_BASE_URL}/api/v1/income-v2/overview`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      if (response.ok) {
-        const budgetData = await response.json();
-        dispatch({
-          type: 'LOAD_SUCCESS',
-          payload: budgetData
-        });
-        return;
-      }
+      // Fetch real expense data from Tools API
+      console.log('💳 Fetching real expense data from Tools API...');
+      const expenseResponse = await fetch(`${API_BASE_URL}/api/v1/expenses-v2/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      // If no budget exists, create from user's onboarding data (most accurate)
-      console.log('📊 No existing budget found, creating from user data...');
-      
       let userBudgetData = getEmptyBudgetData();
-      let dataSource = 'none';
 
-      // First priority: Try onboarding data (most detailed and accurate)
-      console.log('🔄 Trying onboarding data for budget...');
-      const onboardingResponse = await fetch(`${API_BASE_URL}/api/v1/onboarding/state`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (onboardingResponse.ok) {
-        const onboardingData = await onboardingResponse.json();
-        console.log('📋 Onboarding data for budget:', onboardingData);
-        
-        if (onboardingData.financial_data) {
-          const financial = onboardingData.financial_data;
-          userBudgetData.monthlyIncome = parseFloat(financial.monthlyIncome) || 0;
-          
-          // Map onboarding expenses to budget structure (actual categories)
-          userBudgetData.expenses = {
-            rent: parseFloat(financial.rent) || 0,
-            utilities: parseFloat(financial.utilities) || 0,
-            groceries: parseFloat(financial.groceries) || 0,
-            transport: parseFloat(financial.transport) || 0,
-            loanRepayments: parseFloat(financial.loanRepayments) || 0,
-            blackTax: 0, // Not collected in onboarding
-            insurance: 0, // Not collected in onboarding
-            dining: 0,
-            entertainment: 0,
-            clothing: 0,
-            healthcare: 0,
-            personalCare: 0,
-            miscellaneous: 0
-          };
-
-          // Add custom expenses from onboarding
-          if (financial.customExpenses && Array.isArray(financial.customExpenses)) {
-            financial.customExpenses.forEach(expense => {
-              userBudgetData.expenses.miscellaneous += parseFloat(expense.amount) || 0;
-            });
-          }
-          
-          dataSource = 'onboarding';
-          console.log('✅ Using detailed onboarding expense data');
-        }
+      // Process income data
+      if (incomeResponse.ok) {
+        const incomeData = await incomeResponse.json();
+        console.log('📊 Real income data:', incomeData);
+        userBudgetData.monthlyIncome = incomeData.total_monthly_income || 0;
+      } else {
+        console.warn('Failed to fetch income data, using 0');
       }
 
-      // Second priority: Try profile data (fallback if no onboarding data)
-      if (dataSource === 'none') {
-        console.log('🔄 Trying profile data for budget...');
-        const profileResponse = await fetch(`${API_BASE_URL}/api/v1/onboarding/profile-compatibility`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+      // Process expense data  
+      if (expenseResponse.ok) {
+        const expenseData = await expenseResponse.json();
+        console.log('📊 Real expense data:', expenseData);
         
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
-          console.log('👤 Profile data for budget:', profileData);
-          
-          // Use profile data if available (prioritize monthly_income over calculated annual)
-          if (profileData.profile) {
-            const profile = profileData.profile;
-            userBudgetData.monthlyIncome = profile.monthly_income || 
-                                         (profile.annual_income ? profile.annual_income / 12 : 0);
-            
-            // Use actual expense data if available
-            if (profile.monthly_expenses) {
-              const monthlyExpenses = profile.monthly_expenses;
-              // Distribute total expenses across categories (rough estimation)
-              userBudgetData.expenses.rent = monthlyExpenses * 0.3;  // 30% for housing
-              userBudgetData.expenses.groceries = monthlyExpenses * 0.2;  // 20% for food
-              userBudgetData.expenses.transport = monthlyExpenses * 0.15; // 15% for transport
-              userBudgetData.expenses.utilities = monthlyExpenses * 0.1;  // 10% for utilities
-              userBudgetData.expenses.miscellaneous = monthlyExpenses * 0.25; // 25% other
-              if (profile.monthly_debt_payments) {
-                userBudgetData.expenses.loanRepayments = profile.monthly_debt_payments;
-              }
+        // Group expenses by category dynamically
+        const expensesByCategory = {};
+        if (expenseData.expenses) {
+          expenseData.expenses.forEach(expense => {
+            const category = expense.expense_category || 'miscellaneous';
+            if (!expensesByCategory[category]) {
+              expensesByCategory[category] = 0;
             }
-            
-            dataSource = 'profile';
-            console.log('⚠️ Using estimated profile expense distribution');
-          }
+            expensesByCategory[category] += expense.monthly_equivalent || 0;
+          });
         }
+        userBudgetData.expenses = expensesByCategory;
+      } else {
+        console.warn('Failed to fetch expense data, using empty object');
       }
 
-      console.log(`✅ Created budget from ${dataSource} data:`, userBudgetData);
+      console.log('✅ Created budget from real Tools API data:', userBudgetData);
       
       dispatch({
         type: 'LOAD_SUCCESS',

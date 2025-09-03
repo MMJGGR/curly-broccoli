@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "name": "Kileleshwa Rental Property",
+    "asset_type": "real_estate",
+    "current_value": 5000000.00,
+    "purchase_price": 3500000.00,
+    "purchase_date": "2023-01-01",
+    "description": "3-bedroom apartment in Kileleshwa",
+    "notes": "Prime location with good rental demand",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-12-29T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "name": "SACCO Investment Shares",
+    "asset_type": "investment_account",
+    "current_value": 500000.00,
+    "purchase_price": 400000.00,
+    "purchase_date": "2022-06-15",
+    "description": "Shares in local savings and credit cooperative",
+    "notes": "7.5% annual dividend rate",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-12-29T10:00:00Z"
+  },
+  {
+    "id": 3,
+    "name": "Toyota Fielder",
+    "asset_type": "vehicle",
+    "current_value": 1200000.00,
+    "purchase_price": 1500000.00,
+    "purchase_date": "2021-03-10",
+    "description": "2018 Toyota Fielder - Personal vehicle",
+    "notes": "Good condition, regular maintenance",
+    "created_at": "2024-01-15T10:00:00Z",
+    "updated_at": "2024-12-29T10:00:00Z"
+  }
+]

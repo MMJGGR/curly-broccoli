@@ -2,7 +2,7 @@
 Get Spending Analytics Use Case - Clean Architecture
 CFA-compliant spending analysis with category breakdown and trends
 """
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import date, timedelta
 from decimal import Decimal
 from collections import defaultdict

@@ -30,7 +30,7 @@ const AssetManagement = () => {
     { value: 'business', label: 'Business', icon: TrendingUp },
     { value: 'investment_account', label: 'Investment Account', icon: TrendingUp },
     { value: 'savings_account', label: 'Savings Account', icon: TrendingUp },
-    { value: 'equipment', label: 'Equipment', icon: Building },
+    { value: 'equipment', label: 'Equipment', icon: TrendingUp },
     { value: 'collectibles', label: 'Collectibles', icon: TrendingUp },
     { value: 'other', label: 'Other', icon: TrendingUp }
   ];

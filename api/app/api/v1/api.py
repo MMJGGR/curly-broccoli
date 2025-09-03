@@ -4,7 +4,7 @@ from app.api.v1.endpoints import (
     profile, onboarding_consolidated, profile_clean, timeline_clean,
     transactions, accounts, budget, budget_v2_clean, analytics, income_v2_clean, goals_v2_clean,
     accounts_clean, assets_clean, expenses_clean, liabilities_clean, profile_v2_clean,
-    transactions_clean, analytics_clean, timeline_v2_clean  # ✅ ENABLED - All use cases created
+    transactions_clean, analytics_clean, relationships_clean  # timeline_v2_clean temporarily disabled due to dependencies
 )
 
 api_router = APIRouter()
@@ -32,7 +32,8 @@ api_router.include_router(liabilities_clean.router, tags=["liabilities-v2-clean"
 api_router.include_router(transactions_clean.router, tags=["transactions-v2-clean"])  # ✅ ENABLED - GetTransactions use case created
 api_router.include_router(analytics_clean.router, tags=["analytics-v2-clean"])  # ✅ ENABLED - GetSpendingAnalytics use case created
 api_router.include_router(profile_v2_clean.router, tags=["profile-v2-clean"])
-api_router.include_router(timeline_v2_clean.router, tags=["timeline-v2-clean"])  # ✅ ENABLED - GetFinancialTimeline use case created
+api_router.include_router(relationships_clean.router, tags=["relationships-v2-clean"])  # ✅ ENABLED - Cross-component relationship management
+# api_router.include_router(timeline_v2_clean.router, tags=["timeline-v2-clean"])  # TEMPORARILY DISABLED - Missing repository dependencies
 
 # Predictive Analytics endpoints
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])

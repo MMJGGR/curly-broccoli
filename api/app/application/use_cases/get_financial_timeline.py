@@ -8,7 +8,7 @@ from decimal import Decimal
 from dataclasses import asdict
 
 from ...domain.entities.money import Money
-from ...domain.entities.profile import Profile
+from ...domain.entities.profile import UserProfile as Profile
 from ...domain.repositories.profile_repository import ProfileRepository
 from ...domain.repositories.asset_repository import AssetRepository
 from ...domain.repositories.income_repository import IncomeRepository

@@ -361,6 +361,42 @@ class Liability(Base):
     owner = relationship("User", back_populates="liabilities")
 
 
+class FinancialRelationship(Base):
+    """SQLAlchemy model for financial relationships between components"""
+    __tablename__ = "financial_relationships"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Relationship definition
+    relationship_type = Column(String(50), nullable=False, index=True)
+    source_type = Column(String(50), nullable=False, index=True)
+    source_id = Column(Integer, nullable=False, index=True)
+    target_type = Column(String(50), nullable=False, index=True)
+    target_id = Column(Integer, nullable=False, index=True)
+    
+    # Relationship parameters
+    amount = Column(Numeric(precision=15, scale=2), nullable=True)
+    percentage = Column(Numeric(precision=8, scale=6), nullable=True)
+    frequency = Column(String(20), nullable=False, default="monthly")
+    
+    # Timeline
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
+    
+    # Status and metadata
+    status = Column(String(20), nullable=False, default="active", index=True)
+    description = Column(String(500), nullable=True)
+    relationship_metadata = Column(JSON, nullable=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)
+
+    # Relationships
+    owner = relationship("User", backref="financial_relationships")
+
+
 # Import advanced financial modeling components
 from .financial_modeling import (
     AssetReturnAssumption,

@@ -14,6 +14,86 @@ All new code must follow clean architecture principles:
 2. **Single Responsibility**: Each class/module has one reason to change
 3. **Interface Segregation**: Clients depend only on interfaces they use
 4. **Domain Isolation**: Business logic is framework-agnostic
+5. **No Hardcoded Values**: All data must come from dynamic sources, databases, or configuration files
+
+### Data Integrity Standards
+
+#### Zero Hardcoded Values Policy
+
+**CRITICAL**: The system must never contain hardcoded business data or calculations. All values must be:
+
+1. **Stored in Database**: User-specific financial data, preferences, configurations
+2. **Retrieved via APIs**: Real-time market data, exchange rates, reference data
+3. **Calculated Dynamically**: All financial projections, ratios, and analytics
+4. **Configurable**: System parameters, business rules, validation thresholds
+
+```python
+# ❌ FORBIDDEN: Hardcoded financial data
+def calculate_emergency_fund():
+    monthly_expenses = 5000  # NEVER hardcode user data
+    return monthly_expenses * 6
+
+def get_budget_categories():
+    return ["Food", "Transport", "Housing"]  # NEVER hardcode user categories
+
+# ✅ REQUIRED: Dynamic data retrieval
+async def calculate_emergency_fund(user_id: int, expense_repository: ExpenseRepository):
+    monthly_expenses = await expense_repository.get_monthly_total(user_id)
+    emergency_months = await get_user_preference(user_id, "emergency_fund_months", default=6)
+    return monthly_expenses * emergency_months
+
+async def get_budget_categories(user_id: int, category_repository: CategoryRepository):
+    return await category_repository.get_by_user_id(user_id)
+```
+
+#### Frontend Component Standards
+```jsx
+// ❌ FORBIDDEN: Hardcoded display data
+const Dashboard = () => {
+    const totalIncome = 50000; // NEVER hardcode
+    const expenses = [
+        { name: "Rent", amount: 15000 },
+        { name: "Food", amount: 8000 }
+    ];
+    
+    return <div>Income: {totalIncome}</div>;
+};
+
+// ✅ REQUIRED: API-driven components
+const Dashboard = () => {
+    const [totalIncome, setTotalIncome] = useState(0);
+    const [expenses, setExpenses] = useState([]);
+    
+    useEffect(() => {
+        fetchUserIncome().then(setTotalIncome);
+        fetchUserExpenses().then(setExpenses);
+    }, []);
+    
+    return <div>Income: {totalIncome}</div>;
+};
+```
+
+#### Configuration Management
+```python
+# System configuration in environment/database only
+class FinancialConstants:
+    @staticmethod
+    async def get_kenya_tax_brackets():
+        return await db.fetch("SELECT * FROM tax_brackets WHERE country='Kenya'")
+    
+    @staticmethod 
+    async def get_market_assumptions():
+        return await db.fetch("SELECT * FROM market_assumptions WHERE active=true")
+
+# User preferences stored per user
+class UserPreferences:
+    @staticmethod
+    async def get_risk_tolerance(user_id: int):
+        return await db.fetch_one(
+            "SELECT risk_tolerance FROM user_profiles WHERE user_id = %s", 
+            [user_id]
+        )
+```
 
 ### Layer Responsibilities
 
