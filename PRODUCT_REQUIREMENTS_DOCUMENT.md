@@ -21,22 +21,71 @@ The target audience for this application is young professionals in Kenya who are
 
 ## 4. User Stories
 
-### 4.1. Onboarding
+### 4.1. Onboarding & Profile Management
 
-*   As a new user, I want to create an account and provide my personal and financial information in a simple and easy-to-follow process.
-*   As a new user, I want the application to automatically create a budget for me based on the expense data I provide during onboarding.
+**Core User Journey:**
+*   As a new user, I want to complete a progressive disclosure onboarding process that captures my financial profile without overwhelming me with too many fields at once.
+*   As a new user, I want the system to validate my financial data entries in real-time and provide immediate feedback on data completeness and consistency.
+*   As a new user, I want automatic budget template generation based on my income level, life stage (single/family), and expense patterns I provide during onboarding.
+*   As a returning user, I want to update my financial profile and have the system automatically adjust my financial plans and recommendations based on life changes.
 
-### 4.2. Budgeting
+**Data Collection Requirements:**
+*   Income sources and amounts with frequency (monthly, bi-weekly, annual)
+*   Current asset inventory with estimated values and categories
+*   Current liabilities with balances, payment terms, and interest rates
+*   Financial goals with target amounts, timelines, and priority rankings
+*   Risk tolerance assessment through scenario-based questions
+*   Emergency fund current status and target amount preferences
 
-*   As a user, I want to create and track a budget that is aligned with my financial goals.
-*   As a user, I want to see how my budget changes affect my long-term financial goals.
-*   As a user, I want to receive personalized recommendations on how to optimize my spending to achieve my goals faster.
+**Validation and Quality Assurance:**
+*   Real-time data validation with clear error messaging and suggested corrections
+*   Cross-field validation ensuring mathematical consistency across all financial inputs
+*   Completeness scoring with guided recommendations for improving financial profile accuracy
+*   Data export capability for users to review their complete financial profile
 
-### 4.3. Financial Planning
+### 4.2. Budget Management & Cash Flow Analysis
 
-*   As a user, I want to see a holistic view of my financial situation, including my assets, liabilities, income, and expenses.
-*   As a user, I want to track my progress towards my financial goals, such as retirement and buying a home.
-*   As a user, I want to receive personalized financial advice based on my life stage and risk profile.
+**Core Budgeting Functionality:**
+*   As a user, I want to create zero-based budgets where every dollar of income is allocated to specific categories or goals.
+*   As a user, I want automatic budget category suggestions based on my historical spending patterns and income level.
+*   As a user, I want to see immediate impact analysis showing how budget changes affect my goal achievement timelines and net worth projections.
+*   As a user, I want budget vs. actual tracking with variance analysis and automated alerts when spending exceeds budget thresholds.
+
+**Advanced Cash Flow Management:**
+*   As a user, I want 12-month cash flow forecasting that considers irregular expenses, seasonal income variations, and planned major purchases.
+*   As a user, I want scenario planning capabilities to model the impact of income changes, expense reductions, or major financial decisions.
+*   As a user, I want spending optimization recommendations that prioritize high-impact changes aligned with my financial goals.
+*   As a user, I want automated categorization of transactions with manual override capabilities and learning from my corrections.
+
+**Goal Integration:**
+*   As a user, I want my budget categories automatically linked to my financial goals so I can see progress toward multiple objectives simultaneously.
+*   As a user, I want goal-based budget allocation recommendations that optimize funding across competing priorities.
+*   As a user, I want automatic rebalancing suggestions when my income or major expenses change.
+
+### 4.3. Comprehensive Financial Planning & Analysis
+
+**Holistic Financial Dashboard:**
+*   As a user, I want a unified financial health dashboard that displays my net worth, cash flow status, goal progress, and risk assessment in a single view.
+*   As a user, I want real-time synchronization across all financial components so that changes in one area immediately update related calculations and projections.
+*   As a user, I want historical trend analysis showing my financial progress over time with clear visualization of improvements and areas needing attention.
+*   As a user, I want financial health scoring based on CFA Institute standards with specific recommendations for improvement.
+
+**Advanced Planning Capabilities:**
+*   As a user, I want retirement planning calculations that consider multiple income sources, inflation adjustments, and healthcare cost projections.
+*   As a user, I want major purchase planning (home, vehicle, education) with integrated financing analysis and optimal timing recommendations.
+*   As a user, I want tax-aware financial planning that considers tax implications of different investment and savings strategies.
+*   As a user, I want emergency fund optimization with recommendations for target amounts based on income stability and family situation.
+
+**Professional-Grade Analysis:**
+*   As a user, I want asset allocation analysis with diversification recommendations based on my risk tolerance and investment timeline.
+*   As a user, I want debt optimization strategies including consolidation analysis and payoff prioritization based on interest rates and tax implications.
+*   As a user, I want insurance coverage gap analysis with recommendations for adequate protection based on my financial obligations and dependents.
+*   As a user, I want estate planning considerations appropriate for my asset level and family situation.
+
+**Decision Support:**
+*   As a user, I want "what-if" scenario modeling for major financial decisions with clear impact analysis on my overall financial health.
+*   As a user, I want prioritized action recommendations ranked by potential financial impact and ease of implementation.
+*   As a user, I want progress tracking with milestone celebrations and course correction suggestions when I'm off track from my goals.
 
 ## 5. Features
 
@@ -73,48 +122,81 @@ The target audience for this application is young professionals in Kenya who are
 
 ### 5.5. Asset Management
 
-*   Asset creation with comprehensive type selection (real estate, vehicles, investments, cash)
-*   Asset valuation tracking with appreciation/depreciation
-*   Income-generating asset linking (rental income, dividends)
-*   Asset performance analysis and reporting
-*   Portfolio diversification recommendations
-*   Asset lifecycle management (acquisition to disposal)
+**Complete Asset Lifecycle CRUD:**
+*   **Create**: Asset creation with comprehensive type selection (real estate, vehicles, investments, cash)
+*   **Read**: Asset portfolio dashboard with categorization and performance tracking
+*   **Update**: Asset valuation updates, category changes, ownership modifications, performance adjustments
+*   **Delete**: Asset disposal with capital gains/loss calculations and portfolio rebalancing
+
+**Advanced Asset Operations:**
+*   Asset valuation tracking with appreciation/depreciation over time
+*   Income-generating asset linking (rental income, dividends) with full relationship management
+*   Asset performance analysis and reporting with historical trend analysis
+*   Portfolio diversification recommendations with rebalancing suggestions
+*   Asset transfer between categories with audit trail maintenance
 
 ### 5.6. Liability Management
 
-*   Debt inventory with detailed tracking (mortgages, loans, credit cards)
-*   Payment schedule management and optimization
-*   Interest rate tracking and refinancing alerts
-*   Debt-to-income ratio monitoring
-*   Debt consolidation analysis
-*   Liability impact on cash flow and goals
+**Complete Liability Lifecycle CRUD:**
+*   **Create**: New debt entry with terms, rates, payment schedules (mortgages, loans, credit cards)
+*   **Read**: Comprehensive debt dashboard with payment tracking and interest analysis
+*   **Update**: Payment applications, rate changes, term modifications, refinancing updates
+*   **Delete**: Debt payoff with final payment calculations and credit score impact tracking
+
+**Advanced Liability Operations:**
+*   Payment schedule management and optimization with early payoff scenarios
+*   Interest rate tracking and refinancing alerts with market condition monitoring
+*   Debt-to-income ratio monitoring with threshold alerts and improvement recommendations
+*   Debt consolidation analysis with cost-benefit calculations
+*   Liability impact analysis on cash flow projections and goal achievement timelines
 
 ### 5.7. Goals Management
 
-*   SMART goal creation with timeline and funding requirements
-*   Goal progress tracking with milestone notifications
-*   Funding source allocation and optimization
-*   Goal impact analysis on other financial areas
-*   Priority-based goal ranking and resource allocation
-*   Achievement celebration and new goal recommendations
+**Complete Goal Lifecycle CRUD:**
+*   **Create**: SMART goal setup with timeline, funding requirements, and priority classification
+*   **Read**: Goal dashboard with progress visualization, funding analysis, and timeline tracking
+*   **Update**: Goal modifications (amount, timeline, priority), funding source adjustments, milestone updates
+*   **Delete**: Goal completion or cancellation with resource reallocation and portfolio impact analysis
+
+**Advanced Goal Operations:**
+*   Goal progress tracking with milestone notifications and achievement predictions
+*   Funding source allocation and optimization with tax-efficient contribution strategies
+*   Goal impact analysis on other financial areas with trade-off visualization
+*   Priority-based goal ranking and resource allocation with conflict resolution
+*   Achievement celebration with automatic new goal recommendations based on life stage
+*   Cross-goal dependency management with cascade effect analysis
 
 ### 5.8. Income Management
 
-*   Multiple income source tracking (salary, business, investments, rental)
-*   Income trend analysis and forecasting
-*   Tax implications and withholding tracking
-*   Income diversification recommendations
-*   Performance-based income optimization
-*   Retirement income planning
+**Complete Income Lifecycle CRUD:**
+*   **Create**: New income source setup with frequency, amount, and category classification
+*   **Read**: Income dashboard with source breakdown, trend analysis, and tax impact visualization
+*   **Update**: Income amount changes, frequency adjustments, source modifications, tax status updates
+*   **Delete**: Income source termination with impact analysis on budget and goals
+
+**Advanced Income Operations:**
+*   Multiple income source tracking (salary, business, investments, rental) with seasonal variation modeling
+*   Income trend analysis and forecasting with confidence intervals and scenario planning
+*   Tax implications and withholding tracking with year-end projection and optimization
+*   Income diversification recommendations with risk assessment and stability analysis
+*   Performance-based income optimization with growth tracking and improvement suggestions
+*   Retirement income planning with Social Security integration and withdrawal strategies
 
 ### 5.9. Expense Management
 
-*   Comprehensive expense categorization and tracking
-*   Spending pattern analysis and optimization
-*   Subscription and recurring expense management
-*   Variable vs fixed expense identification
-*   Cost-cutting recommendations
-*   Expense-to-income ratio monitoring
+**Complete Expense Lifecycle CRUD:**
+*   **Create**: New expense entry with categorization, frequency, and payment method tracking
+*   **Read**: Expense dashboard with category breakdown, trend analysis, and budget variance reporting
+*   **Update**: Expense modifications (amount, category, frequency), payment method changes, recurring updates
+*   **Delete**: Expense removal with budget reallocation and spending pattern impact analysis
+
+**Advanced Expense Operations:**
+*   Comprehensive expense categorization and tracking with automatic transaction categorization learning
+*   Spending pattern analysis and optimization with seasonal adjustment and irregular expense planning
+*   Subscription and recurring expense management with cancellation reminders and alternative recommendations
+*   Variable vs fixed expense identification with volatility analysis and budgeting implications
+*   Cost-cutting recommendations with impact analysis on lifestyle and goal achievement
+*   Expense-to-income ratio monitoring with threshold alerts and trend analysis
 
 ### 5.10. Profile
 

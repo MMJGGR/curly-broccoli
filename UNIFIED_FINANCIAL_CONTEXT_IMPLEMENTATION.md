@@ -77,18 +77,23 @@ interface UnifiedFinancialState {
 
 ## **Implementation Scope**
 
-### In Scope - Core Implementation
-- **Context Consolidation**: Merge TransactionContext, OnboardingContext, BudgetContext into UnifiedFinancialContext
-- **API Integration Layer**: Unified API service replacing all direct component API calls
-- **Component Migration**: Update 25+ components to use unified context
-- **Real-time Synchronization**: Cross-component data updates
-- **CFA Calculation Engine**: Centralized financial calculations
+### In Scope - MVP NEEDS (Critical)
+- ✅ **Context Consolidation**: Merge TransactionContext, OnboardingContext, BudgetContext into UnifiedFinancialContext
+- ✅ **Complete CRUD Operations**: Full Create, Read, Update, Delete support for all financial entities
+- ✅ **API Integration Layer**: Unified API service replacing all direct component API calls
+- ✅ **Component Migration**: Update 25+ components to use unified context
+- ✅ **Real-time Synchronization**: Cross-component data updates within 2 seconds
+- ✅ **Essential CFA Compliance**: Net worth calculation, cash flow analysis, goal progress tracking
+- ✅ **Basic UI Standards**: Component validation, form validation, loading states, error handling
+- ✅ **Professional Appearance**: Enterprise color scheme and typography
+- ✅ **CRUD API Gap Resolution**: Fix missing UPDATE/DELETE endpoints for Income and Budget entities
 
-### Out of Scope
-- UI/UX design changes (components maintain current interfaces)
-- New feature development (architectural consolidation focus)
-- Database schema modifications (API endpoints unchanged)
-- Authentication system changes
+### Out of Scope - WANTS (Future Versions)
+- 🔄 **Advanced CFA Features**: Monte Carlo simulation, Modern Portfolio Theory (v2.0)
+- 🔄 **Enterprise Architecture**: Multi-user, advanced audit trails, security (v2.0)
+- 🔄 **Advanced UI/UX**: Professional reporting, advanced visualizations (v1.5-v2.0)
+- 🔄 **Regulatory Compliance**: Kenya CMA, Data Protection Act (v3.0)
+- 🔄 **Advanced Analytics**: Behavioral finance, sophisticated risk modeling (v2.0)
 
 ---
 

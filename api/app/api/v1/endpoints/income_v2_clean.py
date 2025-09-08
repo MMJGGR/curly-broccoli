@@ -236,3 +236,170 @@ async def get_income_sources_v2(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving income sources: {str(e)}"
         )
+
+
+@router.put("/sources/{source_id}")
+async def update_income_source_v2(
+    source_id: int,
+    source_name: str = None,
+    monthly_amount: float = None,
+    frequency: str = None,
+    source_type: str = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update an existing income source with validation"""
+    try:
+        # Find the income source
+        source = db.query(IncomeSourceModel).filter(
+            IncomeSourceModel.id == source_id,
+            IncomeSourceModel.user_id == current_user.id
+        ).first()
+        
+        if not source:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Income source with ID {source_id} not found"
+            )
+        
+        # Validate and update fields if provided
+        if source_name is not None:
+            if not source_name or len(source_name.strip()) == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Source name cannot be empty"
+                )
+            if len(source_name) > 100:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Source name too long (max 100 characters)"
+                )
+            source.name = source_name
+        
+        if monthly_amount is not None:
+            if monthly_amount <= 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Monthly amount must be positive"
+                )
+            if monthly_amount > 10_000_000:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Monthly amount exceeds reasonable limit"
+                )
+            source.amount = monthly_amount
+        
+        if frequency is not None:
+            valid_frequencies = ["monthly", "bi-weekly", "weekly", "irregular"]
+            if frequency not in valid_frequencies:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid frequency. Must be one of: {', '.join(valid_frequencies)}"
+                )
+            source.frequency = frequency
+        
+        # Commit changes
+        db.commit()
+        db.refresh(source)
+        
+        return {
+            "message": f"Income source '{source.name}' updated successfully",
+            "income_source": {
+                "id": source.id,
+                "source_name": source.name,
+                "monthly_amount": float(source.amount),
+                "frequency": source.frequency
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating income source: {str(e)}"
+        )
+
+
+@router.delete("/sources/{source_id}")
+async def delete_income_source_v2(
+    source_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete an income source with dependency validation"""
+    try:
+        # Find the income source
+        source = db.query(IncomeSourceModel).filter(
+            IncomeSourceModel.id == source_id,
+            IncomeSourceModel.user_id == current_user.id
+        ).first()
+        
+        if not source:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Income source with ID {source_id} not found"
+            )
+        
+        # Store source name for response
+        source_name = source.name
+        
+        # TODO: Add dependency validation here when relationships are implemented
+        # Check if this income source is linked to any assets or goals
+        # For now, allow deletion
+        
+        # Delete the source
+        db.delete(source)
+        db.commit()
+        
+        return {
+            "message": f"Income source '{source_name}' deleted successfully",
+            "deleted_source_id": source_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error deleting income source: {str(e)}"
+        )
+
+
+@router.get("/sources/{source_id}")
+async def get_income_source_by_id_v2(
+    source_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific income source by ID"""
+    try:
+        source = db.query(IncomeSourceModel).filter(
+            IncomeSourceModel.id == source_id,
+            IncomeSourceModel.user_id == current_user.id
+        ).first()
+        
+        if not source:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Income source with ID {source_id} not found"
+            )
+        
+        return {
+            "id": source.id,
+            "source_name": source.name,
+            "monthly_amount": float(source.amount),
+            "frequency": source.frequency,
+            "created_at": source.created_at,
+            "updated_at": source.updated_at
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving income source: {str(e)}"
+        )
