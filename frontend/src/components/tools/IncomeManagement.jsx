@@ -16,11 +16,23 @@ import {
 import { Badge } from '../ui/badge';
 import { Plus, TrendingUp } from '../ui/icons';
 import { formatCurrency } from '../../utils/formatters';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const IncomeManagement = () => {
-  const [incomes, setIncomes] = useState([]);
-  const [assets, setAssets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Use UnifiedFinancialContext instead of direct state management
+  const {
+    incomeSource,
+    assets,
+    loading,
+    errors,
+    createIncomeSource,
+    updateIncomeSource,
+    deleteIncomeSource,
+    loadAllFinancialData,
+    clearError
+  } = useUnifiedFinancialContext();
+
+  // Local UI state only
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
   const [analysis, setAnalysis] = useState(null);
@@ -39,98 +51,46 @@ const IncomeManagement = () => {
     notes: ''
   });
 
+  // Load all financial data on component mount
   useEffect(() => {
-    fetchIncomes();
-    fetchAssetOptions();
-    fetchIncomeAnalysis();
-  }, []);
-
-  const fetchIncomes = async () => {
-    try {
-      const response = await fetch('/api/v1/income-v2/', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-          'Content-Type': 'application/json'
-        }
+    if (incomeSource.length === 0 || assets.length === 0) {
+      loadAllFinancialData().catch(error => {
+        console.error('Error loading financial data:', error);
       });
-      if (response.ok) {
-        const data = await response.json();
-        setIncomes(data);
-      }
-    } catch (error) {
-      console.error('Error fetching incomes:', error);
     }
-  };
+  }, [incomeSource.length, assets.length, loadAllFinancialData]);
 
-  const fetchAssetOptions = async () => {
-    try {
-      const response = await fetch('/api/v1/income-v2/asset-options/dropdown', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAssets(data.assets || []);
+  // Clear errors when component unmounts
+  useEffect(() => {
+    return () => {
+      if (errors.income) {
+        clearError('income');
       }
-    } catch (error) {
-      console.error('Error fetching asset options:', error);
-    }
-  };
+    };
+  }, [errors.income, clearError]);
 
-  const fetchIncomeAnalysis = async () => {
-    try {
-      const response = await fetch('/api/v1/income-v2/analysis', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAnalysis(data);
-      }
-    } catch (error) {
-      console.error('Error fetching income analysis:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Handle form submission using UnifiedFinancialContext
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     try {
-      const url = editingIncome 
-        ? `/api/v1/income-v2/${editingIncome.id}` 
-        : '/api/v1/income-v2/';
-      
-      const method = editingIncome ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...formData,
-          amount: parseFloat(formData.amount),
-          linked_asset_id: formData.linked_asset_id || null,
-          growth_rate: formData.growth_rate ? parseFloat(formData.growth_rate) : null
-        })
-      });
+      const incomeData = {
+        source_name: formData.description,
+        monthly_amount: parseFloat(formData.amount),
+        frequency: formData.frequency,
+        source_type: formData.income_type
+      };
 
-      if (response.ok) {
-        await fetchIncomes();
-        await fetchIncomeAnalysis();
-        resetForm();
+      if (editingIncome) {
+        await updateIncomeSource(editingIncome.id, incomeData);
       } else {
-        console.error('Error saving income:', response.statusText);
+        await createIncomeSource(incomeData);
       }
+
+      resetForm();
     } catch (error) {
       console.error('Error saving income:', error);
+      // Error is already handled by the context and stored in errors.income
     }
   };
 
