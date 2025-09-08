@@ -29,6 +29,9 @@ def get_engine():
 engine = get_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Import Base from models for alembic
+from .models import Base
+
 def get_db():
     db = SessionLocal()
     try:

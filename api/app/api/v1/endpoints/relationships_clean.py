@@ -14,11 +14,11 @@ from ....models import User
 from ....database import get_db
 from ....application.use_cases.manage_financial_relationships import ManageFinancialRelationships
 from ....infrastructure.repositories.sqlalchemy_relationship_repository import SQLAlchemyRelationshipRepository
-from ....infrastructure.repositories.sqlalchemy_asset_repository import SQLAlchemyAssetRepository
+from ....infrastructure.repositories.sqlalchemy_asset_repository import SqlAlchemyAssetRepository
 # Note: Income repository needs to be created or imported from correct location
 # from ....infrastructure.repositories.sqlalchemy_income_repository import SQLAlchemyIncomeRepository  
-from ....infrastructure.repositories.sqlalchemy_expense_repository import SQLAlchemyExpenseRepository
-from ....infrastructure.repositories.sqlalchemy_liability_repository import SQLAlchemyLiabilityRepository
+from ....infrastructure.repositories.sqlalchemy_expense_repository import SqlAlchemyExpenseRepository
+from ....infrastructure.repositories.sqlalchemy_liability_repository import SqlAlchemyLiabilityRepository
 
 router = APIRouter(prefix="/relationships-v2", tags=["relationships-v2-clean"])
 
@@ -69,11 +69,11 @@ class GoalFundingRequest(BaseModel):
 def get_relationship_use_case(db: Session = Depends(get_db)) -> ManageFinancialRelationships:
     """Dependency injection for relationship use case"""
     relationship_repo = SQLAlchemyRelationshipRepository(db)
-    asset_repo = SQLAlchemyAssetRepository(db)
+    asset_repo = SqlAlchemyAssetRepository(db)
     # Create a mock income repository for now - needs proper implementation
     income_repo = MockIncomeRepository()
-    expense_repo = SQLAlchemyExpenseRepository(db)
-    liability_repo = SQLAlchemyLiabilityRepository(db)
+    expense_repo = SqlAlchemyExpenseRepository(db)
+    liability_repo = SqlAlchemyLiabilityRepository(db)
     
     return ManageFinancialRelationships(
         relationship_repo, asset_repo, income_repo, expense_repo, liability_repo

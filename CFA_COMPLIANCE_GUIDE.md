@@ -2,7 +2,27 @@
 
 ## 1. Introduction
 
-This guide ensures the personal finance application adheres to CFA Institute standards for financial analysis, portfolio management, and client advisory services. All financial calculations, recommendations, and methodologies must align with CFA Institute best practices and ethical standards.
+This comprehensive guide ensures the personal finance application adheres to CFA Institute standards across all financial planning disciplines. Beyond risk assessment, this guide covers portfolio construction, goal-based planning, behavioral finance considerations, and professional presentation standards essential for enterprise-grade financial planning software.
+
+## 2. CFA Institute Code of Ethics & Professional Standards Application
+
+### 2.1 Fiduciary Duty Implementation
+**Standard**: Act for the benefit of clients and place their interests before our own
+
+**Application Requirements**:
+- All investment recommendations must prioritize client goal achievement over application engagement metrics
+- Fee structures and business model must be transparent and aligned with client success
+- Conflicts of interest must be disclosed prominently in user interface
+- Data usage policies must prioritize client privacy and financial security
+
+### 2.2 Professional Competence Standards
+**Standard**: Maintain and improve professional competence and strive to maintain and improve the competence of other professionals
+
+**Implementation Requirements**:
+- All financial calculations must be validated against CFA Institute methodologies
+- Regular updates to reflect current CFA Institute standards and Kenya financial market conditions
+- Documentation must enable professional review and validation of all methodologies
+- User education content must align with CFA Institute financial literacy standards
 
 ## 2. Financial Calculation Standards
 
@@ -48,6 +68,135 @@ WHERE user_id = ?
 
 **Kenya Market Assumptions** (CFA Institute regional guidelines):
 - **Government Securities**: 12-15% annual (Treasury Bills/Bonds)
+- **Equity Markets**: 15-20% long-term (NSE 20 Share Index)
+- **Real Estate**: 8-12% appreciation plus rental yields
+- **Inflation Assumption**: 5-8% annual for planning purposes
+
+## 3. Portfolio Construction & Modern Portfolio Theory Application
+
+### 3.1 Asset Allocation Framework
+**Standard**: CFA Institute Portfolio Management methodology
+
+**Strategic Asset Allocation Process**:
+1. **Life Cycle Considerations**: Age-appropriate risk tolerance and investment horizon
+2. **Risk Capacity Assessment**: Ability to bear losses without compromising financial goals
+3. **Risk Tolerance Measurement**: Willingness to accept volatility for return potential
+4. **Diversification Requirements**: Optimal correlation structure across asset classes
+
+**Implementation Requirements**:
+- Minimum 3 asset classes for basic diversification
+- Maximum single asset allocation: 40% (except primary residence)
+- Rebalancing triggers: +/- 5% from target allocation
+- Tax-efficient placement of assets across account types
+
+### 3.2 Security Selection Criteria
+**Standard**: Fundamental and technical analysis as per CFA curriculum
+
+**Equity Selection Framework**:
+- Financial statement analysis using CFA Institute financial ratios
+- Discounted cash flow valuation models
+- Relative valuation using P/E, P/B, PEG ratios
+- Qualitative factors: management quality, competitive advantage, ESG considerations
+
+**Fixed Income Selection**:
+- Credit analysis and duration risk assessment
+- Yield curve positioning and interest rate sensitivity
+- Default probability assessment for corporate bonds
+- Currency risk evaluation for international bonds
+
+## 4. Goal-Based Financial Planning
+
+### 4.1 Financial Planning Process
+**Standard**: CFA Institute Wealth Planning Process
+
+**Seven-Step Planning Process**:
+1. **Understanding Client Circumstances**: Comprehensive financial profile and life situation analysis
+2. **Identifying Goals and Objectives**: SMART goal framework with priority ranking
+3. **Analyzing Current Course**: Gap analysis between current trajectory and goal requirements
+4. **Developing Planning Recommendations**: Strategy formulation with multiple scenarios
+5. **Presenting Recommendations**: Clear communication with risk-return trade-offs
+6. **Implementing Recommendations**: Action plan with timeline and responsibilities
+7. **Monitoring Progress**: Regular review and adjustment of strategies
+
+### 4.2 Goal Prioritization Methodology
+**Standard**: Utility theory and behavioral finance principles
+
+**Goal Classification Framework**:
+- **Essential Goals**: Emergency fund, basic retirement security, essential insurance
+- **Important Goals**: Home ownership, children's education, comfortable retirement
+- **Aspirational Goals**: Luxury purchases, early retirement, legacy wealth
+
+**Funding Priority Algorithm**:
+1. Essential goals receive first funding priority
+2. Important goals funded based on feasibility analysis
+3. Aspirational goals funded only after essential and important goals are on track
+4. Tax-optimization considerations integrated across all goal funding strategies
+
+### 4.3 Monte Carlo Simulation Requirements
+**Standard**: Probabilistic modeling for goal achievement analysis
+
+**Simulation Parameters**:
+- Minimum 1,000 iterations for statistical significance
+- Historical return and volatility data from Kenya markets (20+ years)
+- Success probability thresholds: 80% for essential goals, 70% for important goals
+- Stress testing under adverse market scenarios (2008, 2020 equivalents)
+
+## 5. Behavioral Finance Integration
+
+### 5.1 Bias Recognition and Mitigation
+**Standard**: CFA Institute Behavioral Finance curriculum application
+
+**Common Bias Detection**:
+- **Loss Aversion**: Excessive focus on avoiding losses versus achieving gains
+- **Anchoring**: Over-reliance on first piece of information (purchase price)
+- **Overconfidence**: Excessive trading or concentration in familiar investments
+- **Mental Accounting**: Sub-optimal allocation across different account purposes
+
+**Mitigation Strategies**:
+- Systematic rebalancing to overcome inaction bias
+- Goal-based reporting to reduce short-term volatility focus
+- Diversification requirements with explanation of correlation benefits
+- Regular reviews with objective performance measurement
+
+### 5.2 Investor Education Framework
+**Standard**: CFA Institute Financial Literacy standards
+
+**Progressive Education Modules**:
+- **Level 1**: Basic financial concepts (time value of money, inflation, diversification)
+- **Level 2**: Investment fundamentals (asset classes, risk-return relationship, fees impact)
+- **Level 3**: Advanced concepts (tax optimization, estate planning, behavioral biases)
+
+**Measurement Requirements**:
+- Pre and post-assessment of financial knowledge
+- Practical application exercises within the planning interface
+- Regular reinforcement of key concepts through contextual tips
+- Progress tracking with competency-based advancement
+
+## 6. Professional Presentation Standards
+
+### 6.1 Client Communication Requirements
+**Standard**: CFA Institute Standards of Professional Conduct
+
+**Disclosure Requirements**:
+- All assumptions underlying financial projections clearly stated
+- Limitations of analysis and recommendations prominently displayed
+- Data sources and methodologies used in calculations documented
+- Regular updates on changing market conditions and impact on plans
+
+### 6.2 Performance Reporting Standards
+**Standard**: Global Investment Performance Standards (GIPS) principles adapted for individual investors
+
+**Reporting Requirements**:
+- Time-weighted returns for investment performance evaluation
+- Money-weighted returns for cash flow impact assessment
+- Benchmark comparisons using appropriate market indices
+- Risk-adjusted performance measures (Sharpe ratio, maximum drawdown)
+
+**Presentation Standards**:
+- Performance presented net of fees with fee disclosure
+- Historical performance with appropriate disclaimers
+- Forward-looking projections with confidence intervals
+- Regular reporting frequency with consistent methodologies
 - **Equity Market (NSE)**: 8-12% long-term average
 - **Real Estate**: 6-10% appreciation + rental yield
 - **Inflation Assumption**: 5-7% annual

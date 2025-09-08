@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+// Removed unused Select imports - using native HTML select instead
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Plus, Edit, Trash2, TrendingUp } from '../ui/icons';
@@ -310,21 +310,35 @@ const AssetManagement = () => {
 
                 <div>
                   <Label htmlFor="asset_type">Asset Type *</Label>
-                  <Select value={formData.asset_type} onValueChange={(value) => setFormData({...formData, asset_type: value})} data-testid="asset-type-select">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select asset type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {assetTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          <div className="flex items-center gap-2">
-                            <type.icon className="h-4 w-4" />
-                            {type.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <select
+                    id="asset_type"
+                    value={formData.asset_type}
+                    onChange={(e) => {
+                      console.log('Asset type selected:', e.target.value); // Debug log
+                      setFormData(prev => ({...prev, asset_type: e.target.value}));
+                    }}
+                    required
+                    style={{
+                      width: '100%',
+                      height: '40px',
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      backgroundColor: 'white',
+                      fontSize: '14px'
+                    }}
+                    data-testid="asset-type-select"
+                  >
+                    <option value="">Select asset type</option>
+                    {assetTypes.map((type) => {
+                      console.log('Rendering asset type option:', type.value, type.label); // Debug log
+                      return (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      );
+                    })}
+                  </select>
                 </div>
 
                 <div>

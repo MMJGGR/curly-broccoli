@@ -135,7 +135,67 @@ graph LR
     B --> F[Dashboard Update];
 ```
 
-### 3.3. How to Add a New Financial Feature
+### 3.3. Standard Change Request Process
+
+**MANDATORY**: All financial component changes must follow this structured process:
+
+#### **Step 1: Change Request Creation**
+- **Problem Statement**: Clear description of current issues and business impact
+- **Scope Definition**: In-scope vs out-of-scope items clearly defined
+- **User Impact Assessment**: Primary and secondary users affected
+- **Dependencies Mapping**: Hard dependencies (blocking) and soft dependencies (coordinating)
+- **Risk Analysis**: High/Medium/Low risks with mitigation strategies
+- **Acceptance Criteria**: Functional, technical, and performance requirements
+- **Rollback Strategy**: Component-level, batch-level, and full rollback procedures
+
+#### **Step 2: Affected Sections Mapping**
+- **Code Modules**: All files requiring changes with before/after status
+- **Tests**: Unit, integration, and E2E test updates required
+- **Configuration**: App.jsx, imports, provider setup changes
+- **Documentation**: Component docs, API docs, architecture updates
+- **Dependencies & Side Effects**: Context mergers, API call removals, state management changes
+
+#### **Step 3: Implementation Plan**
+- **Tasks & Order**: Phased approach with specific tasks and dependencies
+- **Branch Strategy**: Feature branches, component branches, integration branches
+- **Data Migration**: No-downtime migration approach for financial data
+- **Security Notes**: Authentication, data validation, error handling considerations
+- **Performance Notes**: Optimization strategies, benchmarking requirements
+- **Test Plan**: Unit, integration, E2E, and regression testing strategies
+
+#### **Step 4: Agent Review Process**
+- **Self-Checklist**: Component mapping, migration patterns, rollback testing
+- **Static Checks**: TypeScript validation, ESLint compliance, import consistency
+- **Feasibility Check**: Context support, API compatibility, performance impact, timeline assessment
+
+#### **Step 5: Implementation Execution**
+- **Small Commits**: Each component or batch in separate atomic commits
+- **Documentation Updates**: Update docs alongside code changes
+- **Component Migration Pattern**: Standardized before/after transformation approach
+
+#### **Step 6: Validation Process**
+- **Test Updates**: Add/update unit tests for each migrated component
+- **Integration Testing**: Cross-component synchronization validation
+- **Acceptance Criteria**: Verify all functional, technical, performance requirements
+- **Format Compliance**: Code formatting, linting, type checking
+
+#### **Step 7: Review & Merge**
+- **Pull Request**: Comprehensive summary with risks and test evidence
+- **Peer Review**: Address all review comments before merge
+- **Integration Validation**: Final validation in integration environment
+
+#### **Step 8: Release & Monitoring**
+- **Staged Deployment**: Local → Integration → Staging → Canary → Production
+- **Feature Flags**: Gradual rollout with monitoring capabilities
+- **Metrics Monitoring**: Performance, functionality, user experience indicators
+- **Rollback Readiness**: Immediate rollback capability if issues detected
+
+#### **Step 9: Closeout**
+- **Documentation Updates**: Component usage, architecture, changelog updates
+- **PR Linking**: All related pull requests and issues linked
+- **Request Completion**: Mark change request as completed with outcomes
+
+### 3.4. How to Add a New Financial Feature
 
 1.  **Backend:**
     1.  Create a new API endpoint following `/api/v1/{resource}-v2/` pattern.

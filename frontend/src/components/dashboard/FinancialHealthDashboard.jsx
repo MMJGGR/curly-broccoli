@@ -7,81 +7,56 @@ import {
   PieChart, BarChart3, Calendar, AlertTriangle 
 } from '../ui/icons';
 import { formatCurrency } from '../../utils/formatters';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const FinancialHealthDashboard = () => {
+  const {
+    assets,
+    liabilities,
+    incomes,
+    expenses,
+    goals,
+    relationships,
+    loading: contextLoading,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+  
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [projectionPeriod, setProjectionPeriod] = useState('1year');
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [projectionPeriod]);
+    calculateAndSetDashboardData();
+  }, [projectionPeriod, assets, liabilities, incomes, expenses, goals, relationships]);
 
-  const fetchDashboardData = async () => {
+  const calculateAndSetDashboardData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
       
-      // Fetch data from multiple endpoints in parallel
-      const [
-        netWorthResponse,
-        assetsResponse,
-        liabilitiesResponse,
-        goalsResponse,
-        incomeResponse,
-        expensesResponse
-      ] = await Promise.all([
-        fetch('/api/v1/relationships-v2/net-worth-impact', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/v1/assets-v2/', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/v1/liabilities-v2/', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/v1/goals-v2/overview', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/v1/income-v2/overview', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/v1/expenses-v2/', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-      ]);
+      // Ensure all data is loaded through unified context
+      if (contextLoading) {
+        await fetchAllFinancialData();
+      }
 
-      const [
-        netWorthData,
-        assetsData,
-        liabilitiesData,
-        goalsData,
-        incomeData,
-        expensesData
-      ] = await Promise.all([
-        netWorthResponse.ok ? netWorthResponse.json() : { data: {} },
-        assetsResponse.ok ? assetsResponse.json() : [],
-        liabilitiesResponse.ok ? liabilitiesResponse.json() : [],
-        goalsResponse.ok ? goalsResponse.json() : { goals: [] },
-        incomeResponse.ok ? incomeResponse.json() : { total_monthly_income: 0 },
-        expensesResponse.ok ? expensesResponse.json() : { expenses: [] }
-      ]);
+      // Calculate total monthly income from incomes array
+      const totalMonthlyIncome = incomes.reduce((sum, income) => sum + (income.monthly_amount || 0), 0);
+      const incomeData = { total_monthly_income: totalMonthlyIncome };
 
-      // Calculate comprehensive dashboard metrics
+      // Calculate comprehensive dashboard metrics using unified context data
       const calculatedData = calculateDashboardMetrics({
-        netWorth: netWorthData.data || {},
-        relationships: netWorthData.data || {}, // Use the same net worth data for relationships
-        assets: assetsData,
-        liabilities: liabilitiesData,
-        goals: goalsData.goals || [],
+        netWorth: relationships || {},
+        relationships: relationships || {},
+        assets: assets || [],
+        liabilities: liabilities || [],
+        goals: goals || [],
         income: incomeData,
-        expenses: expensesData.expenses || []
+        expenses: expenses || []
       });
 
       setDashboardData(calculatedData);
     } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
+      console.error('Failed to calculate dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -310,7 +285,7 @@ const FinancialHealthDashboard = () => {
     return 'Needs Improvement';
   };
 
-  if (loading) {
+  if (loading || contextLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">

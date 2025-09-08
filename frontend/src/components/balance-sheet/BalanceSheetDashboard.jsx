@@ -12,6 +12,7 @@ import {
 } from '../ui/icons';
 import { AssetDashboard } from '../assets';
 import { formatCurrency } from '../../utils/formatters';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import DiscountRateOverrideModal from './DiscountRateOverrideModal';
 import AdvancedAssumptionPanel from './AdvancedAssumptionPanel';
 import TemporalLiabilityAnalyzer from './TemporalLiabilityAnalyzer';
@@ -19,10 +20,19 @@ import { KENYA_ASSET_CLASSES, KENYA_MARKET_DATA } from '../../utils/kenyaReturnR
 import { KENYA_LIABILITY_TYPES } from '../../utils/kenyaLiabilityModels';
 
 const BalanceSheetDashboard = () => {
+  const {
+    assets,
+    liabilities,
+    expenses,
+    profile,
+    loading: contextLoading,
+    error: contextError,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+
   const [activeView, setActiveView] = useState('overview');
   const [balanceSheetMode, setBalanceSheetMode] = useState('traditional'); // 'traditional' or 'lifetime'
   const [balanceSheetData, setBalanceSheetData] = useState(null);
-  const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showRateOverride, setShowRateOverride] = useState(false);
@@ -60,21 +70,23 @@ const BalanceSheetDashboard = () => {
   const [financialRatios, setFinancialRatios] = useState(null);
 
   useEffect(() => {
-    fetchBalanceSheetData();
+    calculateBalanceSheetData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [assets, liabilities, expenses, profile]);
 
   useEffect(() => {
     // Recalculate when custom rates change
-    if (balanceSheetData && profileData) {
+    if (balanceSheetData && profile) {
       recalculateWithCustomRates();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customRates]);
 
   const recalculateWithCustomRates = () => {
-    if (!balanceSheetData || !profileData) return;
+    if (!balanceSheetData || !profile) return;
 
+    const profileData = { profile: profile };
+    
     const traditionalAssets = balanceSheetData.assets.summary?.total_current_value || 0;
     const traditionalLiabilities = balanceSheetData.liabilities.total_liabilities || 0;
     
@@ -126,54 +138,39 @@ const BalanceSheetDashboard = () => {
     setCustomRates(updatedRates);
   };
 
-  const fetchBalanceSheetData = async () => {
+  const calculateBalanceSheetData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('jwt');
-      
-      // Fetch assets, expenses, liabilities, and profile data in parallel
-      const [assetsResponse, expensesResponse, liabilitiesResponse, profileResponse] = await Promise.all([
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }),
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }),
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/liabilities-v2/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }),
-        fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/profile-v2/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        })
-      ]);
-
-      if (!assetsResponse.ok || !expensesResponse.ok || !liabilitiesResponse.ok || !profileResponse.ok) {
-        throw new Error('Failed to fetch balance sheet data');
+      // Ensure all data is loaded through unified context
+      if (contextLoading) {
+        await fetchAllFinancialData();
       }
 
-      const [assetsData, expensesData, liabilitiesData, profileData] = await Promise.all([
-        assetsResponse.json(),
-        expensesResponse.json(),
-        liabilitiesResponse.json(),
-        profileResponse.json()
-      ]);
+      if (!assets || !liabilities || !expenses || !profile) {
+        setError('Required financial data not available');
+        return;
+      }
 
-      // Store profile data for lifetime calculations
-      setProfileData(profileData);
+      // Prepare data structures to match legacy format
+      const assetsData = {
+        summary: {
+          total_current_value: assets.reduce((sum, asset) => sum + (asset.current_value || 0), 0)
+        }
+      };
+
+      const liabilitiesData = {
+        total_liabilities: liabilities.reduce((sum, liability) => sum + (liability.balance || 0), 0)
+      };
+
+      const expensesData = {
+        expenses: expenses
+      };
+
+      const profileData = {
+        profile: profile
+      };
 
       // Calculate both traditional and lifetime values
       const traditionalAssets = assetsData.summary?.total_current_value || 0;
@@ -215,7 +212,7 @@ const BalanceSheetDashboard = () => {
       });
 
     } catch (err) {
-      console.error('Error fetching balance sheet:', err);
+      console.error('Error calculating balance sheet:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -805,7 +802,7 @@ const BalanceSheetDashboard = () => {
     return recommendations;
   };
 
-  if (loading) {
+  if (loading || contextLoading) {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="text-lg">Loading balance sheet...</div>
@@ -813,17 +810,17 @@ const BalanceSheetDashboard = () => {
     );
   }
 
-  if (error) {
+  if (error || contextError) {
     return (
       <div className="p-4">
         <Card className="border-red-200 bg-red-50">
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2 text-red-700">
               <AlertCircle className="h-5 w-5" />
-              <span>Error loading balance sheet: {error}</span>
+              <span>Error loading balance sheet: {error || contextError}</span>
             </div>
             <Button 
-              onClick={fetchBalanceSheetData} 
+              onClick={fetchAllFinancialData} 
               className="mt-4"
               variant="outline"
             >

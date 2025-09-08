@@ -1,0 +1,47 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ui-component-validation
+        name: Validate UI Components
+        entry: node scripts/validate-ui-components.js
+        language: system
+        files: \.(js|jsx)$
+        pass_filenames: true
+        
+      - id: api-endpoint-consistency  
+        name: Check API Endpoint Consistency
+        entry: node scripts/validate-api-endpoints.js
+        language: system
+        files: \.(js|jsx|py)$
+        pass_filenames: false
+        args: ['.']
+        
+      - id: hardcoded-values-detection
+        name: Detect Hardcoded Financial Values
+        entry: node scripts/detect-hardcoded-values.js
+        language: system
+        files: \.(js|jsx)$
+        pass_filenames: true
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+
+  - repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+      - id: black
+        language_version: python3
+        files: ^api/
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        args: [--max-line-length=88, --extend-ignore=E203,W503]
+        files: ^api/

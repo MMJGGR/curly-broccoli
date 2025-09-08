@@ -379,9 +379,23 @@ const validateUserJourneyAlignment = () => {
 
 ---
 
+## 🎯 MVP SCOPE CLARIFICATION
+
+### **MVP NEEDS (Critical for v1.0)**
+- ✅ UnifiedFinancialContext with real-time sync
+- ✅ All 25+ components migrated from direct API calls  
+- ✅ Essential CFA compliance (net worth, cash flow, goals)
+- ✅ Professional UI standards and error handling
+- ✅ Legacy endpoint deprecation (6 endpoints)
+
+### **WANTS (Future Versions)**
+- 🔄 v1.5: Advanced UI/UX, mobile responsiveness
+- 🔄 v2.0: Enterprise architecture, advanced CFA features, security
+- 🔄 v3.0: Regulatory compliance, estate planning
+
 ## 📊 SUCCESS METRICS & VALIDATION
 
-### **Week 4: Validation Phase**
+### **Week 4: MVP Validation Phase**
 
 **Richard's Complete User Journey Test:**
 1. ✅ Login with credentials (richard.mmacharia@gmail.com)

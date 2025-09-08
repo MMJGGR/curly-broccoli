@@ -7,57 +7,91 @@ import AssetForm from './AssetForm';
 import AssetList from './AssetList';
 import PortfolioAnalysis from './PortfolioAnalysis';
 import { formatCurrency } from '../../utils/formatters';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const AssetDashboard = () => {
-  const [assets, setAssets] = useState([]);
+  const {
+    assets,
+    loading,
+    error,
+    deleteAsset,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+  
   const [summary, setSummary] = useState(null);
   const [portfolioAnalysis, setPortfolioAnalysis] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
 
   useEffect(() => {
-    fetchAssetsData();
-  }, []);
+    calculateAssetsSummary();
+  }, [assets]);
 
-  const fetchAssetsData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const token = localStorage.getItem('jwt');
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+  const calculateAssetsSummary = () => {
+    if (!assets || assets.length === 0) {
+      setSummary({
+        total_current_value: 0,
+        total_assets: 0,
+        total_unrealized_gain_loss: 0
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch assets data');
-      }
-
-      const data = await response.json();
-      setAssets(data.assets || []);
-      setSummary(data.summary || {});
-      setPortfolioAnalysis(data.portfolio_analysis || {});
-    } catch (err) {
-      console.error('Error fetching assets:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setPortfolioAnalysis({
+        liquidity_ratio: 0,
+        risk_assessment: 'moderate',
+        diversification_score: 0
+      });
+      return;
     }
+
+    const totalCurrentValue = assets.reduce((sum, asset) => sum + (asset.current_value || 0), 0);
+    const totalPurchasePrice = assets.reduce((sum, asset) => sum + (asset.purchase_price || 0), 0);
+    const totalUnrealizedGainLoss = totalCurrentValue - totalPurchasePrice;
+
+    // Calculate basic portfolio analysis
+    const liquidAssetTypes = ['savings_account', 'investment_account'];
+    const liquidAssetsValue = assets
+      .filter(asset => liquidAssetTypes.includes(asset.asset_type))
+      .reduce((sum, asset) => sum + (asset.current_value || 0), 0);
+    const liquidityRatio = totalCurrentValue > 0 ? (liquidAssetsValue / totalCurrentValue) * 100 : 0;
+
+    // Calculate diversification score (basic implementation)
+    const assetTypes = [...new Set(assets.map(asset => asset.asset_type))];
+    const diversificationScore = Math.min(assetTypes.length * 2, 10);
+
+    // Risk assessment based on asset types
+    const highRiskTypes = ['business', 'collectibles'];
+    const moderateRiskTypes = ['real_estate', 'investment_account'];
+    const highRiskValue = assets
+      .filter(asset => highRiskTypes.includes(asset.asset_type))
+      .reduce((sum, asset) => sum + (asset.current_value || 0), 0);
+    const moderateRiskValue = assets
+      .filter(asset => moderateRiskTypes.includes(asset.asset_type))
+      .reduce((sum, asset) => sum + (asset.current_value || 0), 0);
+    
+    let riskAssessment = 'low';
+    if (highRiskValue / totalCurrentValue > 0.3) riskAssessment = 'high';
+    else if (moderateRiskValue / totalCurrentValue > 0.3) riskAssessment = 'moderate';
+
+    setSummary({
+      total_current_value: totalCurrentValue,
+      total_assets: assets.length,
+      total_unrealized_gain_loss: totalUnrealizedGainLoss
+    });
+
+    setPortfolioAnalysis({
+      liquidity_ratio: liquidityRatio,
+      risk_assessment: riskAssessment,
+      diversification_score: diversificationScore
+    });
   };
 
   const handleAssetCreated = (newAsset) => {
     setShowAssetForm(false);
-    fetchAssetsData(); // Refresh data
+    fetchAllFinancialData(); // Refresh all data through unified context
   };
 
   const handleAssetUpdated = (updatedAsset) => {
     setEditingAsset(null);
-    fetchAssetsData(); // Refresh data
+    fetchAllFinancialData(); // Refresh all data through unified context
   };
 
   const handleEditAsset = (asset) => {
@@ -71,23 +105,9 @@ const AssetDashboard = () => {
     }
 
     try {
-      const token = localStorage.getItem('jwt');
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/${assetId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete asset');
-      }
-
-      fetchAssetsData(); // Refresh data
+      await deleteAsset(assetId);
     } catch (err) {
       console.error('Error deleting asset:', err);
-      setError(err.message);
     }
   };
 
@@ -109,7 +129,7 @@ const AssetDashboard = () => {
               <span>Error loading assets: {error}</span>
             </div>
             <Button 
-              onClick={fetchAssetsData} 
+              onClick={fetchAllFinancialData} 
               className="mt-4"
               variant="outline"
             >

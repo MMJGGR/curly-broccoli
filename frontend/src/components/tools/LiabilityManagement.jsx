@@ -45,7 +45,7 @@ const LiabilityManagement = () => {
   const fetchLiabilities = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/v1/liabilities/', {
+      const response = await fetch('/api/v1/liabilities-v2/', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -54,7 +54,8 @@ const LiabilityManagement = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setLiabilities(data);
+        // Handle new API response structure - extract liabilities array from summary response
+        setLiabilities(data.liabilities || data);
       }
     } catch (error) {
       console.error('Failed to fetch liabilities:', error);
@@ -68,8 +69,8 @@ const LiabilityManagement = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const url = editingLiability 
-        ? `/api/v1/liabilities/${editingLiability.id}` 
-        : '/api/v1/liabilities/';
+        ? `/api/v1/liabilities-v2/${editingLiability.id}` 
+        : '/api/v1/liabilities-v2/';
       
       const method = editingLiability ? 'PUT' : 'POST';
       
@@ -122,7 +123,7 @@ const LiabilityManagement = () => {
     
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/v1/liabilities/${liabilityId}`, {
+      const response = await fetch(`/api/v1/liabilities-v2/${liabilityId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -21,9 +21,11 @@ export const Select = ({ children, value, onValueChange, ...props }) => {
   }, []);
 
   const handleSelect = (newValue) => {
+    console.log('Select handleSelect called with:', newValue); // Debug log
     setSelectedValue(newValue);
     setIsOpen(false);
     if (onValueChange) {
+      console.log('Calling onValueChange with:', newValue); // Debug log
       onValueChange(newValue);
     }
   };
@@ -33,7 +35,10 @@ export const Select = ({ children, value, onValueChange, ...props }) => {
       {React.Children.map(children, (child) => {
         if (child.type === SelectTrigger) {
           return React.cloneElement(child, {
-            onClick: () => setIsOpen(!isOpen),
+            onClick: () => {
+              console.log('SelectTrigger clicked, current isOpen:', isOpen); // Debug log
+              setIsOpen(!isOpen);
+            },
             selectedValue,
             selectContent: children.find(c => c.type === SelectContent)
           });
@@ -105,7 +110,7 @@ export const SelectValue = ({ placeholder, selectedValue, children }) => {
 
 export const SelectContent = ({ children, onSelect, selectedValue, className = '', ...props }) => (
   <div
-    className={`absolute top-full left-0 z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto ${className}`}
+    className={`absolute top-full left-0 z-[9999] w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto ${className}`}
     {...props}
   >
     {React.Children.map(children, (child) => {
@@ -126,7 +131,10 @@ export const SelectItem = ({ children, value, onSelect, isSelected, className = 
     className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none ${
       isSelected ? 'bg-blue-50 text-blue-600' : ''
     } ${className}`}
-    onClick={() => onSelect && onSelect(value)}
+    onClick={() => {
+      console.log('SelectItem clicked, value:', value, 'onSelect:', !!onSelect); // Debug log
+      onSelect && onSelect(value);
+    }}
     {...props}
   >
     {children}

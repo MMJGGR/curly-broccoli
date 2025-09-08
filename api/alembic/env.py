@@ -8,7 +8,7 @@ proj_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 load_dotenv(os.path.join(proj_root, '.env'))
 
 from alembic import context
-from app.database import Base  # your new Base from database.py
+from app.models import Base  # Base from models/__init__.py
 
 # this is the Alembic Config object
 config = context.config

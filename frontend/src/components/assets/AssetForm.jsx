@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+// Removed unused Select imports - using native HTML select instead
 import { X, Save, AlertCircle } from '../ui/icons';
 import { getKenyaAssetCategories } from '../../utils/kenyaReturnRiskModels';
 import HybridSaveManager from '../balance-sheet/HybridSaveManager';
@@ -371,47 +371,37 @@ const AssetForm = ({ asset, onAssetCreated, onAssetUpdated, onCancel }) => {
             {/* Asset Type */}
             <div className="space-y-2">
               <Label>Asset Type *</Label>
-              <Select 
+              <select
                 value={formData.asset_type} 
-                onValueChange={(value) => {
-                  handleInputChange('asset_type', value);
+                onChange={(e) => {
+                  handleInputChange('asset_type', e.target.value);
                   // Clear error and provide immediate feedback
                   if (validationErrors.asset_type) {
                     setValidationErrors(prev => ({ ...prev, asset_type: '' }));
                   }
                 }}
+                required
+                style={{
+                  width: '100%',
+                  height: '40px',
+                  padding: '8px 12px',
+                  border: validationErrors.asset_type ? '1px solid #ef4444' : formData.asset_type ? '1px solid #10b981' : '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  backgroundColor: formData.asset_type ? '#f0fdf4' : 'white',
+                  fontSize: '14px'
+                }}
               >
-                <SelectTrigger 
-                  className={`${validationErrors.asset_type ? 'border-red-500' : ''} ${
-                    formData.asset_type ? 'border-green-500 bg-green-50' : ''
-                  }`}
-                >
-                  <SelectValue placeholder="Select asset type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(availableTypes).map(([category, types]) => (
-                    <div key={category}>
-                      <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase border-b border-gray-200">
-                        {category.replace('_', ' ')} 
-                        <span className="text-blue-600 font-normal">({types.length} options)</span>
-                      </div>
-                      {types.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          <span className="font-medium">{type.label}</span>
-                          {type.is_liquid && <span className="ml-2 text-xs text-blue-600">[Liquid]</span>}
-                          <span className={`ml-2 text-xs ${
-                            type.risk_level === 'low' ? 'text-green-600' :
-                            type.risk_level === 'high' ? 'text-red-600' :
-                            'text-yellow-600'
-                          }`}>
-                            [{type.risk_level} risk]
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select asset type</option>
+                {Object.entries(availableTypes).map(([category, types]) => (
+                  <optgroup key={category} label={category.replace('_', ' ').toUpperCase()}>
+                    {types.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label} - {type.is_liquid ? '[Liquid]' : '[Illiquid]'} - [{type.risk_level} risk]
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
               {validationErrors.asset_type && (
                 <p className="text-sm text-red-600">{validationErrors.asset_type}</p>
               )}

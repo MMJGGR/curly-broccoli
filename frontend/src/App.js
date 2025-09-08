@@ -9,6 +9,9 @@ import RetakeRiskQuestionnaire from './components/RetakeRiskQuestionnaire';
 import OnboardingWizard from './components/onboarding/OnboardingWizard';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 
+// UnifiedFinancialContext Provider
+import { UnifiedFinancialProvider } from './contexts/TransactionContext';
+
 // Timeline-first application layout
 import TimelineMainAppLayout from './components/TimelineMainAppLayout';
 // Legacy layout for fallback
@@ -40,8 +43,9 @@ const InitialRoute = () => {
 
 function App() {
   return (
-    <div className="bg-white min-h-screen">
-      <Routes>
+    <UnifiedFinancialProvider>
+      <div className="bg-white min-h-screen">
+        <Routes>
         {/* Initial entry point: Auth Screen or Dashboard if logged in */}
         <Route path="/" element={<InitialRoute />} />
         <Route path="/auth" element={<AuthScreen />} />
@@ -94,7 +98,8 @@ function App() {
         {/* Catch-all for unhandled routes - redirects to auth for now */}
         <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>
-    </div>
+      </div>
+    </UnifiedFinancialProvider>
   );
 }
 
