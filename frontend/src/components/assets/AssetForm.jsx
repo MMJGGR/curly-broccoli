@@ -8,8 +8,11 @@ import { Textarea } from '../ui/textarea';
 import { X, Save, AlertCircle } from '../ui/icons';
 import { getKenyaAssetCategories } from '../../utils/kenyaReturnRiskModels';
 import HybridSaveManager from '../balance-sheet/HybridSaveManager';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const AssetForm = ({ asset, onAssetCreated, onAssetUpdated, onCancel }) => {
+  // Use UnifiedFinancialContext for asset operations
+  const { createAsset, updateAsset } = useUnifiedFinancialContext();
   const [formData, setFormData] = useState({
     name: '',
     asset_type: '',
@@ -268,12 +271,6 @@ const AssetForm = ({ asset, onAssetCreated, onAssetUpdated, onCancel }) => {
     setError('');
 
     try {
-      const token = localStorage.getItem('jwt');
-      const url = asset 
-        ? `${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/${asset.id}`
-        : `${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/`;
-      
-      const method = asset ? 'PUT' : 'POST';
 
       const payload = {
         name: formData.name.trim(),
@@ -286,30 +283,17 @@ const AssetForm = ({ asset, onAssetCreated, onAssetUpdated, onCancel }) => {
         location: formData.location.trim() || null
       };
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to save asset');
+      let result;
+      if (asset) {
+        result = await updateAsset(asset.id, payload);
+        onAssetUpdated(result);
+      } else {
+        result = await createAsset(payload);
+        onAssetCreated(result);
       }
-
-      const result = await response.json();
       
       // Clear auto-save data on successful submission
       localStorage.removeItem('asset_form_autosave');
-      
-      if (asset) {
-        onAssetUpdated(result.asset);
-      } else {
-        onAssetCreated(result.asset);
-      }
     } catch (err) {
       console.error('Error saving asset:', err);
       setError(err.message);

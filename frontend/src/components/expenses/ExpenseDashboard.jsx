@@ -7,57 +7,64 @@ import ExpenseForm from './ExpenseForm';
 import ExpenseList from './ExpenseList';
 import ExpenseAnalysis from './ExpenseAnalysis';
 import { formatCurrency } from '../../utils/formatters';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const ExpenseDashboard = () => {
-  const [expenses, setExpenses] = useState([]);
+  // Use UnifiedFinancialContext instead of local state
+  const {
+    expenses,
+    loading,
+    deleteExpense,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+
   const [summary, setSummary] = useState(null);
   const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
 
   useEffect(() => {
-    fetchExpensesData();
-  }, []);
+    // Load all financial data from unified context
+    if (expenses.length === 0) {
+      fetchAllFinancialData().catch(error => {
+        console.error('Error loading financial data:', error);
+        setError(error.message);
+      });
+    }
+  }, [expenses.length, fetchAllFinancialData]);
 
-  const fetchExpensesData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Calculate summary and analysis from expenses data
+  useEffect(() => {
+    if (expenses.length > 0) {
+      const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+      const monthlyRecurring = expenses.filter(e => e.is_recurring).reduce((sum, expense) => sum + expense.amount, 0);
       
-      const token = localStorage.getItem('jwt');
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      setSummary({
+        total_expenses: totalAmount,
+        monthly_recurring: monthlyRecurring,
+        one_time_expenses: totalAmount - monthlyRecurring,
+        expense_count: expenses.length
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch expenses data');
-      }
+      // Basic analysis
+      const typeBreakdown = expenses.reduce((acc, expense) => {
+        acc[expense.expense_type] = (acc[expense.expense_type] || 0) + expense.amount;
+        return acc;
+      }, {});
 
-      const data = await response.json();
-      setExpenses(data.expenses || []);
-      setSummary(data.summary || {});
-      setAnalysis(data.budget_analysis || {});
-    } catch (err) {
-      console.error('Error fetching expenses:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setAnalysis({ type_breakdown: typeBreakdown });
     }
-  };
+  }, [expenses]);
 
   const handleExpenseCreated = (newExpense) => {
     setShowExpenseForm(false);
-    fetchExpensesData(); // Refresh data
+    // Data automatically refreshes via unified context
   };
 
   const handleExpenseUpdated = (updatedExpense) => {
     setEditingExpense(null);
-    fetchExpensesData(); // Refresh data
+    // Data automatically refreshes via unified context
   };
 
   const handleEditExpense = (expense) => {
@@ -71,27 +78,14 @@ const ExpenseDashboard = () => {
     }
 
     try {
-      const token = localStorage.getItem('jwt');
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/${expenseId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete expense');
-      }
-
-      fetchExpensesData(); // Refresh data
+      await deleteExpense(expenseId);
     } catch (err) {
       console.error('Error deleting expense:', err);
       setError(err.message);
     }
   };
 
-  if (loading) {
+  if (loading.expenses || loading.global) {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="text-lg">Loading expenses...</div>
@@ -109,7 +103,7 @@ const ExpenseDashboard = () => {
               <span>Error loading expenses: {error}</span>
             </div>
             <Button 
-              onClick={fetchExpensesData} 
+              onClick={() => fetchAllFinancialData()} 
               className="mt-4"
               variant="outline"
             >

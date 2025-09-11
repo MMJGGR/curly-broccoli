@@ -7,8 +7,11 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { X, Save, AlertCircle, Repeat, Building2 } from '../ui/icons';
 import { Badge } from '../ui/badge';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) => {
+  // Use UnifiedFinancialContext for expense and asset operations
+  const { createExpense, updateExpense, assets } = useUnifiedFinancialContext();
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -21,14 +24,12 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
     related_asset_id: ''
   });
   const [availableTypes, setAvailableTypes] = useState([]);
-  const [availableAssets, setAvailableAssets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     fetchAvailableTypes();
-    fetchAvailableAssets();
     
     // If editing, populate form with expense data
     if (expense) {
@@ -62,25 +63,26 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
     }
   };
 
-  const fetchAvailableAssets = async () => {
-    try {
-      const token = localStorage.getItem('jwt');
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+  // Removed - now using assets from UnifiedFinancialContext
+  // const fetchAvailableAssets = async () => {
+  //   try {
+  //     const token = localStorage.getItem('jwt');
+  //     const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/`, {
+  //       headers: {
+  //         'Authorization': `Bearer ${token}`,
+  //         'Content-Type': 'application/json',
+  //       },
+  //     });
 
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableAssets(data.assets || []);
-      }
-    } catch (err) {
-      console.error('Error fetching assets:', err);
-      // Non-critical error, continue without assets
-    }
-  };
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       setAvailableAssets(data.assets || []);
+  //     }
+  //   } catch (err) {
+  //     console.error('Error fetching assets:', err);
+  //     // Non-critical error, continue without assets
+  //   }
+  // };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -142,12 +144,6 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
     setError('');
 
     try {
-      const token = localStorage.getItem('jwt');
-      const url = expense 
-        ? `${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/${expense.id}`
-        : `${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/`;
-      
-      const method = expense ? 'PUT' : 'POST';
 
       const payload = {
         description: formData.description.trim(),
@@ -161,21 +157,12 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
         related_asset_id: formData.related_asset_id ? parseInt(formData.related_asset_id) : null
       };
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to save expense');
+      let result;
+      if (expense) {
+        result = await updateExpense(expense.id, payload);
+      } else {
+        result = await createExpense(payload);
       }
-
-      const result = await response.json();
       
       if (expense) {
         onExpenseUpdated(result.expense);
@@ -363,7 +350,7 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
                 />
               </div>
 
-              {availableAssets.length > 0 && (
+              {assets.length > 0 && (
                 <div className="space-y-2">
                   <Label>Related Asset (Optional)</Label>
                   <Select 
@@ -375,7 +362,7 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="">No asset selected</SelectItem>
-                      {availableAssets.map((asset) => (
+                      {assets.map((asset) => (
                         <SelectItem key={asset.id} value={asset.id.toString()}>
                           <div className="flex items-center space-x-2">
                             <Building2 className="h-4 w-4" />

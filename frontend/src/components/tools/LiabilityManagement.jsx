@@ -8,12 +8,21 @@ import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Plus, Edit, Trash2, TrendingDown } from '../ui/icons';
 import { formatCurrency } from '../../utils/formatters';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const LiabilityManagement = () => {
-  const [liabilities, setLiabilities] = useState([]);
+  // Use UnifiedFinancialContext instead of local state
+  const {
+    liabilities,
+    loading,
+    createLiability,
+    updateLiability,
+    deleteLiability,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLiability, setEditingLiability] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     liability_type: '',
@@ -39,40 +48,17 @@ const LiabilityManagement = () => {
   ];
 
   useEffect(() => {
-    fetchLiabilities();
-  }, []);
-
-  const fetchLiabilities = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/v1/liabilities-v2/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+    // Load all financial data from unified context
+    if (liabilities.length === 0) {
+      fetchAllFinancialData().catch(error => {
+        console.error('Error loading financial data:', error);
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Handle new API response structure - extract liabilities array from summary response
-        setLiabilities(data.liabilities || data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch liabilities:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [liabilities.length, fetchAllFinancialData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('accessToken');
-      const url = editingLiability 
-        ? `/api/v1/liabilities-v2/${editingLiability.id}` 
-        : '/api/v1/liabilities-v2/';
-      
-      const method = editingLiability ? 'PUT' : 'POST';
       
       const payload = {
         ...formData,
@@ -82,21 +68,15 @@ const LiabilityManagement = () => {
         monthly_payment: formData.monthly_payment ? parseFloat(formData.monthly_payment) : null
       };
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        await fetchLiabilities();
-        setIsFormOpen(false);
-        setEditingLiability(null);
-        resetForm();
+      if (editingLiability) {
+        await updateLiability(editingLiability.id, payload);
+      } else {
+        await createLiability(payload);
       }
+
+      setIsFormOpen(false);
+      setEditingLiability(null);
+      resetForm();
     } catch (error) {
       console.error('Failed to save liability:', error);
     }
@@ -122,17 +102,7 @@ const LiabilityManagement = () => {
     if (!window.confirm('Are you sure you want to delete this liability? This will also remove any linked expense payments.')) return;
     
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/v1/liabilities-v2/${liabilityId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      });
-
-      if (response.ok) {
-        await fetchLiabilities();
-      }
+      await deleteLiability(liabilityId);
     } catch (error) {
       console.error('Failed to delete liability:', error);
     }
@@ -178,7 +148,7 @@ const LiabilityManagement = () => {
     .reduce((sum, liability) => sum + liability.current_balance, 0);
   const unsecuredDebt = totalLiabilities - securedDebt;
 
-  if (loading) {
+  if (loading.liabilities || loading.global) {
     return <div className="flex justify-center items-center h-64">Loading liabilities...</div>;
   }
 

@@ -8,12 +8,21 @@ import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Plus, Edit, Trash2, TrendingUp } from '../ui/icons';
 import { formatCurrency } from '../../utils/formatters';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const AssetManagement = () => {
-  const [assets, setAssets] = useState([]);
+  // Use UnifiedFinancialContext instead of local state
+  const {
+    assets,
+    loading,
+    createAsset,
+    updateAsset,
+    deleteAsset,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     asset_type: '',
@@ -36,61 +45,32 @@ const AssetManagement = () => {
   ];
 
   useEffect(() => {
-    fetchAssets();
-  }, []);
-
-  const fetchAssets = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/v1/assets-v2/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+    // Load all financial data from unified context
+    if (assets.length === 0) {
+      fetchAllFinancialData().catch(error => {
+        console.error('Error loading financial data:', error);
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAssets(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch assets:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [assets.length, fetchAllFinancialData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('accessToken');
-      const url = editingAsset 
-        ? `/api/v1/assets-v2/${editingAsset.id}` 
-        : '/api/v1/assets-v2/';
-      
-      const method = editingAsset ? 'PUT' : 'POST';
-      
       const payload = {
         ...formData,
         current_value: parseFloat(formData.current_value),
         purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null
       };
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        await fetchAssets();
-        setIsFormOpen(false);
-        setEditingAsset(null);
-        resetForm();
+      if (editingAsset) {
+        await updateAsset(editingAsset.id, payload);
+      } else {
+        await createAsset(payload);
       }
+
+      setIsFormOpen(false);
+      setEditingAsset(null);
+      resetForm();
     } catch (error) {
       console.error('Failed to save asset:', error);
     }
@@ -114,17 +94,7 @@ const AssetManagement = () => {
     if (!window.confirm('Are you sure you want to delete this asset? This will also remove any linked income or expenses.')) return;
     
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/v1/assets-v2/${assetId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      });
-
-      if (response.ok) {
-        await fetchAssets();
-      }
+      await deleteAsset(assetId);
     } catch (error) {
       console.error('Failed to delete asset:', error);
     }
@@ -156,7 +126,7 @@ const AssetManagement = () => {
 
   const totalAssetValue = assets.reduce((sum, asset) => sum + asset.current_value, 0);
 
-  if (loading) {
+  if (loading.assets || loading.global) {
     return <div className="flex justify-center items-center h-64">Loading assets...</div>;
   }
 

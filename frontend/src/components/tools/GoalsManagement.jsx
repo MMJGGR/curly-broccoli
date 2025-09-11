@@ -8,12 +8,21 @@ import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Plus, Edit, Trash2, Target, Calendar, TrendingUp } from '../ui/icons';
 import { formatCurrency } from '../../utils/formatters';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const GoalsManagement = () => {
-  const [goals, setGoals] = useState([]);
+  // Use UnifiedFinancialContext instead of local state
+  const {
+    goals,
+    loading,
+    createGoal,
+    updateGoal,
+    deleteGoal,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     target_amount: '',
@@ -36,62 +45,33 @@ const GoalsManagement = () => {
   ];
 
   useEffect(() => {
-    fetchGoals();
-  }, []);
-
-  const fetchGoals = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/v1/goals-v2/overview', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+    // Load all financial data from unified context
+    if (goals.length === 0) {
+      fetchAllFinancialData().catch(error => {
+        console.error('Error loading financial data:', error);
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setGoals(data.goals || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch goals:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [goals.length, fetchAllFinancialData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('accessToken');
-      
-      if (editingGoal) {
-        // Update goal (implement when update endpoint exists)
-        console.log('Update functionality not yet implemented');
-        return;
-      }
-      
-      // Create new goal using form parameters
-      const params = new URLSearchParams({
+      const goalData = {
         name: formData.name,
-        target_amount: parseFloat(formData.target_amount).toString(),
+        target_amount: parseFloat(formData.target_amount),
         target_date: formData.target_date,
-        current_amount: formData.current_amount ? parseFloat(formData.current_amount).toString() : '0'
-      });
+        current_amount: formData.current_amount ? parseFloat(formData.current_amount) : 0
+      };
 
-      const response = await fetch(`/api/v1/goals-v2/?${params}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        await fetchGoals();
-        setIsFormOpen(false);
-        setEditingGoal(null);
-        resetForm();
+      if (editingGoal) {
+        await updateGoal(editingGoal.id, goalData);
+      } else {
+        await createGoal(goalData);
       }
+
+      setIsFormOpen(false);
+      setEditingGoal(null);
+      resetForm();
     } catch (error) {
       console.error('Failed to save goal:', error);
     }
@@ -115,17 +95,7 @@ const GoalsManagement = () => {
     if (!window.confirm('Are you sure you want to delete this goal?')) return;
     
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/v1/goals-v2/${goalId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      });
-
-      if (response.ok) {
-        await fetchGoals();
-      }
+      await deleteGoal(goalId);
     } catch (error) {
       console.error('Failed to delete goal:', error);
     }
@@ -174,7 +144,7 @@ const GoalsManagement = () => {
   const totalGoalValue = goals.reduce((sum, goal) => sum + goal.target_amount, 0);
   const totalProgress = goals.reduce((sum, goal) => sum + (goal.current_amount || 0), 0);
 
-  if (loading) {
+  if (loading.goals || loading.global) {
     return <div className="flex justify-center items-center h-64">Loading goals...</div>;
   }
 

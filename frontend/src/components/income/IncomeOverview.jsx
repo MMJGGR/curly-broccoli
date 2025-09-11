@@ -51,7 +51,7 @@ const IncomeOverview = ({ onNextScreen }) => {
         currency: 'KES'
       },
       stability_score: avgStabilityScore,
-      income_sources: incomeSource
+      income_incomeSource: incomeSource
     });
   }, [incomeSource]);
 
@@ -123,14 +123,14 @@ const IncomeOverview = ({ onNextScreen }) => {
   };
 
   // CFA-Level Income Analysis Functions
-  const calculateIncomeStability = (sources) => {
-    if (!sources || sources.length === 0) return 0;
+  const calculateIncomeStability = (incomeSource) => {
+    if (!incomeSource || incomeSource.length === 0) return 0;
     
-    const totalIncome = sources.reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
+    const totalIncome = incomeSource.reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
     if (totalIncome === 0) return 0;
     
     // Calculate Herfindahl-Hirschman Index for income concentration
-    const hhi = sources.reduce((sum, source) => {
+    const hhi = incomeSource.reduce((sum, source) => {
       const percentage = (source.monthly_amount || 0) / totalIncome;
       return sum + (percentage * percentage);
     }, 0);
@@ -151,14 +151,14 @@ const IncomeOverview = ({ onNextScreen }) => {
     return 'Low';
   };
 
-  const getIncomeBreakdown = (sources) => {
-    if (!sources || sources.length === 0) return [];
+  const getIncomeBreakdown = (incomeSource) => {
+    if (!incomeSource || incomeSource.length === 0) return [];
     
-    const totalIncome = sources.reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
+    const totalIncome = incomeSource.reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
     if (totalIncome === 0) return [];
     
     const breakdown = {};
-    sources.forEach(source => {
+    incomeSource.forEach(source => {
       const type = source.source_type || 'other';
       const category = getCategoryFromType(type);
       breakdown[category] = (breakdown[category] || 0) + (source.monthly_amount || 0);
@@ -183,25 +183,25 @@ const IncomeOverview = ({ onNextScreen }) => {
     return categories[type] || 'other';
   };
 
-  const getCFARecommendations = (sources) => {
+  const getCFARecommendations = (incomeSource) => {
     const recommendations = [];
-    const totalIncome = sources.reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
-    const stability = calculateIncomeStability(sources);
+    const totalIncome = incomeSource.reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
+    const stability = calculateIncomeStability(incomeSource);
     
     if (stability < 40) {
-      recommendations.push('Consider diversifying income sources to reduce risk');
+      recommendations.push('Consider diversifying income incomeSource to reduce risk');
     }
     
-    if (sources.length === 1) {
+    if (incomeSource.length === 1) {
       recommendations.push('Single income source increases financial risk - consider multiple streams');
     }
     
-    const passiveIncome = sources.filter(s => ['investment', 'rental'].includes(s.source_type))
+    const passiveIncome = incomeSource.filter(s => ['investment', 'rental'].includes(s.source_type))
       .reduce((sum, source) => sum + (source.monthly_amount || 0), 0);
     const passivePercentage = totalIncome > 0 ? (passiveIncome / totalIncome) * 100 : 0;
     
     if (passivePercentage < 10) {
-      recommendations.push('Build passive income sources for long-term financial security');
+      recommendations.push('Build passive income incomeSource for long-term financial security');
     }
     
     if (recommendations.length === 0) {
@@ -246,7 +246,7 @@ const IncomeOverview = ({ onNextScreen }) => {
               <div className="text-center">
                 <p className="text-sm text-gray-600">Active Sources</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {overview.summary?.total_sources || 0}
+                  {overview.summary?.total_incomeSource || 0}
                 </p>
               </div>
               <div className="text-center">
@@ -258,9 +258,9 @@ const IncomeOverview = ({ onNextScreen }) => {
               <div className="text-center">
                 <p className="text-sm text-gray-600">Income Stability</p>
                 <p className={`text-2xl font-bold ${
-                  getIncomeStabilityColor(calculateIncomeStability(sources))
+                  getIncomeStabilityColor(calculateIncomeStability(incomeSource))
                 }`}>
-                  {getIncomeStabilityLabel(calculateIncomeStability(sources))}
+                  {getIncomeStabilityLabel(calculateIncomeStability(incomeSource))}
                 </p>
               </div>
             </div>
@@ -272,7 +272,7 @@ const IncomeOverview = ({ onNextScreen }) => {
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h4 className="font-medium text-blue-800 mb-2">Income Diversification</h4>
                   <div className="space-y-1">
-                    {getIncomeBreakdown(sources).map((breakdown, idx) => (
+                    {getIncomeBreakdown(incomeSource).map((breakdown, idx) => (
                       <div key={idx} className="flex justify-between text-sm">
                         <span className="text-blue-700">{breakdown.type}:</span>
                         <span className="font-medium">{breakdown.percentage}%</span>
@@ -283,7 +283,7 @@ const IncomeOverview = ({ onNextScreen }) => {
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h4 className="font-medium text-green-800 mb-2">CFA Recommendations</h4>
                   <ul className="text-sm text-green-700 space-y-1">
-                    {getCFARecommendations(sources).map((rec, idx) => (
+                    {getCFARecommendations(incomeSource).map((rec, idx) => (
                       <li key={idx} className="flex items-start">
                         <span className="text-green-600 mr-1">•</span>
                         {rec}
@@ -415,7 +415,7 @@ const IncomeOverview = ({ onNextScreen }) => {
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Income Sources Yet</h3>
               <p className="text-gray-600 mb-4">
-                Start by adding your income sources to track your financial progress.
+                Start by adding your income incomeSource to track your financial progress.
               </p>
               <button
                 className="bg-green-500 text-white py-2 px-6 rounded-lg font-semibold hover:bg-green-600 transition-all duration-300 shadow-lg"
