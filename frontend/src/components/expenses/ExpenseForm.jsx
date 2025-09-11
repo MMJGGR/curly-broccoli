@@ -11,7 +11,7 @@ import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) => {
   // Use UnifiedFinancialContext for expense and asset operations
-  const { createExpense, updateExpense, assets } = useUnifiedFinancialContext();
+  const { createExpense, updateExpense, assets, fetchExpenseTypes, expenseTypes } = useUnifiedFinancialContext();
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -23,13 +23,18 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
     notes: '',
     related_asset_id: ''
   });
-  const [availableTypes, setAvailableTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
-    fetchAvailableTypes();
+    // Fetch expense types from UnifiedFinancialContext
+    if (expenseTypes.length === 0) {
+      fetchExpenseTypes().catch(err => {
+        console.error('Error fetching expense types:', err);
+        setError('Failed to load expense types');
+      });
+    }
     
     // If editing, populate form with expense data
     if (expense) {
@@ -45,23 +50,7 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
         related_asset_id: expense.related_asset_id?.toString() || ''
       });
     }
-  }, [expense]);
-
-  const fetchAvailableTypes = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/expenses-v2/types/available`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch expense types');
-      }
-
-      const data = await response.json();
-      setAvailableTypes(data.expense_types || []);
-    } catch (err) {
-      console.error('Error fetching expense types:', err);
-      setError('Failed to load expense types');
-    }
-  };
+  }, [expense, expenseTypes.length, fetchExpenseTypes]);
 
   // Removed - now using assets from UnifiedFinancialContext
   // const fetchAvailableAssets = async () => {
@@ -178,7 +167,7 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
   };
 
   const getExpenseTypeInfo = (expenseType) => {
-    return availableTypes.find(t => t.value === expenseType) || null;
+    return expenseTypes.find(t => t.value === expenseType) || null;
   };
 
   const selectedTypeInfo = formData.expense_type ? getExpenseTypeInfo(formData.expense_type) : null;
@@ -266,7 +255,7 @@ const ExpenseForm = ({ expense, onExpenseCreated, onExpenseUpdated, onCancel }) 
                   <SelectValue placeholder="Select expense type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableTypes.map((type) => (
+                  {expenseTypes.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       <div className="flex items-center justify-between w-full">
                         <span>{type.label}</span>

@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { useTimeline } from '../../contexts/TimelineContext';
 import { useBudget } from '../../contexts/BudgetContext';
+// import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const BudgetCashflows = () => {
   const {
@@ -23,6 +24,15 @@ const BudgetCashflows = () => {
     formatAmount,
     refreshBudgetData
   } = useBudget();
+
+  // Get real financial data from UnifiedFinancialContext (available for future use)
+  // const {
+  //   incomeSource,
+  //   expenses,
+  //   goals,
+  //   assets,
+  //   liabilities
+  // } = useUnifiedFinancialContext();
 
   // Component state
   const [activeTab, setActiveTab] = useState('planning');

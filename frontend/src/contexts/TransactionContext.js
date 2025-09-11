@@ -33,6 +33,7 @@ const UNIFIED_FINANCIAL_ACTIONS = {
   CREATE_EXPENSE: 'CREATE_EXPENSE',
   UPDATE_EXPENSE: 'UPDATE_EXPENSE',
   DELETE_EXPENSE: 'DELETE_EXPENSE',
+  SET_EXPENSE_TYPES: 'SET_EXPENSE_TYPES',
   
   // Goals CRUD
   SET_GOALS: 'SET_GOALS',
@@ -96,6 +97,7 @@ const initialUnifiedState = {
   liabilities: [],
   incomeSource: [],
   expenses: [],
+  expenseTypes: [],
   transactions: [],
   goals: [],
   budgetCategories: [],
@@ -291,6 +293,14 @@ const unifiedFinancialReducer = (state, action) => {
         expenses: state.expenses.filter(expense => expense.id !== action.payload),
         lastUpdated: new Date().toISOString()
       };
+      
+    case UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSE_TYPES:
+      return {
+        ...state,
+        expenseTypes: action.payload,
+        loading: { ...state.loading, expenses: false },
+        errors: { ...state.errors, expenses: null }
+      };
     
     // Goals CRUD
     case UNIFIED_FINANCIAL_ACTIONS.SET_GOALS:
@@ -391,6 +401,164 @@ export const UnifiedFinancialProvider = ({ children }) => {
     }
   }, []);
 
+  // Liability CRUD Methods
+  const createLiability = useCallback(async (liabilityData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { liabilities: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch('/api/v1/liabilities-v2/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(liabilityData)
+      });
+
+      if (!response.ok) throw new Error('Failed to create liability');
+      
+      const newLiability = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_LIABILITY, payload: newLiability });
+      return newLiability;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { liabilities: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { liabilities: false } });
+    }
+  }, []);
+
+  const updateLiability = useCallback(async (liabilityId, liabilityData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { liabilities: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`/api/v1/liabilities-v2/${liabilityId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(liabilityData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update liability');
+      
+      const updatedLiability = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_LIABILITY, payload: updatedLiability });
+      return updatedLiability;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { liabilities: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { liabilities: false } });
+    }
+  }, []);
+
+  const deleteLiability = useCallback(async (liabilityId) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { liabilities: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`/api/v1/liabilities-v2/${liabilityId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to delete liability');
+      
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_LIABILITY, payload: liabilityId });
+      return liabilityId;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { liabilities: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { liabilities: false } });
+    }
+  }, []);
+
+  // Goal CRUD Methods
+  const createGoal = useCallback(async (goalData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { goals: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch('/api/v1/goals-v2/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(goalData)
+      });
+
+      if (!response.ok) throw new Error('Failed to create goal');
+      
+      const newGoal = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_GOAL, payload: newGoal });
+      return newGoal;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { goals: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { goals: false } });
+    }
+  }, []);
+
+  const updateGoal = useCallback(async (goalId, goalData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { goals: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`/api/v1/goals-v2/${goalId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(goalData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update goal');
+      
+      const updatedGoal = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_GOAL, payload: updatedGoal });
+      return updatedGoal;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { goals: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { goals: false } });
+    }
+  }, []);
+
+  const deleteGoal = useCallback(async (goalId) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { goals: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`/api/v1/goals-v2/${goalId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to delete goal');
+      
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_GOAL, payload: goalId });
+      return goalId;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { goals: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { goals: false } });
+    }
+  }, []);
+
   // Expense CRUD Methods
   const createExpense = useCallback(async (expenseData) => {
     try {
@@ -462,6 +630,25 @@ export const UnifiedFinancialProvider = ({ children }) => {
       
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_EXPENSE, payload: expenseId });
       return expenseId;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { expenses: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: false } });
+    }
+  }, []);
+
+  const fetchExpenseTypes = useCallback(async () => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
+      
+      const response = await fetch('/api/v1/expenses-v2/types/available');
+      
+      if (!response.ok) throw new Error('Failed to fetch expense types');
+      
+      const data = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSE_TYPES, payload: data.expense_types || [] });
+      return data.expense_types || [];
     } catch (error) {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { expenses: error.message } });
       throw error;
@@ -607,9 +794,16 @@ export const UnifiedFinancialProvider = ({ children }) => {
     
     // Actions
     createAsset,
+    createLiability,
+    updateLiability,
+    deleteLiability,
+    createGoal,
+    updateGoal,
+    deleteGoal,
     createExpense,
     updateExpense,
     deleteExpense,
+    fetchExpenseTypes,
     createIncome,
     updateIncome,
     deleteIncome,
