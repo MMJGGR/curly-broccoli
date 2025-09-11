@@ -70,9 +70,10 @@ const OnboardingWizard = () => {
   const canProceedFromStep = (step) => {
     switch (step) {
       case 1:
-        return personalData.firstName && personalData.lastName && personalData.email;
+        // Only require firstName and lastName for step 1 (email already exists from registration)
+        return personalData.firstName && personalData.lastName;
       case 2:
-        return riskData.riskTolerance;
+        return riskData.riskLevel || riskData.riskTolerance;
       case 3:
         return financialData.monthlyIncome;
       case 4:
@@ -436,6 +437,32 @@ const OnboardingWizard = () => {
                   console.log('Step 4 (Goals):', goalsData);
                   console.log('Completed steps:', completedSteps);
                   console.log('Current step:', currentStep);
+                  console.log('Can proceed from current step:', canProceedFromStep(currentStep));
+                  console.log('Validation checks by step:');
+                  console.log('Step 1 - Personal:', { 
+                    hasFirstName: !!personalData.firstName,
+                    hasLastName: !!personalData.lastName,
+                    firstName: personalData.firstName,
+                    lastName: personalData.lastName,
+                    canProceed: personalData.firstName && personalData.lastName
+                  });
+                  console.log('Step 2 - Risk:', {
+                    hasRiskLevel: !!riskData.riskLevel,
+                    hasRiskTolerance: !!riskData.riskTolerance,
+                    riskLevel: riskData.riskLevel,
+                    riskTolerance: riskData.riskTolerance,
+                    canProceed: riskData.riskLevel || riskData.riskTolerance
+                  });
+                  console.log('Step 3 - Financial:', {
+                    hasMonthlyIncome: !!financialData.monthlyIncome,
+                    monthlyIncome: financialData.monthlyIncome,
+                    canProceed: !!financialData.monthlyIncome
+                  });
+                  console.log('Step 4 - Goals:', {
+                    goalKeysCount: Object.keys(goalsData).length,
+                    goalsData: goalsData,
+                    canProceed: Object.keys(goalsData).length > 0
+                  });
                 }}
                 className="px-3 py-2 text-xs font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200"
               >
