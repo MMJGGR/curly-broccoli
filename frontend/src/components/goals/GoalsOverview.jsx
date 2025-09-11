@@ -1,13 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { getGoalsOverview, createGoalV2, updateGoalProgress, deleteGoalV2 } from '../../api';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import MessageBox from '../MessageBox';
 
 const GoalsOverview = ({ onNextScreen }) => {
+  // Use UnifiedFinancialContext instead of direct API calls
+  const {
+    goals,
+    loading,
+    createGoal,
+    updateGoal,
+    deleteGoal,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+
   const [message, setMessage] = useState('');
   const [showMessageBox, setShowMessageBox] = useState(false);
   const [overview, setOverview] = useState(null);
-  const [goals, setGoals] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
 
   const [newGoal, setNewGoal] = useState({
@@ -17,25 +25,48 @@ const GoalsOverview = ({ onNextScreen }) => {
     current_amount: '0'
   });
 
-  const fetchGoalsData = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getGoalsOverview();
-      
-      setOverview(data);
-      setGoals(data.goals || []);
-    } catch (err) {
-      console.error('Error fetching goals data:', err);
-      showActionMessage(`Error: ${err.message}`);
-    } finally {
-      setLoading(false);
+  const calculateOverview = React.useCallback(() => {
+    if (goals.length === 0) {
+      setOverview(null);
+      return;
     }
-  }, []);
+
+    // Calculate overview from unified context goals data
+    const totalTargetAmount = goals.reduce((sum, goal) => sum + (goal.target_amount || 0), 0);
+    const totalCurrentAmount = goals.reduce((sum, goal) => sum + (goal.current_amount || 0), 0);
+    const completedGoals = goals.filter(goal => goal.current_amount >= goal.target_amount).length;
+    const avgProgress = goals.length > 0 ? 
+      goals.reduce((sum, goal) => sum + ((goal.current_amount / goal.target_amount) * 100), 0) / goals.length : 0;
+
+    setOverview({
+      total_target_amount: {
+        amount: totalTargetAmount,
+        currency: 'KES'
+      },
+      total_current_amount: {
+        amount: totalCurrentAmount,
+        currency: 'KES'
+      },
+      completed_goals: completedGoals,
+      average_progress: avgProgress,
+      goals: goals
+    });
+  }, [goals]);
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') return;
-    fetchGoalsData();
-  }, [fetchGoalsData]);
+    // Load all financial data from unified context
+    if (goals.length === 0) {
+      fetchAllFinancialData().catch(error => {
+        console.error('Error loading financial data:', error);
+        showActionMessage(`Error: ${error.message}`);
+      });
+    }
+  }, [goals.length, fetchAllFinancialData]);
+
+  useEffect(() => {
+    calculateOverview();
+  }, [calculateOverview]);
 
   const showActionMessage = (message) => {
     setMessage(message);
@@ -63,7 +94,7 @@ const GoalsOverview = ({ onNextScreen }) => {
         current_amount: parseFloat(newGoal.current_amount || 0)
       };
 
-      await createGoalV2(null, goalData);
+      await createGoal(goalData);
       showActionMessage('Goal created successfully!');
       
       // Reset form and refresh data
@@ -74,7 +105,6 @@ const GoalsOverview = ({ onNextScreen }) => {
         current_amount: '0'
       });
       setShowAddForm(false);
-      await fetchGoalsData();
       
     } catch (err) {
       console.error('Error adding goal:', err);
@@ -93,9 +123,8 @@ const GoalsOverview = ({ onNextScreen }) => {
     }
 
     try {
-      await updateGoalProgress(null, goalId, { current_amount: amount });
+      await updateGoal(goalId, { current_amount: amount });
       showActionMessage('Goal progress updated successfully!');
-      await fetchGoalsData();
     } catch (err) {
       console.error('Error updating goal:', err);
       showActionMessage(`Error updating progress: ${err.message}`);
@@ -108,9 +137,8 @@ const GoalsOverview = ({ onNextScreen }) => {
     }
 
     try {
-      await deleteGoalV2(null, goalId);
+      await deleteGoal(goalId);
       showActionMessage('Goal deleted successfully!');
-      await fetchGoalsData();
     } catch (err) {
       console.error('Error deleting goal:', err);
       showActionMessage(`Error deleting goal: ${err.message}`);
@@ -138,7 +166,7 @@ const GoalsOverview = ({ onNextScreen }) => {
     return diffDays;
   };
 
-  if (loading) {
+  if (loading.goals || loading.global) {
     return (
       <div className="bg-gray-100 min-h-screen flex items-center justify-center">
         <div className="text-xl text-gray-600">Loading goals data...</div>

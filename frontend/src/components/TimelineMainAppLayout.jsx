@@ -8,7 +8,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 // Timeline Context
 import { TimelineProvider } from '../contexts/TimelineContext';
 import { BudgetProvider } from '../contexts/BudgetContext';
-import { TransactionProvider } from '../contexts/TransactionContext';
+import { UnifiedFinancialProvider } from '../contexts/TransactionContext';
 
 // Timeline-first components
 import TimelineDashboard from './timeline/TimelineDashboard';
@@ -132,7 +132,7 @@ const TimelineMainAppLayout = () => {
   return (
     <TimelineProvider>
       <BudgetProvider>
-        <TransactionProvider>
+        <UnifiedFinancialProvider>
         <div className="timeline-app h-screen bg-gradient-to-br from-slate-50 to-blue-50">
           <Routes>
             {/* Default redirect */}
@@ -172,7 +172,7 @@ const TimelineMainAppLayout = () => {
           {/* Bottom Navigation */}
           <BottomNavBar onTabClick={handleTabClick} activeTab={activeTab} />
         </div>
-        </TransactionProvider>
+        </UnifiedFinancialProvider>
       </BudgetProvider>
     </TimelineProvider>
   );

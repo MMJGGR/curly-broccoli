@@ -25,11 +25,10 @@ const IncomeManagement = () => {
     assets,
     loading,
     errors,
-    createIncomeSource,
-    updateIncomeSource,
-    deleteIncomeSource,
-    loadAllFinancialData,
-    clearError
+    createIncome,
+    updateIncome,
+    deleteIncome,
+    fetchAllFinancialData
   } = useUnifiedFinancialContext();
 
   // Local UI state only
@@ -54,20 +53,18 @@ const IncomeManagement = () => {
   // Load all financial data on component mount
   useEffect(() => {
     if (incomeSource.length === 0 || assets.length === 0) {
-      loadAllFinancialData().catch(error => {
+      fetchAllFinancialData().catch(error => {
         console.error('Error loading financial data:', error);
       });
     }
-  }, [incomeSource.length, assets.length, loadAllFinancialData]);
+  }, [incomeSource.length, assets.length, fetchAllFinancialData]);
 
-  // Clear errors when component unmounts
+  // Clear errors when component unmounts (optional - errors auto-clear on next action)
   useEffect(() => {
     return () => {
-      if (errors.income) {
-        clearError('income');
-      }
+      // Errors will auto-clear on next successful action
     };
-  }, [errors.income, clearError]);
+  }, []);
 
   // Handle form submission using UnifiedFinancialContext
   const handleSubmit = async (e) => {
@@ -82,9 +79,9 @@ const IncomeManagement = () => {
       };
 
       if (editingIncome) {
-        await updateIncomeSource(editingIncome.id, incomeData);
+        await updateIncome(editingIncome.id, incomeData);
       } else {
-        await createIncomeSource(incomeData);
+        await createIncome(incomeData);
       }
 
       resetForm();
@@ -115,17 +112,7 @@ const IncomeManagement = () => {
     if (!confirm('Are you sure you want to delete this income?')) return;
     
     try {
-      const response = await fetch(`/api/v1/income-v2/${incomeId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt')}`
-        }
-      });
-      
-      if (response.ok) {
-        await fetchIncomes();
-        await fetchIncomeAnalysis();
-      }
+      await deleteIncome(incomeId);
     } catch (error) {
       console.error('Error deleting income:', error);
     }
@@ -161,7 +148,7 @@ const IncomeManagement = () => {
     return types[type] || type;
   };
 
-  if (loading) {
+  if (loading.income || loading.global) {
     return (
       <div className=\"flex justify-center items-center p-8\">
         <div className=\"text-lg\">Loading income data...</div>
@@ -245,14 +232,14 @@ const IncomeManagement = () => {
           </Button>
         </CardHeader>
         <CardContent>
-          {incomes.length === 0 ? (
+          {incomeSource.length === 0 ? (
             <div className=\"text-center py-8 text-gray-500\">
               <TrendingUp className=\"h-12 w-12 mx-auto mb-4 text-gray-300\" />
               <p>No income sources yet. Add your first income stream!</p>
             </div>
           ) : (
             <div className=\"space-y-4\">
-              {incomes.map((income) => (
+              {incomeSource.map((income) => (
                 <div
                   key={income.id}
                   className=\"flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50\"

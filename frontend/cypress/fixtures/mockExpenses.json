@@ -1,0 +1,44 @@
+{
+  "expenses": [
+    {
+      "id": 1,
+      "category": "housing",
+      "monthly_amount": 85000,
+      "description": "Mortgage payment",
+      "created_at": "2024-01-15T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "category": "transportation",
+      "monthly_amount": 60000,
+      "description": "Car loan and fuel",
+      "created_at": "2024-01-20T09:15:00Z"
+    },
+    {
+      "id": 3,
+      "category": "food",
+      "monthly_amount": 40000,
+      "description": "Groceries and dining",
+      "created_at": "2024-01-25T12:00:00Z"
+    },
+    {
+      "id": 4,
+      "category": "utilities",
+      "monthly_amount": 15000,
+      "description": "Electricity, water, internet",
+      "created_at": "2024-01-30T14:30:00Z"
+    }
+  ],
+  "summary": {
+    "monthly_recurring_total": {
+      "amount": 200000
+    },
+    "total_expenses": 200000,
+    "category_breakdown": {
+      "housing": 85000,
+      "transportation": 60000,
+      "food": 40000,
+      "utilities": 15000
+    }
+  }
+}

@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useReducer, useCallback, useRef } from 'react';
-import { api } from '../api';
+import React, { createContext, useContext, useReducer, useCallback } from 'react';
 
 // UnifiedFinancialContext for managing all financial data - Single Source of Truth
 const UnifiedFinancialContext = createContext();
@@ -359,506 +358,277 @@ const unifiedFinancialReducer = (state, action) => {
       return state;
   }
 };
-  budgetOverview: {
-    totalBudgeted: 0,
-    totalSpent: 0,
-    remainingBudget: 0,
-    categoriesCount: 0,
-    overBudgetCount: 0
-  },
-  
-  // Analytics
-  spendingAnalytics: {
-    categoryBreakdown: [],
-    monthlyTrends: [],
-    summary: {}
-  },
-  
-  // Import status
-  importStatus: {
-    isImporting: false,
-    lastImport: null,
-    importResults: null
-  },
-  
-  // Filters
-  filters: {
-    accountId: null,
-    category: null,
-    startDate: null,
-    endDate: null,
-    searchTerm: ''
-  }
-};
 
-// Reducer function
-const transactionReducer = (state, action) => {
-  switch (action.type) {
-    case TRANSACTION_ACTIONS.SET_LOADING:
-      return { ...state, isLoading: action.payload, error: null };
-    
-    case TRANSACTION_ACTIONS.SET_ERROR:
-      return { 
-        ...state, 
-        error: action.payload, 
-        isLoading: false, 
-        isSubmitting: false 
-      };
-    
-    case TRANSACTION_ACTIONS.CLEAR_ERROR:
-      return { ...state, error: null };
-    
-    case TRANSACTION_ACTIONS.SET_TRANSACTIONS:
-      return {
-        ...state,
-        transactions: action.payload.transactions,
-        totalTransactions: action.payload.total_count,
-        currentPage: action.payload.offset / action.payload.limit,
-        isLoading: false
-      };
-    
-    case TRANSACTION_ACTIONS.ADD_TRANSACTION:
-      return {
-        ...state,
-        transactions: [action.payload, ...state.transactions],
-        totalTransactions: state.totalTransactions + 1,
-        isSubmitting: false
-      };
-    
-    case TRANSACTION_ACTIONS.UPDATE_TRANSACTION:
-      return {
-        ...state,
-        transactions: state.transactions.map(t => 
-          t.id === action.payload.id ? action.payload : t
-        ),
-        isSubmitting: false
-      };
-    
-    case TRANSACTION_ACTIONS.DELETE_TRANSACTION:
-      return {
-        ...state,
-        transactions: state.transactions.filter(t => t.id !== action.payload),
-        totalTransactions: Math.max(0, state.totalTransactions - 1),
-        isSubmitting: false
-      };
-    
-    case TRANSACTION_ACTIONS.SET_ACCOUNTS:
-      return {
-        ...state,
-        accounts: action.payload.accounts,
-        accountSummary: action.payload.summary,
-        isLoading: false
-      };
-    
-    case TRANSACTION_ACTIONS.ADD_ACCOUNT:
-      return {
-        ...state,
-        accounts: [...state.accounts, action.payload],
-        accountSummary: {
-          ...state.accountSummary,
-          totalAccounts: state.accountSummary.totalAccounts + 1
+// UnifiedFinancialProvider Component
+export const UnifiedFinancialProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(unifiedFinancialReducer, initialUnifiedState);
+
+  // API Service Methods
+  const createAsset = useCallback(async (assetData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch('/api/v1/assets-v2/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        isSubmitting: false
-      };
-    
-    case TRANSACTION_ACTIONS.UPDATE_ACCOUNT:
-      return {
-        ...state,
-        accounts: state.accounts.map(a => 
-          a.id === action.payload.id ? action.payload : a
-        ),
-        isSubmitting: false
-      };
-    
-    case TRANSACTION_ACTIONS.DELETE_ACCOUNT:
-      return {
-        ...state,
-        accounts: state.accounts.filter(a => a.id !== action.payload),
-        accountSummary: {
-          ...state.accountSummary,
-          totalAccounts: Math.max(0, state.accountSummary.totalAccounts - 1)
-        },
-        isSubmitting: false
-      };
-    
-    case TRANSACTION_ACTIONS.SET_BUDGET_CATEGORIES:
-      return {
-        ...state,
-        budgetCategories: action.payload.categories,
-        isLoading: false
-      };
-    
-    case TRANSACTION_ACTIONS.ADD_BUDGET_CATEGORY:
-      return {
-        ...state,
-        budgetCategories: [...state.budgetCategories, action.payload],
-        isSubmitting: false
-      };
-    
-    case TRANSACTION_ACTIONS.UPDATE_BUDGET_CATEGORY:
-      return {
-        ...state,
-        budgetCategories: state.budgetCategories.map(c => 
-          c.id === action.payload.id ? action.payload : c
-        ),
-        isSubmitting: false
-      };
-    
-    case TRANSACTION_ACTIONS.DELETE_BUDGET_CATEGORY:
-      return {
-        ...state,
-        budgetCategories: state.budgetCategories.filter(c => c.id !== action.payload),
-        isSubmitting: false
-      };
-    
-    case TRANSACTION_ACTIONS.SET_ANALYTICS:
-      return {
-        ...state,
-        spendingAnalytics: action.payload,
-        isLoading: false
-      };
-    
-    case TRANSACTION_ACTIONS.SET_BUDGET_OVERVIEW:
-      return {
-        ...state,
-        budgetOverview: action.payload.summary,
-        budgetCategories: action.payload.categories,
-        isLoading: false
-      };
-    
-    default:
-      return state;
-  }
-};
+        body: JSON.stringify(assetData)
+      });
 
-// Provider component
-export const TransactionProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(transactionReducer, initialState);
-
-  // Error handling utility
-  const handleError = useCallback((error) => {
-    console.error('Transaction Context Error:', error);
-    const errorMessage = error.response?.data?.detail || error.message || 'An unexpected error occurred';
-    dispatch({ type: TRANSACTION_ACTIONS.SET_ERROR, payload: errorMessage });
+      if (!response.ok) throw new Error('Failed to create asset');
+      
+      const newAsset = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_ASSET, payload: newAsset });
+      return newAsset;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { assets: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: false } });
+    }
   }, []);
 
-  // Clear error
-  const clearError = useCallback(() => {
-    dispatch({ type: TRANSACTION_ACTIONS.CLEAR_ERROR });
+  // Expense CRUD Methods
+  const createExpense = useCallback(async (expenseData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch('/api/v1/expenses-v2/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(expenseData)
+      });
+
+      if (!response.ok) throw new Error('Failed to create expense');
+      
+      const newExpense = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_EXPENSE, payload: newExpense });
+      return newExpense;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { expenses: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: false } });
+    }
   }, []);
 
-  // Transaction operations
-  const fetchTransactions = useCallback(async (filters = {}) => {
+  const updateExpense = useCallback(async (expenseId, expenseData) => {
     try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
       
-      const params = new URLSearchParams();
-      if (filters.accountId) params.append('account_id', filters.accountId);
-      if (filters.category) params.append('category', filters.category);
-      if (filters.startDate) params.append('start_date', filters.startDate);
-      if (filters.endDate) params.append('end_date', filters.endDate);
-      if (filters.limit) params.append('limit', filters.limit);
-      if (filters.offset) params.append('offset', filters.offset);
-
-      const response = await api.get(`/transactions?${params.toString()}`);
-      dispatch({ type: TRANSACTION_ACTIONS.SET_TRANSACTIONS, payload: response.data });
-    } catch (error) {
-      handleError(error);
-    }
-  }, [handleError]);
-
-  const createTransaction = useCallback(async (transactionData) => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
-      
-      const response = await api.post('/transactions/', transactionData);
-      dispatch({ 
-        type: TRANSACTION_ACTIONS.ADD_TRANSACTION, 
-        payload: response.data.transaction 
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`/api/v1/expenses-v2/${expenseId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(expenseData)
       });
-      
-      return response.data;
-    } catch (error) {
-      handleError(error);
-      throw error;
-    }
-  }, [handleError]);
 
-  const updateTransaction = useCallback(async (transactionId, transactionData) => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
+      if (!response.ok) throw new Error('Failed to update expense');
       
-      const response = await api.put(`/transactions/${transactionId}`, transactionData);
-      dispatch({ 
-        type: TRANSACTION_ACTIONS.UPDATE_TRANSACTION, 
-        payload: response.data.transaction 
+      const updatedExpense = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_EXPENSE, payload: updatedExpense });
+      return updatedExpense;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { expenses: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: false } });
+    }
+  }, []);
+
+  const deleteExpense = useCallback(async (expenseId) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`/api/v1/expenses-v2/${expenseId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
-      
-      return response.data;
-    } catch (error) {
-      handleError(error);
-      throw error;
-    }
-  }, [handleError]);
 
-  const deleteTransaction = useCallback(async (transactionId) => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
+      if (!response.ok) throw new Error('Failed to delete expense');
       
-      await api.delete(`/transactions/${transactionId}`);
-      dispatch({ 
-        type: TRANSACTION_ACTIONS.DELETE_TRANSACTION, 
-        payload: transactionId 
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_EXPENSE, payload: expenseId });
+      return expenseId;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { expenses: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: false } });
+    }
+  }, []);
+
+  // Income CRUD Methods
+  const createIncome = useCallback(async (incomeData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch('/api/v1/income-v2/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(incomeData)
       });
-    } catch (error) {
-      handleError(error);
-      throw error;
-    }
-  }, [handleError]);
 
-  const importTransactionsCSV = useCallback(async (file, accountId = null) => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
+      if (!response.ok) throw new Error('Failed to create income');
       
-      const formData = new FormData();
-      formData.append('file', file);
-      if (accountId) formData.append('account_id', accountId);
+      const newIncome = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_INCOME_SOURCE, payload: newIncome });
+      return newIncome;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { income: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: false } });
+    }
+  }, []);
 
-      const response = await api.post('/transactions/import/csv', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+  const updateIncome = useCallback(async (incomeId, incomeData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: true } });
+      
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`/api/v1/income-v2/${incomeId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(incomeData)
       });
+
+      if (!response.ok) throw new Error('Failed to update income');
       
-      // Refresh transactions after import
-      await fetchTransactions();
-      
-      return response.data;
+      const updatedIncome = await response.json();
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_INCOME_SOURCE, payload: updatedIncome });
+      return updatedIncome;
     } catch (error) {
-      handleError(error);
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { income: error.message } });
       throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: false } });
     }
-  }, [handleError, fetchTransactions]);
+  }, []);
 
-  // Account operations
-  const fetchAccounts = useCallback(async () => {
+  const deleteIncome = useCallback(async (incomeId) => {
     try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: true } });
       
-      const response = await api.get('/accounts/');
-      dispatch({ type: TRANSACTION_ACTIONS.SET_ACCOUNTS, payload: response.data });
-    } catch (error) {
-      handleError(error);
-    }
-  }, [handleError]);
-
-  const createAccount = useCallback(async (accountData) => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
-      
-      const response = await api.post('/accounts/', accountData);
-      dispatch({ 
-        type: TRANSACTION_ACTIONS.ADD_ACCOUNT, 
-        payload: response.data.account 
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`/api/v1/income-v2/${incomeId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
+
+      if (!response.ok) throw new Error('Failed to delete income');
       
-      return response.data;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_INCOME_SOURCE, payload: incomeId });
+      return incomeId;
     } catch (error) {
-      handleError(error);
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { income: error.message } });
       throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: false } });
     }
-  }, [handleError]);
+  }, []);
 
-  const updateAccount = useCallback(async (accountId, accountData) => {
+  const fetchAllFinancialData = useCallback(async () => {
     try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: true } });
       
-      const response = await api.put(`/accounts/${accountId}`, accountData);
-      dispatch({ 
-        type: TRANSACTION_ACTIONS.UPDATE_ACCOUNT, 
-        payload: response.data.account 
-      });
+      const token = localStorage.getItem('jwt');
       
-      return response.data;
+      // Fetch all financial data in parallel
+      const [assetsRes, liabilitiesRes, incomesRes, expensesRes, goalsRes] = await Promise.all([
+        fetch('/api/v1/assets-v2/', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/v1/liabilities-v2/', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/v1/income-v2/', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/v1/expenses-v2/', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch('/api/v1/goals-v2/', { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+
+      if (assetsRes.ok) {
+        const assets = await assetsRes.json();
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ASSETS, payload: assets });
+      }
+
+      if (liabilitiesRes.ok) {
+        const liabilities = await liabilitiesRes.json();
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES, payload: liabilities });
+      }
+
+      if (incomesRes.ok) {
+        const incomes = await incomesRes.json();
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: incomes });
+      }
+
+      if (expensesRes.ok) {
+        const expenses = await expensesRes.json();
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES, payload: expenses });
+      }
+
+      if (goalsRes.ok) {
+        const goals = await goalsRes.json();
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: goals });
+      }
+
     } catch (error) {
-      handleError(error);
-      throw error;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { global: error.message } });
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: false } });
     }
-  }, [handleError]);
+  }, []);
 
-  const deleteAccount = useCallback(async (accountId, force = false) => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
-      
-      await api.delete(`/accounts/${accountId}?force=${force}`);
-      dispatch({ 
-        type: TRANSACTION_ACTIONS.DELETE_ACCOUNT, 
-        payload: accountId 
-      });
-    } catch (error) {
-      handleError(error);
-      throw error;
-    }
-  }, [handleError]);
+  // Load data on mount
+  React.useEffect(() => {
+    fetchAllFinancialData();
+  }, [fetchAllFinancialData]);
 
-  // Budget operations
-  const fetchBudgetOverview = useCallback(async (period = 'month') => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
-      
-      const response = await api.get(`/budget/overview?period=${period}`);
-      dispatch({ type: TRANSACTION_ACTIONS.SET_BUDGET_OVERVIEW, payload: response.data });
-    } catch (error) {
-      handleError(error);
-    }
-  }, [handleError]);
-
-  const fetchBudgetCategories = useCallback(async () => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
-      
-      const response = await api.get('/budget/categories');
-      dispatch({ type: TRANSACTION_ACTIONS.SET_BUDGET_CATEGORIES, payload: response.data });
-    } catch (error) {
-      handleError(error);
-    }
-  }, [handleError]);
-
-  const createBudgetCategory = useCallback(async (categoryData) => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
-      
-      const response = await api.post('/budget/categories', categoryData);
-      dispatch({ 
-        type: TRANSACTION_ACTIONS.ADD_BUDGET_CATEGORY, 
-        payload: response.data.category 
-      });
-      
-      return response.data;
-    } catch (error) {
-      handleError(error);
-      throw error;
-    }
-  }, [handleError]);
-
-  const updateBudgetCategory = useCallback(async (categoryId, categoryData) => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
-      
-      const response = await api.put(`/budget/categories/${categoryId}`, categoryData);
-      dispatch({ 
-        type: TRANSACTION_ACTIONS.UPDATE_BUDGET_CATEGORY, 
-        payload: response.data.category 
-      });
-      
-      return response.data;
-    } catch (error) {
-      handleError(error);
-      throw error;
-    }
-  }, [handleError]);
-
-  const deleteBudgetCategory = useCallback(async (categoryId) => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
-      
-      await api.delete(`/budget/categories/${categoryId}`);
-      dispatch({ 
-        type: TRANSACTION_ACTIONS.DELETE_BUDGET_CATEGORY, 
-        payload: categoryId 
-      });
-    } catch (error) {
-      handleError(error);
-      throw error;
-    }
-  }, [handleError]);
-
-  // Analytics operations
-  const fetchSpendingAnalytics = useCallback(async (period = 'month') => {
-    try {
-      dispatch({ type: TRANSACTION_ACTIONS.SET_LOADING, payload: true });
-      
-      const response = await api.get(`/transactions/analytics/spending?period=${period}`);
-      dispatch({ type: TRANSACTION_ACTIONS.SET_ANALYTICS, payload: response.data });
-    } catch (error) {
-      handleError(error);
-    }
-  }, [handleError]);
-
-  const getBudgetComparison = useCallback(async (period = 'month') => {
-    try {
-      const response = await api.get(`/transactions/budget-comparison?period=${period}`);
-      return response.data;
-    } catch (error) {
-      handleError(error);
-      throw error;
-    }
-  }, [handleError]);
-
-  // Utility functions
-  const getAccountBalance = useCallback((accountId) => {
-    const account = state.accounts.find(a => a.id === accountId);
-    return account ? account.balance : 0;
-  }, [state.accounts]);
-
-  const getCategoryBudget = useCallback((categoryName) => {
-    const category = state.budgetCategories.find(c => c.name === categoryName);
-    return category ? category.budgeted_amount : 0;
-  }, [state.budgetCategories]);
-
-  const getCategoryActual = useCallback((categoryName) => {
-    const category = state.budgetCategories.find(c => c.name === categoryName);
-    return category ? category.actual_amount : 0;
-  }, [state.budgetCategories]);
-
-  // Context value
   const value = {
     // State
     ...state,
     
-    // Transaction operations
-    fetchTransactions,
-    createTransaction,
-    updateTransaction,
-    deleteTransaction,
-    importTransactionsCSV,
-    
-    // Account operations
-    fetchAccounts,
-    createAccount,
-    updateAccount,
-    deleteAccount,
-    
-    // Budget operations
-    fetchBudgetOverview,
-    fetchBudgetCategories,
-    createBudgetCategory,
-    updateBudgetCategory,
-    deleteBudgetCategory,
-    
-    // Analytics
-    fetchSpendingAnalytics,
-    getBudgetComparison,
-    
-    // Utilities
-    getAccountBalance,
-    getCategoryBudget,
-    getCategoryActual,
-    clearError
+    // Actions
+    createAsset,
+    createExpense,
+    updateExpense,
+    deleteExpense,
+    createIncome,
+    updateIncome,
+    deleteIncome,
+    fetchAllFinancialData
   };
 
   return (
-    <TransactionContext.Provider value={value}>
+    <UnifiedFinancialContext.Provider value={value}>
       {children}
-    </TransactionContext.Provider>
+    </UnifiedFinancialContext.Provider>
   );
 };
 
-// Custom hook to use the context
-export const useTransactions = () => {
-  const context = useContext(TransactionContext);
+// Custom hook to use the unified context
+export const useUnifiedFinancialContext = () => {
+  const context = useContext(UnifiedFinancialContext);
   if (!context) {
-    throw new Error('useTransactions must be used within a TransactionProvider');
+    throw new Error('useUnifiedFinancialContext must be used within a UnifiedFinancialProvider');
   }
   return context;
 };
 
-export default TransactionContext;

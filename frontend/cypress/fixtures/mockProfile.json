@@ -1,0 +1,14 @@
+{
+  "id": 1,
+  "email": "richard.macharia@testuser.com",
+  "first_name": "Richard",
+  "last_name": "Macharia",
+  "age": 31,
+  "monthly_income": 325000,
+  "profile": {
+    "monthly_income": 325000,
+    "age": 31
+  },
+  "created_at": "2024-01-01T08:00:00Z",
+  "updated_at": "2024-01-01T08:00:00Z"
+}

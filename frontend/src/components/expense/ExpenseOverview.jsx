@@ -1,76 +1,86 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../../api';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import MessageBox from '../MessageBox';
 
 const ExpenseOverview = ({ onNextScreen }) => {
+  // Use UnifiedFinancialContext instead of direct API calls
+  const {
+    expenses,
+    loading,
+    createExpense,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+
   const [message, setMessage] = useState('');
   const [showMessageBox, setShowMessageBox] = useState(false);
   const [overview, setOverview] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
 
   const [newExpense, setNewExpense] = useState({
-    name: '',
+    description: '',
     amount: '',
-    category: 'other'
+    expense_type: 'other',
+    frequency: 'monthly',
+    is_recurring: true
   });
 
-  const fetchExpenseData = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      // Get onboarding data which contains expense information
-      const response = await api.get('/api/v1/onboarding/state');
-      const onboardingData = response.data;
-      
-      if (onboardingData && onboardingData.financial_data) {
-        const financialData = onboardingData.financial_data;
-        
-        // Calculate total monthly expenses
-        const standardExpenses = [
-          { name: 'Rent', amount: financialData.rent || 0, category: 'housing' },
-          { name: 'Utilities', amount: financialData.utilities || 0, category: 'utilities' },
-          { name: 'Groceries', amount: financialData.groceries || 0, category: 'food' },
-          { name: 'Transport', amount: financialData.transport || 0, category: 'transportation' },
-          { name: 'Loan Repayments', amount: financialData.loanRepayments || 0, category: 'debt' }
-        ].filter(expense => expense.amount > 0);
-        
-        const customExpenses = (financialData.customExpenses || []).map(expense => ({
-          name: expense.name,
-          amount: expense.amount,
-          category: 'custom',
-          id: expense.id
-        }));
-        
-        const allExpenses = [...standardExpenses, ...customExpenses];
-        const totalMonthlyExpenses = allExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-        
-        // Calculate expense breakdown by category
-        const categoryBreakdown = allExpenses.reduce((breakdown, expense) => {
-          breakdown[expense.category] = (breakdown[expense.category] || 0) + expense.amount;
-          return breakdown;
-        }, {});
-        
-        setOverview({
-          totalMonthlyExpenses,
-          expenses: allExpenses,
-          categoryBreakdown,
-          expenseCount: allExpenses.length,
-          monthlyIncome: financialData.monthlyIncome || 0,
-          expenseToIncomeRatio: financialData.monthlyIncome > 0 ? (totalMonthlyExpenses / financialData.monthlyIncome * 100) : 0
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching expense data:', err);
-      showActionMessage(`Error: ${err.message}`);
-    } finally {
-      setLoading(false);
+  const calculateOverview = React.useCallback(() => {
+    if (expenses.length === 0) return;
+
+    // Calculate total monthly expenses from unified context
+    const totalMonthlyExpenses = expenses.reduce((sum, expense) => {
+      const monthlyAmount = calculateMonthlyAmount(expense);
+      return sum + monthlyAmount;
+    }, 0);
+
+    // Calculate expense breakdown by category
+    const categoryBreakdown = expenses.reduce((breakdown, expense) => {
+      const category = expense.expense_type || 'other';
+      const monthlyAmount = calculateMonthlyAmount(expense);
+      breakdown[category] = (breakdown[category] || 0) + monthlyAmount;
+      return breakdown;
+    }, {});
+
+    setOverview({
+      totalMonthlyExpenses,
+      expenses: expenses.map(expense => ({
+        name: expense.description,
+        amount: calculateMonthlyAmount(expense),
+        category: expense.expense_type || 'other',
+        id: expense.id
+      })),
+      categoryBreakdown,
+      expenseCount: expenses.length,
+      expenseToIncomeRatio: 0 // Will be calculated when income context is available
+    });
+  }, [expenses]);
+
+  const calculateMonthlyAmount = (expense) => {
+    const amount = expense.amount;
+    switch (expense.frequency) {
+      case 'daily': return amount * 30;
+      case 'weekly': return amount * 4.33;
+      case 'monthly': return amount;
+      case 'quarterly': return amount / 3;
+      case 'annually': return amount / 12;
+      default: return amount;
     }
-  }, []);
+  };
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') return;
-    fetchExpenseData();
-  }, [fetchExpenseData]);
+    // Load all financial data from unified context
+    if (expenses.length === 0) {
+      fetchAllFinancialData().catch(error => {
+        console.error('Error loading financial data:', error);
+        showActionMessage(`Error: ${error.message}`);
+      });
+    }
+  }, [expenses.length, fetchAllFinancialData]);
+
+  useEffect(() => {
+    calculateOverview();
+  }, [calculateOverview]);
 
   const showActionMessage = (msg) => {
     setMessage(msg);
@@ -79,18 +89,30 @@ const ExpenseOverview = ({ onNextScreen }) => {
   };
 
   const handleAddExpense = async () => {
-    if (!newExpense.name || !newExpense.amount) {
+    if (!newExpense.description || !newExpense.amount) {
       showActionMessage('Please fill in all fields');
       return;
     }
 
     try {
-      // For now, just show success message since we'd need to update onboarding data
-      showActionMessage(`Expense "${newExpense.name}" would be added (integration pending)`);
+      const expenseData = {
+        description: newExpense.description,
+        amount: parseFloat(newExpense.amount),
+        expense_type: newExpense.expense_type,
+        frequency: newExpense.frequency,
+        is_recurring: newExpense.is_recurring
+      };
+
+      await createExpense(expenseData);
+      showActionMessage(`Expense "${newExpense.description}" added successfully!`);
       setShowAddForm(false);
-      setNewExpense({ name: '', amount: '', category: 'other' });
-      // Refresh data would go here
-      fetchExpenseData();
+      setNewExpense({
+        description: '',
+        amount: '',
+        expense_type: 'other',
+        frequency: 'monthly',
+        is_recurring: true
+      });
     } catch (error) {
       showActionMessage(`Error adding expense: ${error.message}`);
     }
@@ -113,7 +135,7 @@ const ExpenseOverview = ({ onNextScreen }) => {
     return colors[category] || colors.other;
   };
 
-  if (loading) {
+  if (loading.expenses || loading.global) {
     return (
       <div className="expense-overview flex items-center justify-center h-64">
         <div className="text-center">
@@ -155,10 +177,11 @@ const ExpenseOverview = ({ onNextScreen }) => {
             </div>
             
             <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-green-500">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Surplus/Deficit</h3>
-              <p className={`text-2xl font-bold ${overview.monthlyIncome - overview.totalMonthlyExpenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatAmount(overview.monthlyIncome - overview.totalMonthlyExpenses)}
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Total Expenses</h3>
+              <p className="text-2xl font-bold text-red-600">
+                {formatAmount(overview.totalMonthlyExpenses)}
               </p>
+              <p className="text-sm text-gray-500">{overview.expenseCount} expenses</p>
             </div>
           </div>
         )}
@@ -240,11 +263,11 @@ const ExpenseOverview = ({ onNextScreen }) => {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Expense Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expense Description</label>
                   <input
                     type="text"
-                    value={newExpense.name}
-                    onChange={(e) => setNewExpense({...newExpense, name: e.target.value})}
+                    value={newExpense.description}
+                    onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., Internet Bill"
                   />
@@ -262,17 +285,20 @@ const ExpenseOverview = ({ onNextScreen }) => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expense Type</label>
                   <select
-                    value={newExpense.category}
-                    onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
+                    value={newExpense.expense_type}
+                    onChange={(e) => setNewExpense({...newExpense, expense_type: e.target.value})}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="housing">Housing</option>
                     <option value="utilities">Utilities</option>
-                    <option value="food">Food & Dining</option>
+                    <option value="food_dining">Food & Dining</option>
                     <option value="transportation">Transportation</option>
-                    <option value="debt">Debt Payments</option>
+                    <option value="debt_payments">Debt Payments</option>
+                    <option value="healthcare">Healthcare</option>
+                    <option value="insurance">Insurance</option>
+                    <option value="entertainment">Entertainment</option>
                     <option value="other">Other</option>
                   </select>
                 </div>

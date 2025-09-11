@@ -8,14 +8,24 @@ import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Plus, Edit, Trash2, TrendingDown } from '../ui/icons';
 import { formatCurrency } from '../../utils/formatters';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const ExpenseManagement = () => {
-  const [expenses, setExpenses] = useState([]);
-  const [assets, setAssets] = useState([]);
-  const [liabilities, setLiabilities] = useState([]);
+  // Use UnifiedFinancialContext instead of local state
+  const {
+    expenses,
+    assets,
+    liabilities,
+    loading,
+    createExpense,
+    updateExpense,
+    deleteExpense,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+
+  // Local UI state only
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -64,81 +74,19 @@ const ExpenseManagement = () => {
     { value: 'other', label: 'Other' }
   ];
 
+  // Load all financial data on component mount
   useEffect(() => {
-    fetchExpenses();
-    fetchAssets();
-    fetchLiabilities();
-  }, []);
-
-  const fetchExpenses = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/v1/expenses-v2/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+    if (expenses.length === 0 || assets.length === 0 || liabilities.length === 0) {
+      fetchAllFinancialData().catch(error => {
+        console.error('Error loading financial data:', error);
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setExpenses(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch expenses:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [expenses.length, assets.length, liabilities.length, fetchAllFinancialData]);
 
-  const fetchAssets = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/v1/assets-v2/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAssets(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch assets:', error);
-    }
-  };
-
-  const fetchLiabilities = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/v1/liabilities/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setLiabilities(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch liabilities:', error);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('accessToken');
-      const url = editingExpense 
-        ? `/api/v1/expenses-v2/${editingExpense.id}` 
-        : '/api/v1/expenses-v2/';
-      
-      const method = editingExpense ? 'PUT' : 'POST';
-      
       const payload = {
         ...formData,
         amount: parseFloat(formData.amount),
@@ -147,21 +95,15 @@ const ExpenseManagement = () => {
         total_payments_remaining: formData.total_payments_remaining ? parseInt(formData.total_payments_remaining) : null
       };
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        await fetchExpenses();
-        setIsFormOpen(false);
-        setEditingExpense(null);
-        resetForm();
+      if (editingExpense) {
+        await updateExpense(editingExpense.id, payload);
+      } else {
+        await createExpense(payload);
       }
+
+      setIsFormOpen(false);
+      setEditingExpense(null);
+      resetForm();
     } catch (error) {
       console.error('Failed to save expense:', error);
     }
@@ -190,17 +132,7 @@ const ExpenseManagement = () => {
     if (!window.confirm('Are you sure you want to delete this expense?')) return;
     
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/v1/expenses-v2/${expenseId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      });
-
-      if (response.ok) {
-        await fetchExpenses();
-      }
+      await deleteExpense(expenseId);
     } catch (error) {
       console.error('Failed to delete expense:', error);
     }
@@ -248,7 +180,7 @@ const ExpenseManagement = () => {
   const getRelatedAsset = (assetId) => assets.find(asset => asset.id === assetId);
   const getRelatedLiability = (liabilityId) => liabilities.find(liability => liability.id === liabilityId);
 
-  if (loading) {
+  if (loading.expenses || loading.global) {
     return <div className="flex justify-center items-center h-64">Loading expenses...</div>;
   }
 

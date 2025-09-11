@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Plus, TrendingUp, TrendingDown, DollarSign, PieChart, AlertCircle } from '../ui/icons';
@@ -23,11 +23,7 @@ const AssetDashboard = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
 
-  useEffect(() => {
-    calculateAssetsSummary();
-  }, [assets]);
-
-  const calculateAssetsSummary = () => {
+  const calculateAssetsSummary = useCallback(() => {
     if (!assets || assets.length === 0) {
       setSummary({
         total_current_value: 0,
@@ -82,7 +78,11 @@ const AssetDashboard = () => {
       risk_assessment: riskAssessment,
       diversification_score: diversificationScore
     });
-  };
+  }, [assets]);
+
+  useEffect(() => {
+    calculateAssetsSummary();
+  }, [calculateAssetsSummary]);
 
   const handleAssetCreated = (newAsset) => {
     setShowAssetForm(false);

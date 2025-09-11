@@ -1,0 +1,26 @@
+{
+  "income_sources": [
+    {
+      "id": 1,
+      "name": "Software Engineer Salary",
+      "income_type": "salary",
+      "monthly_amount": 250000,
+      "description": "Full-time software engineer position",
+      "created_at": "2024-01-01T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "name": "Freelance Consulting",
+      "income_type": "consulting",
+      "monthly_amount": 75000,
+      "description": "Part-time consulting work",
+      "created_at": "2024-02-15T16:00:00Z"
+    }
+  ],
+  "total_monthly_income": 325000,
+  "overview": {
+    "primary_income": 250000,
+    "secondary_income": 75000,
+    "income_stability": "stable"
+  }
+}

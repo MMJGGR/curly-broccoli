@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { getIncomeOverview, createIncomeSource } from '../../api';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import MessageBox from '../MessageBox';
 
 const IncomeOverview = ({ onNextScreen }) => {
+  // Use UnifiedFinancialContext instead of direct API calls
+  const {
+    incomeSource,
+    loading,
+    createIncome,
+    fetchAllFinancialData
+  } = useUnifiedFinancialContext();
+
   const [message, setMessage] = useState('');
   const [showMessageBox, setShowMessageBox] = useState(false);
   const [overview, setOverview] = useState(null);
-  const [sources, setSources] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
 
   const [newSource, setNewSource] = useState({
@@ -17,25 +23,52 @@ const IncomeOverview = ({ onNextScreen }) => {
     source_type: 'salary'
   });
 
-  const fetchIncomeData = React.useCallback(async () => {
-    try {
-      setLoading(true);
-      const overviewData = await getIncomeOverview();
-      
-      setOverview(overviewData);
-      setSources(overviewData.income_sources || []);
-    } catch (err) {
-      console.error('Error fetching income data:', err);
-      showActionMessage(`Error: ${err.message}`);
-    } finally {
-      setLoading(false);
+  const calculateOverview = React.useCallback(() => {
+    if (incomeSource.length === 0) {
+      setOverview(null);
+      return;
     }
-  }, []);
+
+    // Calculate overview from unified context income data
+    const totalMonthlyIncome = incomeSource.reduce((sum, income) => {
+      return sum + (income.monthly_equivalent?.amount || income.monthly_amount || 0);
+    }, 0);
+
+    const totalAnnualIncome = totalMonthlyIncome * 12;
+    
+    // Calculate stability score (simple average for now)
+    const avgStabilityScore = incomeSource.reduce((sum, income) => {
+      return sum + (income.stability_score || 5);
+    }, 0) / incomeSource.length;
+
+    setOverview({
+      total_monthly_income: {
+        amount: totalMonthlyIncome,
+        currency: 'KES'
+      },
+      total_annual_income: {
+        amount: totalAnnualIncome,
+        currency: 'KES'
+      },
+      stability_score: avgStabilityScore,
+      income_sources: incomeSource
+    });
+  }, [incomeSource]);
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') return;
-    fetchIncomeData();
-  }, [fetchIncomeData]);
+    // Load all financial data from unified context
+    if (incomeSource.length === 0) {
+      fetchAllFinancialData().catch(error => {
+        console.error('Error loading financial data:', error);
+        showActionMessage(`Error: ${error.message}`);
+      });
+    }
+  }, [incomeSource.length, fetchAllFinancialData]);
+
+  useEffect(() => {
+    calculateOverview();
+  }, [calculateOverview]);
 
   const showActionMessage = (message) => {
     setMessage(message);
@@ -63,7 +96,7 @@ const IncomeOverview = ({ onNextScreen }) => {
         source_type: newSource.source_type
       };
 
-      await createIncomeSource(null, sourceData);
+      await createIncome(sourceData);
       showActionMessage('Income source added successfully!');
       
       // Reset form and refresh data
@@ -74,7 +107,6 @@ const IncomeOverview = ({ onNextScreen }) => {
         source_type: 'salary'
       });
       setShowAddForm(false);
-      await fetchIncomeData();
       
     } catch (err) {
       console.error('Error adding income source:', err);
@@ -179,7 +211,7 @@ const IncomeOverview = ({ onNextScreen }) => {
     return recommendations;
   };
 
-  if (loading) {
+  if (loading.income || loading.global) {
     return (
       <div className="bg-gray-100 min-h-screen flex items-center justify-center">
         <div className="text-xl text-gray-600">Loading income data...</div>
@@ -351,8 +383,8 @@ const IncomeOverview = ({ onNextScreen }) => {
 
         {/* Income Sources List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sources.length > 0 ? (
-            sources.map((source, index) => (
+          {incomeSource.length > 0 ? (
+            incomeSource.map((source, index) => (
               <div key={source.id || index} className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex justify-between items-start mb-3">
                   <h3 className="text-lg font-semibold text-gray-800">{source.source_name || source.name}</h3>

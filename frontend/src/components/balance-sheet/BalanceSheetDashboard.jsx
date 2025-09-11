@@ -35,6 +35,9 @@ const BalanceSheetDashboard = () => {
   const [balanceSheetData, setBalanceSheetData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Create profileData for legacy compatibility throughout component
+  const profileData = profile ? { profile: profile } : null;
   const [showRateOverride, setShowRateOverride] = useState(false);
   const [customRates, setCustomRates] = useState({
     incomeDiscountRate: 12.5,

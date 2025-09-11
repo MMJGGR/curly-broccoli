@@ -23,6 +23,15 @@ async def income_health_check():
     }
 
 
+@router.get("/", response_model=Dict[str, Any])
+async def get_income_v2(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Root endpoint - Get income overview (same as /overview)"""
+    return await get_income_overview_v2(current_user, db)
+
+
 @router.get("/overview")
 async def get_income_overview_v2(
     current_user: User = Depends(get_current_user),

@@ -79,7 +79,15 @@
       "Read(/C:\\Users\\Richard\\curly-broccoli/**)",
       "Bash(copy scriptsvalidate-ui-components.js scriptsvalidate-ui-components.cjs)",
       "Bash(find:*)",
-      "Bash(del \"C:\\Users\\Richard\\curly-broccoli\\CHANGE_REQUEST_CR003_TRANSACTION_CONTEXT_UNIFICATION.md\")"
+      "Bash(del \"C:\\Users\\Richard\\curly-broccoli\\CHANGE_REQUEST_CR003_TRANSACTION_CONTEXT_UNIFICATION.md\")",
+      "Bash(NODE_ENV=development npm run lint)",
+      "Bash(NODE_ENV=development npm run lint -- src/contexts/TransactionContext.js)",
+      "Bash(NODE_ENV=development npm run build)",
+      "Bash(timeout 300 npx cypress run --spec \"cypress/e2e/cr004-phase2-validation.cy.js\")",
+      "Bash(timeout 60 npx cypress run:*)",
+      "Bash(docker system prune:*)",
+      "Bash(docker logs:*)",
+      "Bash(timeout 30 npm run simple-login-test)"
     ],
     "deny": [],
     "ask": []

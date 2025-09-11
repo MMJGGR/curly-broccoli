@@ -516,3 +516,171 @@ Cypress.Commands.add('completeOnboardingWithIncompleteData', (data) => {
 Cypress.Commands.add('cleanupTestData', () => {
   cy.task('db:cleanup');
 });
+
+// API Mocking Commands for UnifiedFinancialContext Testing
+Cypress.Commands.add('setupMockAPI', () => {
+  // Mock financial data endpoints with realistic data
+  cy.intercept('GET', '**/api/v1/assets-v2/', { 
+    statusCode: 200, 
+    body: {
+      "assets": [
+        {
+          "id": 1,
+          "name": "Family Home",
+          "asset_type": "real_estate",
+          "current_value": 15000000,
+          "description": "Primary residence in Nairobi"
+        }
+      ],
+      "summary": { "total_current_value": 15000000 }
+    }
+  });
+  
+  cy.intercept('GET', '**/api/v1/liabilities-v2/', { 
+    statusCode: 200, 
+    body: { "liabilities": [], "total_liabilities": 0 }
+  });
+  
+  cy.intercept('GET', '**/api/v1/income-v2/', { 
+    statusCode: 200, 
+    body: { "income_sources": [], "total_monthly_income": 325000 }
+  });
+  
+  cy.intercept('GET', '**/api/v1/expenses-v2/', { 
+    statusCode: 200, 
+    body: { "expenses": [], "summary": { "monthly_recurring_total": { "amount": 200000 } } }
+  });
+  
+  cy.intercept('GET', '**/api/v1/goals-v2/', { 
+    statusCode: 200, 
+    body: { "goals": [] }
+  });
+  
+  cy.intercept('GET', '**/api/v1/profile-v2/', { 
+    statusCode: 200, 
+    body: { "monthly_income": 325000, "age": 31 }
+  });
+  
+  // Mock auth endpoints
+  cy.intercept('POST', '**/api/v1/login', {
+    statusCode: 200,
+    body: { access_token: 'mock-jwt-token', token_type: 'bearer' }
+  });
+  
+  cy.intercept('GET', '**/api/v1/onboarding/status', {
+    statusCode: 200,
+    body: { is_complete: true }
+  });
+});
+
+// Enhanced login command for mock mode
+Cypress.Commands.add('loginMock', () => {
+  // Mock authentication by setting localStorage
+  cy.window().then((win) => {
+    win.localStorage.setItem('accessToken', 'mock-jwt-token');
+    win.localStorage.setItem('user', JSON.stringify({
+      id: 1,
+      email: 'test@example.com',
+      name: 'Test User'
+    }));
+  });
+  
+  // Go directly to dashboard
+  cy.visit('/app/dashboard');
+});
+
+// Context and State Commands
+Cypress.Commands.add('waitForContextLoad', () => {
+  // Wait for UnifiedFinancialContext to load
+  cy.get('[data-testid="loading-spinner"]', { timeout: 1000 }).should('not.exist');
+  cy.wait(1000); // Give context time to initialize
+});
+
+// Navigation Commands
+Cypress.Commands.add('navigateTo', (section) => {
+  const routes = {
+    'dashboard': '/app/dashboard',
+    'assets': '/app/assets',
+    'liabilities': '/app/balance-sheet',
+    'income': '/app/income',
+    'expenses': '/app/expenses',
+    'goals': '/app/tools',
+    'profile': '/app/profile'
+  };
+  
+  if (routes[section]) {
+    cy.visit(routes[section]);
+  } else {
+    throw new Error(`Unknown section: ${section}`);
+  }
+});
+
+// Assertion helpers
+Cypress.Commands.add('shouldShowNoErrors', () => {
+  cy.get('body').should('not.contain', 'Error loading');
+  cy.get('body').should('not.contain', 'Failed to fetch');
+  cy.get('body').should('not.contain', 'Something went wrong');
+  cy.get('[data-testid="error-message"]').should('not.exist');
+});
+
+// Performance testing helpers
+Cypress.Commands.add('measurePerformance', (actionName, threshold = 3000) => {
+  const startTime = Date.now();
+  
+  return cy.then(() => ({
+    end: () => {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      cy.log(`${actionName} took ${duration}ms`);
+      expect(duration).to.be.lessThan(threshold);
+      return duration;
+    }
+  }));
+});
+
+// Cleanup Commands
+Cypress.Commands.add('cleanup', () => {
+  // In mock mode, just clear localStorage
+  cy.clearLocalStorage();
+  cy.clearCookies();
+});
+
+// Quick Login Commands for Testing
+Cypress.Commands.add('loginWithTestUser', () => {
+  const testUser = {
+    email: 'richard.macharia@testuser.com',
+    password: 'TestPassword123!'
+  };
+  
+  cy.visit('/');
+  cy.get('input[type="email"]').type(testUser.email);
+  cy.get('input[type="password"]').type(testUser.password);
+  cy.get('button[type="submit"]').contains('Login').click();
+  
+  // Wait for successful login redirect
+  cy.url({ timeout: 15000 }).should('satisfy', (url) => {
+    return url.includes('/dashboard') || url.includes('/app') || url.includes('/onboarding');
+  });
+  
+  // Verify authentication
+  cy.window().then((win) => {
+    expect(win.localStorage.getItem('jwt')).to.exist;
+  });
+  
+  cy.log('✅ Successfully logged in with test user');
+});
+
+// Verify Dashboard Access
+Cypress.Commands.add('verifyDashboardAccess', () => {
+  // Should be able to access dashboard
+  cy.visit('/app/dashboard');
+  cy.url().should('include', '/app/dashboard');
+  
+  // Should not redirect to login
+  cy.url().should('not.equal', Cypress.config().baseUrl + '/');
+  
+  // Basic dashboard elements should be present
+  cy.get('body').should('not.contain', 'Welcome Back'); // Not on login screen
+  
+  cy.log('✅ Dashboard access verified');
+});
