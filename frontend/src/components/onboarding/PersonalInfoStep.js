@@ -7,10 +7,14 @@
  * - Kenya-specific formatting
  */
 import React, { useState, useEffect } from 'react';
-import { useOnboarding } from '../../contexts/OnboardingContext';
 
-const PersonalInfoStep = () => {
-  const { personalData, updatePersonalData, saveStep, saveStatus } = useOnboarding();
+const PersonalInfoStep = ({ onboardingContext }) => {
+  const { 
+    personalData, 
+    updatePersonalData, 
+    saveStep, 
+    saveStatus 
+  } = onboardingContext || {};
   
   // Local state for form fields
   const [formData, setFormData] = useState({

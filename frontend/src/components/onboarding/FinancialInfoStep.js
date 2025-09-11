@@ -7,10 +7,14 @@
  * - Budget calculations and insights
  */
 import React, { useState, useEffect } from 'react';
-import { useOnboarding } from '../../contexts/OnboardingContext';
 
-const FinancialInfoStep = () => {
-  const { financialData, updateFinancialData, saveStep, saveStatus } = useOnboarding();
+const FinancialInfoStep = ({ onboardingContext }) => {
+  const { 
+    financialData, 
+    updateFinancialData, 
+    saveStep, 
+    saveStatus 
+  } = onboardingContext;
   
   // Local state for form fields
   const [formData, setFormData] = useState({

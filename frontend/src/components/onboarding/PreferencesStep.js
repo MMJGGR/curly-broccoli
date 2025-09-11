@@ -3,10 +3,13 @@
  * Optional preferences
  */
 import React, { useState, useEffect } from 'react';
-import { useOnboarding } from '../../contexts/OnboardingContext';
 
-const PreferencesStep = () => {
-  const { preferencesData, updatePreferencesData, saveStep } = useOnboarding();
+const PreferencesStep = ({ onboardingContext }) => {
+  const { 
+    preferencesData, 
+    updatePreferencesData, 
+    saveStep 
+  } = onboardingContext || {};
   
   const [formData, setFormData] = useState({
     notifications: preferencesData.notifications ?? true,

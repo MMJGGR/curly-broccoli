@@ -7,11 +7,15 @@
  * - Professional questionnaire design
  */
 import React, { useState, useEffect } from 'react';
-import { useOnboarding } from '../../contexts/OnboardingContext';
 import { calculateRiskScore, getRiskLevel } from '../../utils/riskCalculation';
 
-const RiskAssessmentStep = () => {
-  const { riskData, updateRiskData, saveStep, saveStatus } = useOnboarding();
+const RiskAssessmentStep = ({ onboardingContext }) => {
+  const { 
+    riskData, 
+    updateRiskData, 
+    saveStep, 
+    saveStatus 
+  } = onboardingContext || {};
   
   // Local state for questionnaire answers
   const [answers, setAnswers] = useState(riskData.questionnaire || []);

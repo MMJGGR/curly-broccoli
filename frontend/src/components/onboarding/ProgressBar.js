@@ -2,10 +2,8 @@
  * ProgressBar - Shows onboarding progress
  */
 import React from 'react';
-import { useOnboarding } from '../../contexts/OnboardingContext';
 
-const ProgressBar = () => {
-  const { currentStep, completedSteps, STEP_NAMES } = useOnboarding();
+const ProgressBar = ({ currentStep = 1, completedSteps = [], STEP_NAMES = {} }) => {
   
   const steps = [1, 2, 3, 4, 5];
   

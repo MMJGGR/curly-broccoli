@@ -7,7 +7,6 @@ import RetakeRiskQuestionnaire from './components/RetakeRiskQuestionnaire';
 
 // NEW Onboarding System
 import OnboardingWizard from './components/onboarding/OnboardingWizard';
-import { OnboardingProvider } from './contexts/OnboardingContext';
 
 // UnifiedFinancialContext Provider
 import { UnifiedFinancialProvider } from './contexts/TransactionContext';
@@ -50,12 +49,10 @@ function App() {
         <Route path="/" element={<InitialRoute />} />
         <Route path="/auth" element={<AuthScreen />} />
 
-        {/* NEW Onboarding Flow - Bulletproof Data Persistence */}
+        {/* NEW Onboarding Flow - Integrated with UnifiedFinancialContext */}
         <Route path="/onboarding" element={
           <PrivateRoute>
-            <OnboardingProvider>
-              <OnboardingWizard />
-            </OnboardingProvider>
+            <OnboardingWizard />
           </PrivateRoute>
         } />
 

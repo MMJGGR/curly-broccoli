@@ -3,10 +3,13 @@
  * CFA-compliant employment profile for discount rate calculation
  */
 import React, { useState, useEffect } from 'react';
-import { useOnboarding } from '../../contexts/OnboardingContext';
 
-const EmploymentProfileStep = () => {
-  const { employmentData, updateEmploymentData, saveStep } = useOnboarding();
+const EmploymentProfileStep = ({ onboardingContext }) => {
+  const { 
+    employmentData, 
+    updateEmploymentData, 
+    saveStep 
+  } = onboardingContext || {};
   
   const [formData, setFormData] = useState({
     industry_sector: employmentData?.industry_sector || '',

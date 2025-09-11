@@ -7,9 +7,9 @@
  * - Resume capability
  * - Phone field included
  */
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useOnboarding } from '../../contexts/OnboardingContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 // Import step components
 import PersonalInfoStep from './PersonalInfoStep';
@@ -21,7 +21,170 @@ import ProgressBar from './ProgressBar';
 import SaveIndicator from './SaveIndicator';
 
 const OnboardingWizard = () => {
+  // Use UnifiedFinancialContext for financial data
   const {
+    createIncome,
+    createExpense,
+    createGoal,
+    loading,
+    errors
+  } = useUnifiedFinancialContext();
+  
+  // Local state for onboarding flow management
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isComplete, setIsComplete] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState([]);
+  const [error, setError] = useState(null);
+  const [saveStatus, setSaveStatus] = useState({});
+  
+  // Onboarding data state
+  const [personalData, setPersonalData] = useState({});
+  const [riskData, setRiskData] = useState({});
+  const [financialData, setFinancialData] = useState({});
+  const [goalsData, setGoalsData] = useState({});
+  const [employmentData, setEmploymentData] = useState({});
+  
+  const STEP_NAMES = {
+    1: 'Personal Information',
+    2: 'Risk Assessment', 
+    3: 'Financial Information',
+    4: 'Goals',
+    5: 'Employment Profile'
+  };
+  
+  const navigate = useNavigate();
+  
+  // Helper functions for onboarding flow
+  const nextStep = () => {
+    if (currentStep < 5) {
+      setCurrentStep(prev => prev + 1);
+    }
+  };
+  
+  const previousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+  
+  const canProceedFromStep = (step) => {
+    switch (step) {
+      case 1:
+        return personalData.firstName && personalData.lastName && personalData.email;
+      case 2:
+        return riskData.riskTolerance;
+      case 3:
+        return financialData.monthlyIncome;
+      case 4:
+        return Object.keys(goalsData).length > 0;
+      case 5:
+        return true; // Employment is optional
+      default:
+        return false;
+    }
+  };
+  
+  const saveStep = async (stepNumber, stepData, isAutoSave = false, shouldUpdateStep = false) => {
+    try {
+      setSaveStatus(prev => ({ ...prev, [stepNumber]: 'saving' }));
+      
+      // Save data to UnifiedFinancialContext based on step
+      if (stepNumber === 3 && stepData) {
+        // Financial Info Step - create income sources and expenses
+        if (stepData.monthlyIncome) {
+          await createIncome({
+            source_name: 'Primary Income',
+            amount: stepData.monthlyIncome,
+            frequency: stepData.incomeFrequency || 'monthly',
+            is_recurring: true
+          });
+        }
+        
+        // Create expense entries for common expenses
+        const expenseTypes = ['rent', 'utilities', 'groceries', 'transport', 'loanRepayments'];
+        for (const expenseType of expenseTypes) {
+          if (stepData[expenseType] && stepData[expenseType] > 0) {
+            await createExpense({
+              description: expenseType.charAt(0).toUpperCase() + expenseType.slice(1),
+              amount: stepData[expenseType],
+              expense_type: expenseType,
+              expense_date: new Date().toISOString(),
+              is_recurring: true,
+              frequency_months: 1
+            });
+          }
+        }
+      }
+      
+      if (stepNumber === 4 && stepData) {
+        // Goals Step - create goals in UnifiedFinancialContext
+        const goalTypes = ['emergencyFund', 'homeDownPayment', 'education', 'retirement', 'investment', 'debtPayoff'];
+        for (const goalType of goalTypes) {
+          if (stepData[goalType] && stepData[goalType] > 0) {
+            await createGoal({
+              name: goalType.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+              target_amount: stepData[goalType],
+              current_amount: 0,
+              target_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+              description: `${goalType} goal from onboarding`
+            });
+          }
+        }
+      }
+      
+      // Mark step as completed
+      if (!completedSteps.includes(stepNumber)) {
+        setCompletedSteps(prev => [...prev, stepNumber]);
+      }
+      
+      setSaveStatus(prev => ({ ...prev, [stepNumber]: 'saved' }));
+      return { success: true };
+    } catch (error) {
+      console.error(`Error saving step ${stepNumber}:`, error);
+      setSaveStatus(prev => ({ ...prev, [stepNumber]: 'error' }));
+      setError(error.message);
+      return { success: false, error: error.message };
+    }
+  };
+  
+  const completeOnboarding = async () => {
+    try {
+      // Mark onboarding as complete
+      setIsComplete(true);
+      return { success: true };
+    } catch (error) {
+      setError(error.message);
+      return { success: false, error: error.message };
+    }
+  };
+  
+  const clearError = () => {
+    setError(null);
+  };
+  
+  const forceSaveAllSteps = async () => {
+    console.log('Force saving all onboarding data to UnifiedFinancialContext...');
+    try {
+      await saveStep(3, financialData);
+      await saveStep(4, goalsData);
+    } catch (error) {
+      console.error('Error force saving:', error);
+    }
+  };
+  
+  // Handle onboarding completion
+  useEffect(() => {
+    if (isComplete) {
+      // Navigate to dashboard after short delay
+      setTimeout(() => {
+        navigate('/app/dashboard', { replace: true });
+      }, 1500);
+    }
+  }, [isComplete, navigate]);
+  
+  // Create context value for step components
+  const isLoading = loading?.global || false;
+  const onboardingContextValue = {
     currentStep,
     isComplete,
     isLoading,
@@ -40,36 +203,32 @@ const OnboardingWizard = () => {
     saveStep,
     clearError,
     forceSaveAllSteps,
-    STEP_NAMES
-  } = useOnboarding();
+    STEP_NAMES,
+    // Data update functions
+    updatePersonalData: setPersonalData,
+    updateRiskData: setRiskData,
+    updateFinancialData: setFinancialData,
+    updateGoalsData: setGoalsData,
+    updateEmploymentData: setEmploymentData
+  };
   
-  const navigate = useNavigate();
-  
-  // Handle onboarding completion
-  useEffect(() => {
-    if (isComplete) {
-      // Navigate to dashboard after short delay
-      setTimeout(() => {
-        navigate('/app/dashboard', { replace: true });
-      }, 1500);
-    }
-  }, [isComplete, navigate]);
-  
-  // Render current step component
+  // Render current step component with context
   const renderCurrentStep = () => {
+    const stepProps = { onboardingContext: onboardingContextValue };
+    
     switch (currentStep) {
       case 1:
-        return <PersonalInfoStep />;
+        return <PersonalInfoStep {...stepProps} />;
       case 2:
-        return <RiskAssessmentStep />;
+        return <RiskAssessmentStep {...stepProps} />;
       case 3:
-        return <FinancialInfoStep />;
+        return <FinancialInfoStep {...stepProps} />;
       case 4:
-        return <GoalsStep />;
+        return <GoalsStep {...stepProps} />;
       case 5:
-        return <EmploymentProfileStep />;
+        return <EmploymentProfileStep {...stepProps} />;
       default:
-        return <PersonalInfoStep />;
+        return <PersonalInfoStep {...stepProps} />;
     }
   };
   
@@ -170,7 +329,11 @@ const OnboardingWizard = () => {
               <SaveIndicator stepNumber={currentStep} status={saveStatus[currentStep]} />
             </div>
           </div>
-          <ProgressBar />
+          <ProgressBar 
+            currentStep={currentStep}
+            completedSteps={completedSteps}
+            STEP_NAMES={STEP_NAMES}
+          />
         </div>
       </div>
       
@@ -279,23 +442,17 @@ const OnboardingWizard = () => {
                 📊 Show Data
               </button>
               
-              {/* Debug: Check Backend State */}
+              {/* Debug: Check UnifiedFinancialContext State */}
               <button
-                onClick={async () => {
-                  const jwt = localStorage.getItem('jwt');
-                  try {
-                    const response = await fetch('http://localhost:8000/api/v1/onboarding/debug', {
-                      headers: { 'Authorization': `Bearer ${jwt}` }
-                    });
-                    const data = await response.json();
-                    console.log('🔍 Backend onboarding state:', data);
-                  } catch (error) {
-                    console.error('Failed to fetch backend state:', error);
-                  }
+                onClick={() => {
+                  console.log('🔍 UnifiedFinancialContext state:');
+                  console.log('Loading states:', loading);
+                  console.log('Error states:', errors);
+                  console.log('Onboarding will save to context when completed');
                 }}
                 className="px-3 py-2 text-xs font-medium text-green-600 bg-green-100 rounded-md hover:bg-green-200"
               >
-                🔍 Backend State
+                🔍 Context State
               </button>
               
               {/* Skip button for optional steps */}

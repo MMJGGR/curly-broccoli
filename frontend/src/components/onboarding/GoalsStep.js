@@ -3,10 +3,14 @@
  * Enhanced with persona-specific smart defaults and guidance
  */
 import React, { useState, useEffect } from 'react';
-import { useOnboarding } from '../../contexts/OnboardingContext';
 
-const GoalsStep = () => {
-  const { goalsData, financialData, updateGoalsData, saveStep } = useOnboarding();
+const GoalsStep = ({ onboardingContext }) => {
+  const { 
+    goalsData, 
+    financialData, 
+    updateGoalsData, 
+    saveStep 
+  } = onboardingContext;
   
   const [formData, setFormData] = useState({
     emergencyFund: goalsData.emergencyFund || '',
