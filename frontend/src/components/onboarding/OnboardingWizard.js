@@ -10,6 +10,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
+import { API_BASE_URL } from '../../config';
 
 // Import step components
 import PersonalInfoStep from './PersonalInfoStep';
@@ -86,23 +87,33 @@ const OnboardingWizard = () => {
     try {
       setSaveStatus(prev => ({ ...prev, [stepNumber]: 'saving' }));
       
-      // TODO: Optionally save data to UnifiedFinancialContext based on step
-      // Currently disabled to prevent API errors during onboarding
-      // Financial data should be managed through dedicated financial management tabs
-      console.log(`📝 Step ${stepNumber} data saved locally:`, stepData);
+      console.log(`📝 Saving Step ${stepNumber} data:`, stepData);
       
-      // Future enhancement: Save to backend when APIs are ready
-      // if (stepNumber === 3 && stepData) {
-      //   // Financial Info Step - create income sources and expenses
-      //   if (stepData.monthlyIncome) {
-      //     await createIncome({
-      //       source_name: 'Primary Income',
-      //       amount: stepData.monthlyIncome,
-      //       frequency: stepData.incomeFrequency || 'monthly',
-      //       is_recurring: true
-      //     });
-      //   }
-      // }
+      // Save step data to backend API
+      const token = localStorage.getItem('jwt');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/v1/onboarding-v2-clean/save-step`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          step_number: stepNumber,
+          step_data: stepData
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `Failed to save step ${stepNumber}`);
+      }
+      
+      const result = await response.json();
+      console.log(`✅ Step ${stepNumber} saved successfully:`, result);
       
       // Mark step as completed
       if (!completedSteps.includes(stepNumber)) {
@@ -121,7 +132,7 @@ const OnboardingWizard = () => {
   
   const completeOnboarding = async () => {
     try {
-      console.log('✅ Onboarding completed successfully!');
+      console.log('✅ Completing onboarding...');
       console.log('📊 Onboarding Data Summary:', {
         personalData,
         riskData,
@@ -130,11 +141,43 @@ const OnboardingWizard = () => {
         employmentData
       });
       
+      // Call backend completion endpoint
+      const token = localStorage.getItem('jwt');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/v1/onboarding-v2-clean/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          onboarding_data: {
+            personalData,
+            riskData,
+            financialData,
+            goalsData,
+            employmentData
+          }
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to complete onboarding');
+      }
+      
+      const result = await response.json();
+      console.log('✅ Onboarding completed successfully:', result);
+      
       // Mark onboarding as complete locally
       setIsComplete(true);
       
       return { success: true };
     } catch (error) {
+      console.error('Error completing onboarding:', error);
       setError(error.message);
       return { success: false, error: error.message };
     }
@@ -155,6 +198,34 @@ const OnboardingWizard = () => {
   };
   
   // Handle onboarding completion
+  // Load onboarding status on component mount
+  useEffect(() => {
+    const loadOnboardingStatus = async () => {
+      try {
+        const token = localStorage.getItem('jwt');
+        if (!token) return;
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/onboarding-v2-clean/status`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const status = await response.json();
+          setCurrentStep(status.current_step || 1);
+          setCompletedSteps(status.completed_steps || []);
+          setIsComplete(status.is_complete || false);
+          console.log('📊 Loaded onboarding status:', status);
+        }
+      } catch (error) {
+        console.error('Error loading onboarding status:', error);
+      }
+    };
+
+    loadOnboardingStatus();
+  }, []);
+
   useEffect(() => {
     if (isComplete) {
       // Navigate to dashboard after short delay

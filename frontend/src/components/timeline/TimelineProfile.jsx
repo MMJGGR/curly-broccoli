@@ -86,7 +86,7 @@ const TimelineProfile = () => {
       // If no Profile data, try to get OnboardingState data and attempt transfer
       if (!hasProfileData) {
         console.log('🔄 TimelineProfile: Profile data incomplete, trying onboarding state...');
-        response = await fetch(`${API_BASE_URL}/api/v1/onboarding/state`, {
+        response = await fetch(`${API_BASE_URL}/api/v1/onboarding-v2-clean/state`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -97,64 +97,7 @@ const TimelineProfile = () => {
           const onboardingData = await response.json();
           console.log('✅ TimelineProfile: Onboarding state loaded:', onboardingData);
           
-          // If we have rich onboarding data, try to transfer it to profile
-          if (onboardingData.personal_data || onboardingData.financial_data) {
-            console.log('🔄 TimelineProfile: Attempting to transfer onboarding data to profile...');
-            try {
-              const transferResponse = await fetch(`${API_BASE_URL}/api/v1/onboarding/transfer-to-profile`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              });
-              
-              if (transferResponse.ok) {
-                const transferResult = await transferResponse.json();
-                console.log('✅ TimelineProfile: Data transfer result:', transferResult);
-                
-                // Reload profile data after transfer - Try multiple times to ensure success
-                if (transferResult.success) {
-                  let retryCount = 0;
-                  const maxRetries = 3;
-                  
-                  while (retryCount < maxRetries) {
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
-                    
-                    const newProfileResponse = await fetch(`${API_BASE_URL}/auth/me`, {
-                      headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                      }
-                    });
-                    
-                    if (newProfileResponse.ok) {
-                      const newProfileData = await newProfileResponse.json();
-                      console.log(`🔄 Retry ${retryCount + 1}: Profile data:`, newProfileData.profile);
-                      
-                      if (newProfileData.profile && (newProfileData.profile.first_name || newProfileData.profile.annual_income || newProfileData.profile.monthly_income)) {
-                        data = newProfileData;
-                        hasProfileData = true;
-                        console.log('✅ Profile data successfully loaded after transfer!');
-                        break;
-                      }
-                    }
-                    retryCount++;
-                  }
-                  
-                  if (!hasProfileData) {
-                    console.warn('⚠️ Profile data still not available after transfer and retries');
-                  }
-                }
-              } else {
-                console.error('❌ Transfer failed:', await transferResponse.text());
-              }
-            } catch (transferError) {
-              console.warn('Transfer attempt failed:', transferError);
-            }
-          }
-          
-          // If transfer didn't work or wasn't attempted, use onboarding data directly
+          // Use onboarding data directly (simplified - no transfer needed)
           if (!hasProfileData) {
             // Map onboarding data to profile structure
             const personalData = onboardingData.personal_data || {};

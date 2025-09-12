@@ -21,7 +21,7 @@ from app.schemas.onboarding import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/onboarding", tags=["onboarding-consolidated"])
+router = APIRouter(prefix="/onboarding-v2-clean", tags=["onboarding-v2-clean"])
 
 
 @router.get("/state", response_model=OnboardingStateResponse)

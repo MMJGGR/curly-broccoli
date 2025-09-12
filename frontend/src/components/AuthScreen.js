@@ -60,7 +60,7 @@ const AuthScreen = () => {
 
                 // Check if user has completed onboarding
                 try {
-                    const profileResponse = await fetch(`${API_BASE}/api/v1/onboarding/profile-compatibility`, {
+                    const profileResponse = await fetch(`${API_BASE}/api/v1/onboarding-v2-clean/profile-compatibility`, {
                         headers: {
                             'Authorization': `Bearer ${data.access_token}`,
                             'Content-Type': 'application/json'

@@ -8,8 +8,8 @@ from app.api.v1.endpoints import (
 )
 
 api_router = APIRouter()
-# CONSOLIDATED ENDPOINTS - Single Source of Truth
-api_router.include_router(onboarding_consolidated.router, tags=["onboarding"])
+# CONSOLIDATED ENDPOINTS - Single Source of Truth (Clean Architecture)
+api_router.include_router(onboarding_consolidated.router, tags=["onboarding-v2-clean"])
 
 # Legacy endpoints (DEPRECATED - use onboarding endpoints instead)
 # api_router.include_router(profile.router, tags=["profile"]) # DEPRECATED: Use onboarding data

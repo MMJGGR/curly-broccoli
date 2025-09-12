@@ -26,7 +26,7 @@ const ProfileDynamic = () => {
                 return;
             }
 
-            const response = await fetch(`${API_BASE}/api/v1/onboarding/state`, {
+            const response = await fetch(`${API_BASE}/api/v1/onboarding-v2-clean/state`, {
                 headers: {
                     'Authorization': `Bearer ${jwt}`,
                     'Content-Type': 'application/json'
