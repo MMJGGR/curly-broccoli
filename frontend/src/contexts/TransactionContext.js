@@ -379,7 +379,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch('/api/v1/assets-v2/', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -407,7 +407,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { liabilities: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch('/api/v1/liabilities-v2/', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/liabilities-v2/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -434,7 +434,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { liabilities: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch(`/api/v1/liabilities-v2/${liabilityId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/liabilities-v2/${liabilityId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -461,7 +461,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { liabilities: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch(`/api/v1/liabilities-v2/${liabilityId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/liabilities-v2/${liabilityId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -486,7 +486,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { goals: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch('/api/v1/goals-v2/', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/goals-v2/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -513,7 +513,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { goals: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch(`/api/v1/goals-v2/${goalId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/goals-v2/${goalId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -540,7 +540,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { goals: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch(`/api/v1/goals-v2/${goalId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/goals-v2/${goalId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -565,7 +565,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch('/api/v1/expenses-v2/', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -592,7 +592,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch(`/api/v1/expenses-v2/${expenseId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/${expenseId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -619,7 +619,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch(`/api/v1/expenses-v2/${expenseId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/${expenseId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -642,7 +642,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
     try {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
       
-      const response = await fetch('/api/v1/expenses-v2/types/available');
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/types/available`);
       
       if (!response.ok) throw new Error('Failed to fetch expense types');
       
@@ -663,7 +663,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch('/api/v1/income-v2/', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -690,7 +690,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch(`/api/v1/income-v2/${incomeId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/${incomeId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -717,7 +717,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: true } });
       
       const token = localStorage.getItem('jwt');
-      const response = await fetch(`/api/v1/income-v2/${incomeId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/${incomeId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -744,11 +744,11 @@ export const UnifiedFinancialProvider = ({ children }) => {
       
       // Fetch all financial data in parallel
       const [assetsRes, liabilitiesRes, incomesRes, expensesRes, goalsRes] = await Promise.all([
-        fetch('/api/v1/assets-v2/', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/v1/liabilities-v2/', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/v1/income-v2/', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/v1/expenses-v2/', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch('/api/v1/goals-v2/', { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/liabilities-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/goals-v2/`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       if (assetsRes.ok) {

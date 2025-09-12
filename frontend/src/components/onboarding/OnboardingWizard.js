@@ -23,9 +23,6 @@ import SaveIndicator from './SaveIndicator';
 const OnboardingWizard = () => {
   // Use UnifiedFinancialContext for financial data
   const {
-    createIncome,
-    createExpense,
-    createGoal,
     loading,
     errors
   } = useUnifiedFinancialContext();
@@ -89,49 +86,23 @@ const OnboardingWizard = () => {
     try {
       setSaveStatus(prev => ({ ...prev, [stepNumber]: 'saving' }));
       
-      // Save data to UnifiedFinancialContext based on step
-      if (stepNumber === 3 && stepData) {
-        // Financial Info Step - create income sources and expenses
-        if (stepData.monthlyIncome) {
-          await createIncome({
-            source_name: 'Primary Income',
-            amount: stepData.monthlyIncome,
-            frequency: stepData.incomeFrequency || 'monthly',
-            is_recurring: true
-          });
-        }
-        
-        // Create expense entries for common expenses
-        const expenseTypes = ['rent', 'utilities', 'groceries', 'transport', 'loanRepayments'];
-        for (const expenseType of expenseTypes) {
-          if (stepData[expenseType] && stepData[expenseType] > 0) {
-            await createExpense({
-              description: expenseType.charAt(0).toUpperCase() + expenseType.slice(1),
-              amount: stepData[expenseType],
-              expense_type: expenseType,
-              expense_date: new Date().toISOString(),
-              is_recurring: true,
-              frequency_months: 1
-            });
-          }
-        }
-      }
+      // TODO: Optionally save data to UnifiedFinancialContext based on step
+      // Currently disabled to prevent API errors during onboarding
+      // Financial data should be managed through dedicated financial management tabs
+      console.log(`📝 Step ${stepNumber} data saved locally:`, stepData);
       
-      if (stepNumber === 4 && stepData) {
-        // Goals Step - create goals in UnifiedFinancialContext
-        const goalTypes = ['emergencyFund', 'homeDownPayment', 'education', 'retirement', 'investment', 'debtPayoff'];
-        for (const goalType of goalTypes) {
-          if (stepData[goalType] && stepData[goalType] > 0) {
-            await createGoal({
-              name: goalType.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-              target_amount: stepData[goalType],
-              current_amount: 0,
-              target_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
-              description: `${goalType} goal from onboarding`
-            });
-          }
-        }
-      }
+      // Future enhancement: Save to backend when APIs are ready
+      // if (stepNumber === 3 && stepData) {
+      //   // Financial Info Step - create income sources and expenses
+      //   if (stepData.monthlyIncome) {
+      //     await createIncome({
+      //       source_name: 'Primary Income',
+      //       amount: stepData.monthlyIncome,
+      //       frequency: stepData.incomeFrequency || 'monthly',
+      //       is_recurring: true
+      //     });
+      //   }
+      // }
       
       // Mark step as completed
       if (!completedSteps.includes(stepNumber)) {
