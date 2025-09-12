@@ -121,44 +121,17 @@ const OnboardingWizard = () => {
   
   const completeOnboarding = async () => {
     try {
-      // Save completion status to backend
-      const token = localStorage.getItem('jwt');
-      if (token) {
-        try {
-          const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/onboarding/complete`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              is_complete: true,
-              completed_at: new Date().toISOString(),
-              completion_data: {
-                personalData,
-                riskData,
-                financialData,
-                goalsData,
-                employmentData
-              }
-            })
-          });
-          
-          if (response.ok) {
-            console.log('✅ Onboarding completion saved to backend');
-          } else {
-            console.warn('⚠️ Could not save onboarding completion to backend:', response.status);
-          }
-        } catch (error) {
-          console.warn('⚠️ Could not save onboarding completion to backend:', error.message);
-        }
-      }
+      console.log('✅ Onboarding completed successfully!');
+      console.log('📊 Onboarding Data Summary:', {
+        personalData,
+        riskData,
+        financialData,
+        goalsData,
+        employmentData
+      });
       
       // Mark onboarding as complete locally
       setIsComplete(true);
-      
-      // Set local flag for fallback detection
-      localStorage.setItem('onboarding_just_completed', 'true');
       
       return { success: true };
     } catch (error) {

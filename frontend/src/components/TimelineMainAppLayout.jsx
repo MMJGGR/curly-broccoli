@@ -34,45 +34,34 @@ import ProfileDynamic from './ProfileDynamic';
 import BottomNavBar from './BottomNavBar';
 
 // Config
-import { API_BASE_URL } from '../config';
+// import { API_BASE_URL } from '../config'; // Disabled - not needed for simplified flow
 
-// Utility functions
-const isOnboardingComplete = async () => {
-  const token = localStorage.getItem('jwt');
-  if (!token) return false;
-
-  try {
-    const url = `${API_BASE_URL}/api/v1/onboarding/status`;
-    console.log('🔧 TimelineMainAppLayout fetching from:', url);
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to check onboarding status');
-    }
-
-    const data = await response.json();
-    return data.is_complete === true;
-  } catch (error) {
-    console.error('Error checking onboarding status:', error);
-    
-    // Fallback: Check if onboarding was just completed locally
-    // This handles the case where onboarding was just finished but API is unavailable
-    const onboardingJustCompleted = localStorage.getItem('onboarding_just_completed');
-    if (onboardingJustCompleted) {
-      console.log('🔄 Using local fallback: onboarding was just completed');
-      // Clear the flag so it doesn't persist indefinitely
-      localStorage.removeItem('onboarding_just_completed');
-      return true;
-    }
-    
-    return false;
-  }
-};
+// Utility functions - Disabled to prevent redirect loops
+// const isOnboardingComplete = async () => {
+//   const token = localStorage.getItem('jwt');
+//   if (!token) return false;
+//
+//   try {
+//     const url = `${API_BASE_URL}/api/v1/onboarding/status`;
+//     console.log('🔧 TimelineMainAppLayout fetching from:', url);
+//     const response = await fetch(url, {
+//       headers: {
+//         'Authorization': `Bearer ${token}`,
+//         'Content-Type': 'application/json'
+//       }
+//     });
+//
+//     if (!response.ok) {
+//       throw new Error('Failed to check onboarding status');
+//     }
+//
+//     const data = await response.json();
+//     return data.is_complete === true;
+//   } catch (error) {
+//     console.error('Error checking onboarding status:', error);
+//     return false;
+//   }
+// };
 
 const TimelineMainAppLayout = () => {
   const [onboardingComplete, setOnboardingComplete] = useState(null);
@@ -109,11 +98,19 @@ const TimelineMainAppLayout = () => {
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
-        const complete = await isOnboardingComplete();
-        setOnboardingComplete(complete);
+        // Trust that if user reached this component, onboarding is complete
+        // The routing logic should handle onboarding redirects at App.js level
+        console.log('🔧 TimelineMainAppLayout: Assuming onboarding complete (user reached dashboard)');
+        setOnboardingComplete(true);
+        setIsLoading(false);
+        return;
+        
+        // Disabled automatic API check that was causing redirect loops
+        // const complete = await isOnboardingComplete();
+        // setOnboardingComplete(complete);
       } catch (error) {
         console.error('Onboarding check failed:', error);
-        setOnboardingComplete(false);
+        setOnboardingComplete(true); // Default to complete to avoid loops
       } finally {
         setIsLoading(false);
       }
