@@ -153,6 +153,7 @@ const BalanceSheetDashboard = () => {
 
       if (!assets || !liabilities || !expenses || !profile) {
         setError('Required financial data not available');
+        setLoading(false);
         return;
       }
 
