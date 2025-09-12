@@ -759,7 +759,19 @@ export const UnifiedFinancialProvider = ({ children }) => {
     }
   }, []);
 
+  // Add a ref to track the last fetch timestamp
+  const lastFetchRef = React.useRef(0);
+  const MINIMUM_FETCH_INTERVAL = 3000; // 3 seconds minimum between fetches
+  
   const fetchAllFinancialData = useCallback(async () => {
+    // Prevent rapid successive calls with timing check
+    const now = Date.now();
+    if (state.loading.global || (now - lastFetchRef.current) < MINIMUM_FETCH_INTERVAL) {
+      return;
+    }
+    
+    lastFetchRef.current = now;
+    
     try {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: true } });
       
@@ -785,7 +797,9 @@ export const UnifiedFinancialProvider = ({ children }) => {
       }
 
       if (incomesRes.ok) {
-        const incomes = await incomesRes.json();
+        const incomesData = await incomesRes.json();
+        // Extract the income_sources array from the API response structure
+        const incomes = incomesData.income_sources || [];
         dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: incomes });
       } else {
         console.warn('Income API failed or timed out, using empty fallback data');
@@ -800,7 +814,9 @@ export const UnifiedFinancialProvider = ({ children }) => {
       }
 
       if (expensesRes.ok) {
-        const expenses = await expensesRes.json();
+        const expensesData = await expensesRes.json();
+        // Extract the expenses array from the API response structure
+        const expenses = expensesData.expenses || [];
         dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES, payload: expenses });
       }
 
@@ -814,12 +830,13 @@ export const UnifiedFinancialProvider = ({ children }) => {
     } finally {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: false } });
     }
-  }, []);
+  }, [fetchWithTimeout, state.loading.global]);
 
-  // Load data on mount
+  // Load data on mount only once
   React.useEffect(() => {
     fetchAllFinancialData();
-  }, [fetchAllFinancialData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array to run only once on mount
 
   const value = {
     // State
