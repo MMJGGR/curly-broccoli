@@ -59,6 +59,17 @@ const isOnboardingComplete = async () => {
     return data.is_complete === true;
   } catch (error) {
     console.error('Error checking onboarding status:', error);
+    
+    // Fallback: Check if onboarding was just completed locally
+    // This handles the case where onboarding was just finished but API is unavailable
+    const onboardingJustCompleted = localStorage.getItem('onboarding_just_completed');
+    if (onboardingJustCompleted) {
+      console.log('🔄 Using local fallback: onboarding was just completed');
+      // Clear the flag so it doesn't persist indefinitely
+      localStorage.removeItem('onboarding_just_completed');
+      return true;
+    }
+    
     return false;
   }
 };
