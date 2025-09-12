@@ -87,7 +87,9 @@
       "Bash(timeout 60 npx cypress run:*)",
       "Bash(docker system prune:*)",
       "Bash(docker logs:*)",
-      "Bash(timeout 30 npm run simple-login-test)"
+      "Bash(timeout 30 npm run simple-login-test)",
+      "Bash(docker exec:*)",
+      "Bash(timeout 300 npx cypress run:*)"
     ],
     "deny": [],
     "ask": []

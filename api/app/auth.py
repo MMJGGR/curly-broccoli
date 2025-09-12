@@ -152,13 +152,7 @@ def register(
 
     # 5. Compute CFA-aligned risk score
     age   = calculate_age(data.dob)
-    score = compute_risk_score(
-        age=age,
-        income=data.annual_income,
-        dependents=data.dependents,
-        time_horizon=data.goals.get("timeHorizon", 0),
-        questionnaire=questionnaire,
-    )
+    score = compute_risk_score(questionnaire)
     profile.risk_score = score
     profile.risk_level = compute_risk_level(score)
 

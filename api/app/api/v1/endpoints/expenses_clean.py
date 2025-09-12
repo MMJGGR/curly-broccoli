@@ -67,7 +67,8 @@ async def expenses_health_check():
 @router.get("/", response_model=Dict[str, Any])
 async def get_expenses_summary_v2(
     current_user: User = Depends(get_current_user),
-    use_case: GetExpensesSummary = Depends(get_expenses_summary_use_case)
+    use_case: GetExpensesSummary = Depends(get_expenses_summary_use_case),
+    db: Session = Depends(get_db)
 ):
     """
     Get comprehensive expenses summary using clean architecture.
@@ -78,14 +79,89 @@ async def get_expenses_summary_v2(
     - Essential vs. non-essential expense classification
     - Recurring expense projections and cash flow impact
     - Expense ratios and financial health indicators
+    - Onboarding data integration
     """
     try:
+        print(f"DEBUG: Expenses endpoint called for user {current_user.id}")
+        # Get regular expenses from database
         result = await use_case.execute(current_user.id)
+        print(f"DEBUG: Use case result: {result}")
+        print(f"DEBUG: Number of expenses from DB: {len(result['expenses'])}")
         
-        # Convert to API response format
-        expenses_data = []
+        # Get onboarding expenses
+        from app.models import OnboardingState
+        onboarding = db.query(OnboardingState).filter(OnboardingState.user_id == current_user.id).first()
+        onboarding_expenses = []
+        
+        print(f"DEBUG: Onboarding found for user {current_user.id}: {onboarding is not None}")
+        if onboarding:
+            print(f"DEBUG: Financial data exists: {onboarding.financial_data is not None}")
+            if onboarding.financial_data:
+                print(f"DEBUG: Financial data: {onboarding.financial_data}")
+        
+        if onboarding and onboarding.financial_data:
+            financial_data = onboarding.financial_data
+            
+            # Convert standard expense categories from onboarding
+            standard_expenses = [
+                {"name": "Rent", "amount": financial_data.get('rent', 0), "type": "housing"},
+                {"name": "Utilities", "amount": financial_data.get('utilities', 0), "type": "utilities"}, 
+                {"name": "Groceries", "amount": financial_data.get('groceries', 0), "type": "food_dining"},
+                {"name": "Transport", "amount": financial_data.get('transport', 0), "type": "transportation"},
+                {"name": "Loan Repayments", "amount": financial_data.get('loanRepayments', 0), "type": "debt_payment"}
+            ]
+            
+            for expense in standard_expenses:
+                if expense["amount"] > 0:
+                    onboarding_expenses.append({
+                        "id": f"onboarding-{expense['type']}",
+                        "description": f"{expense['name']} (from onboarding)",
+                        "amount": float(expense["amount"]),
+                        "expense_type": expense["type"],
+                        "expense_category": "fixed_expenses" if expense["type"] in ["housing", "debt_payment"] else "variable_expenses",
+                        "expense_date": None,
+                        "is_recurring": True,
+                        "frequency_months": 1,
+                        "annual_projection": float(expense["amount"]) * 12,
+                        "monthly_equivalent": float(expense["amount"]),
+                        "is_essential": True,
+                        "budget_impact_score": 8 if expense["type"] in ["housing", "debt_payment"] else 6,
+                        "financial_health_impact": "high" if expense["type"] in ["housing", "debt_payment"] else "medium",
+                        "vendor": None,
+                        "notes": f"Imported from onboarding - {expense['name']}",
+                        "is_active": True,
+                        "currency": "KES",
+                        "source": "onboarding"
+                    })
+            
+            # Add custom expenses from onboarding
+            custom_expenses = financial_data.get('customExpenses', [])
+            for custom_expense in custom_expenses:
+                onboarding_expenses.append({
+                    "id": f"onboarding-custom-{custom_expense.get('id', 0)}",
+                    "description": f"{custom_expense.get('name', 'Custom Expense')} (from onboarding)",
+                    "amount": float(custom_expense.get('amount', 0)),
+                    "expense_type": "other",
+                    "expense_category": "discretionary_expenses",
+                    "expense_date": None,
+                    "is_recurring": True,
+                    "frequency_months": 1,
+                    "annual_projection": float(custom_expense.get('amount', 0)) * 12,
+                    "monthly_equivalent": float(custom_expense.get('amount', 0)),
+                    "is_essential": False,
+                    "budget_impact_score": 4,
+                    "financial_health_impact": "low",
+                    "vendor": None,
+                    "notes": f"Custom expense from onboarding - {custom_expense.get('name', 'Unnamed')}",
+                    "is_active": True,
+                    "currency": "KES",
+                    "source": "onboarding"
+                })
+        
+        # Convert database expenses to API format
+        database_expenses = []
         for expense_info in result["expenses"]:
-            expenses_data.append({
+            database_expenses.append({
                 "id": expense_info["id"],
                 "description": expense_info["description"],
                 "amount": float(expense_info["amount"].amount),
@@ -102,16 +178,26 @@ async def get_expenses_summary_v2(
                 "vendor": expense_info["vendor"],
                 "notes": expense_info["notes"],
                 "is_active": expense_info["is_active"],
-                "currency": "KES"
+                "currency": "KES",
+                "source": "database"
             })
+        
+        # Combine onboarding and database expenses
+        all_expenses = onboarding_expenses + database_expenses
+        total_amount = sum(exp["amount"] for exp in all_expenses)
+        monthly_recurring = sum(exp["monthly_equivalent"] for exp in all_expenses if exp["is_recurring"])
         
         return {
             "user_id": current_user.id,
-            "expenses": expenses_data,
+            "expenses": all_expenses,
+            "data_sources": {
+                "onboarding_expenses": len(onboarding_expenses),
+                "dedicated_expenses": len(database_expenses)
+            },
             "summary": {
-                "total_expenses": result["summary"]["total_expenses"],
-                "total_amount": float(result["summary"]["total_amount"].amount),
-                "monthly_recurring_total": float(result["summary"]["monthly_recurring_total"].amount),
+                "total_expenses": len(all_expenses),
+                "total_amount": total_amount,
+                "monthly_recurring_total": monthly_recurring,
                 "expense_count_by_category": result["summary"]["expense_count_by_category"],
                 "expense_count_by_type": result["summary"]["expense_count_by_type"],
                 "essential_expenses": result["summary"]["essential_expenses"],
@@ -195,6 +281,19 @@ async def create_expense_v2(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating expense: {str(e)}"
         )
+
+
+@router.get("/overview", response_model=Dict[str, Any])
+async def get_expenses_overview_v2(
+    current_user: User = Depends(get_current_user),
+    use_case: GetExpensesSummary = Depends(get_expenses_summary_use_case),
+    db: Session = Depends(get_db)
+):
+    """
+    Get expenses overview with onboarding integration.
+    Alias for the main endpoint that includes onboarding data.
+    """
+    return await get_expenses_summary_v2(current_user, use_case, db)
 
 
 @router.get("/{expense_id}", response_model=Dict[str, Any])

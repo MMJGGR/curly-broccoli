@@ -169,7 +169,7 @@ describe('OnboardingContext', () => {
       
       await waitFor(() => {
         expect(fetch).toHaveBeenCalledWith(
-          expect.stringContaining('/api/v1/onboarding/save-step'),
+          expect.stringContaining('/api/v1/onboarding-v2-clean/save-step'),
           expect.objectContaining({
             method: 'POST',
             headers: expect.objectContaining({
@@ -272,7 +272,7 @@ describe('OnboardingContext', () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/onboarding/state'),
+        expect.stringContaining('/api/v1/onboarding-v2-clean/state'),
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer test-token'
