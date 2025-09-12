@@ -56,35 +56,49 @@ async def get_income_overview_v2(
         if onboarding and onboarding.financial_data:
             financial_data = onboarding.financial_data  # Already deserialized by SQLAlchemy
             
-            if financial_data.get('monthlyIncome'):
-                source_data.append({
-                    "id": "onboarding-primary",
-                    "source_name": "Primary Income (from onboarding)",
-                    "monthly_amount": float(financial_data['monthlyIncome']),
-                    "frequency": financial_data.get('incomeFrequency', 'Monthly').lower()
-                })
-                total_monthly += float(financial_data['monthlyIncome'])
+            monthly_income_raw = financial_data.get('monthlyIncome')
+            if monthly_income_raw:
+                try:
+                    monthly_income_amount = float(monthly_income_raw)
+                    if monthly_income_amount > 0:
+                        source_data.append({
+                            "id": "onboarding-primary",
+                            "source_name": "Primary Income (from onboarding)",
+                            "monthly_amount": monthly_income_amount,
+                            "frequency": financial_data.get('incomeFrequency', 'Monthly').lower()
+                        })
+                        total_monthly += monthly_income_amount
+                except (ValueError, TypeError) as e:
+                    # Log the error but continue processing
+                    print(f"Invalid monthlyIncome value: {monthly_income_raw}, error: {e}")
             
             # Add custom incomes from onboarding
             custom_incomes = financial_data.get('customIncomes', [])
-            for custom_income in custom_incomes:
-                source_data.append({
-                    "id": f"onboarding-custom-{custom_income['id']}",
-                    "source_name": custom_income['name'],
-                    "monthly_amount": float(custom_income['amount']),
-                    "frequency": "monthly"
-                })
-                total_monthly += float(custom_income['amount'])
+            if custom_incomes and isinstance(custom_incomes, list):
+                for i, custom_income in enumerate(custom_incomes):
+                    if isinstance(custom_income, dict):
+                        source_data.append({
+                            "id": f"onboarding-custom-{custom_income.get('id', i)}",
+                            "source_name": custom_income.get('name', f'Custom Income {i+1}'),
+                            "monthly_amount": float(custom_income.get('amount', 0)),
+                            "frequency": "monthly"
+                        })
+                        total_monthly += float(custom_income.get('amount', 0))
         
         # Add sources from dedicated income_sources table
         for source in sources:
-            source_data.append({
-                "id": source.id,
-                "source_name": source.name,
-                "monthly_amount": float(source.amount),
-                "frequency": source.frequency
-            })
-            total_monthly += float(source.amount)
+            try:
+                amount = float(source.amount) if source.amount else 0
+                source_data.append({
+                    "id": source.id,
+                    "source_name": source.name or "Unnamed Income Source",
+                    "monthly_amount": amount,
+                    "frequency": source.frequency or "monthly"
+                })
+                total_monthly += amount
+            except (ValueError, TypeError) as e:
+                print(f"Invalid income source amount: {source.amount}, error: {e}")
+                continue
         
         return {
             "user_id": current_user.id,

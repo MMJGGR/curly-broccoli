@@ -736,19 +736,42 @@ export const UnifiedFinancialProvider = ({ children }) => {
     }
   }, []);
 
+  // Helper function for timeout-enabled fetch
+  const fetchWithTimeout = useCallback(async (url, options, timeout = 10000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        console.warn(`Request timed out: ${url}`);
+        // Return a mock "ok: false" response for timeout
+        return { ok: false, status: 408, statusText: 'Request Timeout' };
+      }
+      throw error;
+    }
+  }, []);
+
   const fetchAllFinancialData = useCallback(async () => {
     try {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: true } });
       
       const token = localStorage.getItem('jwt');
       
-      // Fetch all financial data in parallel
+      // Fetch all financial data in parallel - using onboarding-integrated endpoints with timeout
       const [assetsRes, liabilitiesRes, incomesRes, expensesRes, goalsRes] = await Promise.all([
-        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/liabilities-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/goals-v2/`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/liabilities-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/goals-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       if (assetsRes.ok) {
@@ -764,6 +787,16 @@ export const UnifiedFinancialProvider = ({ children }) => {
       if (incomesRes.ok) {
         const incomes = await incomesRes.json();
         dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: incomes });
+      } else {
+        console.warn('Income API failed or timed out, using empty fallback data');
+        // Set empty income data to prevent infinite loading
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: {
+          user_id: null,
+          total_monthly_income: 0,
+          income_sources: [],
+          source_count: 0,
+          data_sources: { onboarding_sources: 0, dedicated_sources: 0 }
+        }});
       }
 
       if (expensesRes.ok) {
