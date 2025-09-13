@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Plus, Edit, Trash2, TrendingDown } from '../ui/icons';
+import { EXPENSE_TYPE_DEFS } from '../expenses/expenseTypeDefs';
 import { formatCurrency } from '../../utils/formatters';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
@@ -41,20 +42,7 @@ const ExpenseManagement = () => {
     notes: ''
   });
 
-  const expenseTypes = [
-    { value: 'housing', label: 'Housing' },
-    { value: 'transportation', label: 'Transportation' },
-    { value: 'food_dining', label: 'Food & Dining' },
-    { value: 'utilities', label: 'Utilities' },
-    { value: 'healthcare', label: 'Healthcare' },
-    { value: 'insurance', label: 'Insurance' },
-    { value: 'debt_payments', label: 'Debt Payments' },
-    { value: 'entertainment', label: 'Entertainment' },
-    { value: 'personal_care', label: 'Personal Care' },
-    { value: 'business_operating', label: 'Business Operating' },
-    { value: 'taxes', label: 'Taxes' },
-    { value: 'other', label: 'Other' }
-  ];
+  const expenseTypes = EXPENSE_TYPE_DEFS;
 
   const frequencies = [
     { value: 'daily', label: 'Daily' },

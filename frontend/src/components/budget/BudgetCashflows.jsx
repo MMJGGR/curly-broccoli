@@ -6,8 +6,9 @@
  */
 import React, { useState } from 'react';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
-// import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
+import { Card, CardContent } from '../ui/card';
+import { EXPENSE_TYPE_DEFS } from '../expenses/expenseTypeDefs';
 
 const BudgetCashflows = () => {
   const {
@@ -17,19 +18,43 @@ const BudgetCashflows = () => {
   } = useTimeline();
 
   const {
-    budgetData,
-    totalExpenses,
-    actualSurplus,
-    loading,
-    formatAmount,
-    refreshBudgetData
-  } = useBudget();
+    expenses,
+    incomes = [],
+    loading
+  } = useUnifiedFinancialContext();
 
-  // Get real financial data from UnifiedFinancialContext (available for future use)
-  // const {
-  //   incomeSource,
-  //   expenses,
-  //   goals,
+  // Calculate derived values
+  const totalIncome = Array.isArray(incomes)
+    ? incomes.reduce((sum, inc) => sum + (inc.monthly_amount || inc.amount || 0), 0)
+    : (incomes?.total_monthly_income || 0);
+  const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.monthly_equivalent || 0), 0) || 0;
+  const actualSurplus = totalIncome - totalExpenses;
+
+  const formatAmount = (amount) => `KES ${Math.round(amount).toLocaleString()}`;
+
+  // Mock budgetData structure for compatibility with existing code
+  // Align categories with Tools tab expense types for consistent UX
+  const expenseTypeDefs = EXPENSE_TYPE_DEFS;
+
+  // Totals by detailed type (based on normalized expense.expense_type)
+  const totalsByType = (expenses || []).reduce((acc, expense) => {
+    const type = (expense.expense_type || 'other').toLowerCase();
+    const amount = expense.monthly_equivalent || 0;
+    acc[type] = (acc[type] || 0) + amount;
+    return acc;
+  }, {});
+
+  const budgetData = {
+    monthlyIncome: totalIncome,
+    categoriesByType: totalsByType,
+    goalAllocations: {
+      emergencyFund: 0,
+      retirement: 0,
+      education: 0,
+      investments: 0
+    }
+  };
+
   //   assets,
   //   liabilities
   // } = useUnifiedFinancialContext();
@@ -39,11 +64,19 @@ const BudgetCashflows = () => {
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
-  // Calculate total goal allocations (must be before early returns)
+  // Calculate total goal allocations - hardcoded for now since goals come from a different API
   const totalGoalAllocations = React.useMemo(() => {
-    if (!budgetData?.goalAllocations) return 0;
-    return Object.values(budgetData.goalAllocations).reduce((total, amount) => total + (parseFloat(amount) || 0), 0);
-  }, [budgetData?.goalAllocations]);
+    return 0; // Will be calculated from goals API in future
+  }, []);
+
+  // Safely get budget values with defaults
+  const getBudgetValue = (key, defaultValue = 0) => {
+    return budgetData?.[key] || defaultValue;
+  };
+
+  const monthlyIncome = getBudgetValue('monthlyIncome', 0);
+  const totalBudgetedExpenses = totalExpenses || 0;
+  const surplus = actualSurplus || (monthlyIncome - totalBudgetedExpenses);
 
   // Import handlers
   const handleImportClose = () => {
@@ -51,7 +84,7 @@ const BudgetCashflows = () => {
   };
 
   // Loading state
-  if (loading || timelineLoading) {
+  if (loading?.global || timelineLoading) {
     return (
       <div className="budget-cashflows h-screen flex items-center justify-center">
         <div className="text-center">
@@ -66,14 +99,14 @@ const BudgetCashflows = () => {
   // Get dynamic recommendations based on actual financial data (NO HARDCODED VALUES)
   const getPersonaRecommendations = () => {
     const recommendations = [];
-    
+
     // Generate recommendations based on actual financial data
     if (surplus > 0) {
       recommendations.push('Great job! You have positive cash flow. Consider increasing investments.');
     } else {
       recommendations.push('Your expenses exceed income. Review and reduce variable expenses.');
     }
-    
+
     if (monthlyIncome > 0) {
       const savingsRate = (surplus / monthlyIncome) * 100;
       if (savingsRate >= 20) {
@@ -84,21 +117,12 @@ const BudgetCashflows = () => {
         recommendations.push(`Low savings rate of ${savingsRate.toFixed(1)}%. Aim for at least 20% of income.`);
       }
     }
-    
+
     // Add general recommendation
     recommendations.push('Review and optimize your budget quarterly for best results.');
-    
+
     return recommendations;
   };
-
-  // Safely get budget values with defaults
-  const getBudgetValue = (key, defaultValue = 0) => {
-    return budgetData?.[key] || defaultValue;
-  };
-
-  const monthlyIncome = getBudgetValue('monthlyIncome', 0);
-  const totalBudgetedExpenses = totalExpenses || 0;
-  const surplus = actualSurplus || (monthlyIncome - totalBudgetedExpenses);
 
   return (
     <div className="budget-cashflows flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100" style={{ height: 'calc(100vh - 4rem)' }}>
@@ -205,29 +229,26 @@ const BudgetCashflows = () => {
                   <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
                     💳 Expense Categories
                   </h3>
-                  <div className="space-y-3">
-                    {budgetData?.categories && Object.entries(budgetData.categories).map(([key, category]) => (
-                      <div key={key} className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-700 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                          <span className="font-semibold text-gray-800">
-                            {formatAmount ? formatAmount(category) : `KES ${category.toLocaleString()}`}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {/* Show custom categories */}
-                    {budgetData?.customCategories && Object.entries(budgetData.customCategories).map(([key, customCat]) => (
-                      <div key={key} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <div className="flex justify-between items-center">
-                          <span className="text-blue-700 font-medium">{customCat.name}</span>
-                          <span className="font-semibold text-blue-800">
-                            {formatAmount ? formatAmount(customCat.amount) : `KES ${customCat.amount.toLocaleString()}`}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                  {/* Styled cards matching app’s card design */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {expenseTypeDefs.map(({ value, label, Icon }) => {
+                      const amount = budgetData.categoriesByType?.[value] || 0;
+                      return (
+                        <Card key={value}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                                {Icon ? <Icon className="h-4 w-4 text-gray-500" /> : null}
+                                {label}
+                              </span>
+                              <span className="text-base font-semibold text-gray-900">
+                                {formatAmount ? formatAmount(amount) : `KES ${amount.toLocaleString()}`}
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -300,7 +321,7 @@ const BudgetCashflows = () => {
             </button>
             
             <button
-              onClick={refreshBudgetData}
+              onClick={() => console.warn('Data refreshes automatically')}
               className="w-full bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 transition-colors"
             >
               Refresh Data
@@ -348,9 +369,9 @@ const BudgetCashflows = () => {
             <h3 className="text-lg font-bold text-gray-800 mb-4">Import Transactions</h3>
             <p className="text-gray-600 mb-4">Import functionality temporarily unavailable.</p>
             <div className="flex space-x-2">
-              <button 
+              <button
                 onClick={() => {
-                  if (refreshBudgetData) refreshBudgetData();
+                  console.warn('Data refreshes automatically');
                   handleImportClose();
                 }}
                 className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"

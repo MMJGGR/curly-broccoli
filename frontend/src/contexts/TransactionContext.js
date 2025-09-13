@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import { deriveExpenseCategory, monthlyEquivalent, normalizeExpenseType } from '../utils/expenseTaxonomy';
 
 // UnifiedFinancialContext for managing all financial data - Single Source of Truth
 const UnifiedFinancialContext = createContext();
@@ -262,30 +263,59 @@ const unifiedFinancialReducer = (state, action) => {
       };
     
     // Expenses CRUD
-    case UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES:
+    case UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES: {
+      const normalized = Array.isArray(action.payload)
+        ? action.payload.map(exp => ({
+            ...exp,
+            expense_type: normalizeExpenseType(exp.expense_type || exp.type),
+            expense_category: exp.expense_category || deriveExpenseCategory(exp.expense_type || exp.type),
+            monthly_equivalent: typeof exp.monthly_equivalent === 'number' ? exp.monthly_equivalent : monthlyEquivalent(exp),
+            // Normalize temporal fields for compatibility
+            end_date: exp.end_date || exp.payment_end_date || null
+          }))
+        : [];
       return {
         ...state,
-        expenses: action.payload,
+        expenses: normalized,
         loading: { ...state.loading, expenses: false },
         errors: { ...state.errors, expenses: null },
         lastUpdated: new Date().toISOString()
       };
+    }
       
-    case UNIFIED_FINANCIAL_ACTIONS.CREATE_EXPENSE:
+    case UNIFIED_FINANCIAL_ACTIONS.CREATE_EXPENSE: {
+      const exp = action.payload;
+      const normalized = {
+        ...exp,
+        expense_type: normalizeExpenseType(exp.expense_type || exp.type),
+        expense_category: exp.expense_category || deriveExpenseCategory(exp.expense_type || exp.type),
+        monthly_equivalent: typeof exp.monthly_equivalent === 'number' ? exp.monthly_equivalent : monthlyEquivalent(exp),
+        end_date: exp.end_date || exp.payment_end_date || null
+      };
       return {
         ...state,
-        expenses: [...state.expenses, action.payload],
+        expenses: [...state.expenses, normalized],
         lastUpdated: new Date().toISOString()
       };
+    }
       
-    case UNIFIED_FINANCIAL_ACTIONS.UPDATE_EXPENSE:
+    case UNIFIED_FINANCIAL_ACTIONS.UPDATE_EXPENSE: {
+      const upd = action.payload;
+      const normalizedUpd = {
+        ...upd,
+        expense_type: normalizeExpenseType(upd.expense_type || upd.type),
+        expense_category: upd.expense_category || deriveExpenseCategory(upd.expense_type || upd.type),
+        monthly_equivalent: typeof upd.monthly_equivalent === 'number' ? upd.monthly_equivalent : monthlyEquivalent(upd),
+        end_date: upd.end_date || upd.payment_end_date || null
+      };
       return {
         ...state,
         expenses: state.expenses.map(expense => 
-          expense.id === action.payload.id ? { ...expense, ...action.payload } : expense
+          expense.id === normalizedUpd.id ? { ...expense, ...normalizedUpd } : expense
         ),
         lastUpdated: new Date().toISOString()
       };
+    }
       
     case UNIFIED_FINANCIAL_ACTIONS.DELETE_EXPENSE:
       return {
@@ -390,9 +420,63 @@ export const UnifiedFinancialProvider = ({ children }) => {
 
       if (!response.ok) throw new Error('Failed to create asset');
       
-      const newAsset = await response.json();
+      const apiResponse = await response.json();
+      // Assets API wraps created asset under `asset`
+      const newAsset = apiResponse?.asset || apiResponse;
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_ASSET, payload: newAsset });
       return newAsset;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { assets: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: false } });
+    }
+  }, []);
+
+  const updateAsset = useCallback(async (assetId, assetData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: true } });
+
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/${assetId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(assetData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update asset');
+
+      const apiResponse = await response.json();
+      const updatedAsset = apiResponse?.asset || apiResponse;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_ASSET, payload: updatedAsset });
+      return updatedAsset;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { assets: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: false } });
+    }
+  }, []);
+
+  const deleteAsset = useCallback(async (assetId) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: true } });
+
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/${assetId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to delete asset');
+
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_ASSET, payload: assetId });
+      return assetId;
     } catch (error) {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { assets: error.message } });
       throw error;
@@ -787,13 +871,21 @@ export const UnifiedFinancialProvider = ({ children }) => {
       ]);
 
       if (assetsRes.ok) {
-        const assets = await assetsRes.json();
-        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ASSETS, payload: assets });
+        const assetsResponse = await assetsRes.json();
+        // API returns an object with `assets` array and summary; extract array
+        const assetArray = Array.isArray(assetsResponse)
+          ? assetsResponse
+          : (assetsResponse?.assets || []);
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ASSETS, payload: assetArray });
       }
 
       if (liabilitiesRes.ok) {
-        const liabilities = await liabilitiesRes.json();
-        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES, payload: liabilities });
+        const liabilitiesResponse = await liabilitiesRes.json();
+        // API returns an object with `liabilities` array and summary; extract array
+        const liabilityArray = Array.isArray(liabilitiesResponse)
+          ? liabilitiesResponse
+          : (liabilitiesResponse?.liabilities || []);
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES, payload: liabilityArray });
       }
 
       if (incomesRes.ok) {
@@ -803,14 +895,8 @@ export const UnifiedFinancialProvider = ({ children }) => {
         dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: incomes });
       } else {
         console.warn('Income API failed or timed out, using empty fallback data');
-        // Set empty income data to prevent infinite loading
-        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: {
-          user_id: null,
-          total_monthly_income: 0,
-          income_sources: [],
-          source_count: 0,
-          data_sources: { onboarding_sources: 0, dedicated_sources: 0 }
-        }});
+        // Set empty income array to prevent downstream shape errors
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: [] });
       }
 
       if (expensesRes.ok) {
@@ -841,9 +927,14 @@ export const UnifiedFinancialProvider = ({ children }) => {
   const value = {
     // State
     ...state,
+    // Backward-compatibility aliases for legacy consumers
+    incomes: state.incomeSource || [],
+    profile: state.userProfile || null,
     
     // Actions
     createAsset,
+    updateAsset,
+    deleteAsset,
     createLiability,
     updateLiability,
     deleteLiability,
