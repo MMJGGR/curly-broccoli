@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     profile, onboarding_consolidated, profile_clean, timeline_clean,
-    transactions, accounts, budget, budget_v2_clean, analytics, income_v2_clean, goals_v2_clean,
+    transactions, accounts, analytics, income_v2_clean, goals_v2_clean,
     accounts_clean, assets_clean, expenses_clean, liabilities_clean, profile_v2_clean,
     transactions_clean, analytics_clean, relationships_clean  # timeline_v2_clean temporarily disabled due to dependencies
 )
@@ -19,10 +19,7 @@ api_router.include_router(timeline_clean.router, prefix="/timeline", tags=["time
 # New real data integration endpoints
 api_router.include_router(transactions.router, tags=["transactions"])
 api_router.include_router(accounts.router, tags=["accounts"])
-api_router.include_router(budget.router, tags=["budget"])
-
 # Clean Architecture endpoints (New)
-api_router.include_router(budget_v2_clean.router, tags=["budget-v2-clean"])
 api_router.include_router(income_v2_clean.router, tags=["income-v2-clean"])  # Fixed: Income V2 Clean Architecture
 api_router.include_router(goals_v2_clean.router, tags=["goals-v2-clean"])
 api_router.include_router(accounts_clean.router, tags=["accounts-v2-clean"])

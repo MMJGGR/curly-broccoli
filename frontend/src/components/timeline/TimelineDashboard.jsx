@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import TimelineVisualization from './TimelineVisualization';
 import AlignmentDashboard from './AlignmentDashboard';
 import GoalAnalyticsDashboard from '../analytics/GoalAnalyticsDashboard';
@@ -44,13 +44,36 @@ const TimelineDashboard = () => {
   } = useTimeline();
 
   const {
-    budgetData,
-    actualSurplus,
-    budgetHealth,
-    formatAmount,
-    isBudgetReady,
-    loading: budgetLoading,
-  } = useBudget();
+    expenses,
+    incomes = [],
+    loading: budgetLoading
+  } = useUnifiedFinancialContext();
+
+  // Calculate derived values from unified context
+  const totalIncome = Array.isArray(incomes)
+    ? incomes.reduce((sum, inc) => sum + (inc.monthly_amount || inc.amount || 0), 0)
+    : (incomes?.total_monthly_income || 0);
+  const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.monthly_equivalent || 0), 0) || 0;
+  const actualSurplus = totalIncome - totalExpenses;
+  const formatAmount = (amount) => `KES ${Math.round(amount).toLocaleString()}`;
+  const budgetHealth = actualSurplus >= 0 ? 'healthy' : 'deficit';
+  const isBudgetReady = !budgetLoading?.global && Array.isArray(expenses) && (Array.isArray(incomes) ? incomes.length >= 0 : true);
+
+  // Mock budgetData structure for compatibility with existing code
+  const budgetData = {
+    monthlyIncome: totalIncome,
+    expenses: expenses?.reduce((acc, expense) => {
+      const category = expense.expense_category || 'miscellaneous';
+      acc[category] = (acc[category] || 0) + (expense.monthly_equivalent || 0);
+      return acc;
+    }, {}) || {},
+    goalAllocations: {
+      emergencyFund: 0, // This would come from goals in future
+      retirement: 0,
+      education: 0,
+      investments: 0
+    }
+  };
 
   const [activeView, setActiveView] = useState('overview');
   const [showMobilePanel, setShowMobilePanel] = useState(false);

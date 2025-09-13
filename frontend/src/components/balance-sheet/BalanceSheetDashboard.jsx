@@ -10,6 +10,7 @@ import {
   Calculator,
   TrendingUp
 } from '../ui/icons';
+import { EXPENSE_TYPE_DEFS } from '../expenses/expenseTypeDefs';
 import { AssetDashboard } from '../assets';
 import { formatCurrency } from '../../utils/formatters';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
@@ -147,11 +148,12 @@ const BalanceSheetDashboard = () => {
       setError(null);
       
       // Ensure all data is loaded through unified context
-      if (contextLoading) {
+      if (contextLoading?.global) {
         await fetchAllFinancialData();
       }
 
-      if (!assets || !liabilities || !expenses || !profile) {
+      // Proceed if core datasets are available; profile is optional
+      if (!assets || !liabilities || !expenses) {
         setError('Required financial data not available');
         setLoading(false);
         return;
@@ -160,16 +162,23 @@ const BalanceSheetDashboard = () => {
       // Prepare data structures to match legacy format
       const assetsData = {
         summary: {
-          total_current_value: assets.reduce((sum, asset) => sum + (asset.current_value || 0), 0)
-        }
+          total_current_value: assets.reduce((sum, asset) => sum + (parseFloat(asset.current_value) || 0), 0)
+        },
+        // Provide full list for downstream analytics
+        assets: assets
       };
 
       const liabilitiesData = {
-        total_liabilities: liabilities.reduce((sum, liability) => sum + (liability.balance || 0), 0)
+        total_liabilities: liabilities.reduce((sum, liability) => sum + (parseFloat(liability.current_balance) || 0), 0),
+        liabilities: liabilities
       };
 
+      const monthlyRecurringTotal = (expenses || []).reduce((sum, exp) => sum + (parseFloat(exp.monthly_equivalent) || 0), 0);
       const expensesData = {
-        expenses: expenses
+        expenses: expenses,
+        summary: {
+          monthly_recurring_total: { amount: monthlyRecurringTotal }
+        }
       };
 
       const profileData = {
@@ -369,20 +378,21 @@ const BalanceSheetDashboard = () => {
     if (expensesData?.expenses) {
       for (const expense of expensesData.expenses) {
         // Check for loan payments or expenses with end dates
-        if (expense.expense_type === 'DEBT_PAYMENT' || 
+        const type = String(expense.expense_type || '').toLowerCase();
+        if (type === 'debt_payments' ||
             expense.category === 'debt_payment' ||
-            expense.end_date ||
+            expense.end_date || expense.payment_end_date ||
             expense.is_temporal) {
           
           temporalExpenses.items.push({
             id: expense.id,
             name: expense.description || expense.name,
-            monthly_amount: expense.monthly_equivalent?.amount || expense.amount?.amount || 0,
-            end_date: expense.end_date,
+            monthly_amount: (typeof expense.monthly_equivalent === 'number' ? expense.monthly_equivalent : (parseFloat(expense.amount) || 0)),
+            end_date: expense.end_date || expense.payment_end_date || null,
             expense_type: expense.expense_type
           });
           
-          temporalExpenses.monthlyTotal += expense.monthly_equivalent?.amount || expense.amount?.amount || 0;
+          temporalExpenses.monthlyTotal += (typeof expense.monthly_equivalent === 'number' ? expense.monthly_equivalent : (parseFloat(expense.amount) || 0));
         }
       }
     }
@@ -399,7 +409,7 @@ const BalanceSheetDashboard = () => {
           name: 'Personal Loan Payment (Detected)',
           monthly_amount: 33253,
           end_date: '2028-12-31',  // ~4 years from 2025
-          expense_type: 'DEBT_PAYMENT'
+          expense_type: 'debt_payments'
         });
         
         temporalExpenses.monthlyTotal = 33253;
@@ -806,7 +816,8 @@ const BalanceSheetDashboard = () => {
     return recommendations;
   };
 
-  if (loading || contextLoading) {
+  // Only treat context as loading when global flag is true
+  if (loading || (contextLoading && contextLoading.global)) {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="text-lg">Loading balance sheet...</div>
@@ -1772,28 +1783,47 @@ const BalanceSheetDashboard = () => {
               <h3 className="text-lg font-semibold text-red-700 border-b border-red-200 pb-2">
                 Expense Categories
               </h3>
-              <div className="p-4 bg-red-50 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Monthly Recurring</span>
-                  <span className="font-bold text-red-600">
-                    {formatCurrency(balanceSheetData?.expenses?.summary?.monthly_recurring_total?.amount || 0)}
-                  </span>
-                </div>
-              </div>
-              <div className="p-4 bg-red-50 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Variable Expenses</span>
-                  <span className="font-bold text-red-600">KES 0.00</span>
-                </div>
-              </div>
-              <div className="p-4 bg-red-100 rounded-lg border-2 border-red-300">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold">Total Monthly Expenses</span>
-                  <span className="font-bold text-red-700 text-lg">
-                    {formatCurrency(balanceSheetData?.expenses?.summary?.monthly_recurring_total?.amount || 0)}
-                  </span>
-                </div>
-              </div>
+              {/* Totals by expense type, aligned with Tools/Budget */}
+              {(() => {
+                const items = balanceSheetData?.expenses?.expenses || [];
+                const totalsByType = items.reduce((acc, exp) => {
+                  const type = (exp.expense_type || 'other').toLowerCase();
+                  const amount = parseFloat(exp.monthly_equivalent) || 0;
+                  acc[type] = (acc[type] || 0) + amount;
+                  return acc;
+                }, {});
+                const totalMonthly = balanceSheetData?.expenses?.summary?.monthly_recurring_total?.amount || 0;
+                return (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {EXPENSE_TYPE_DEFS.map(({ value, label, Icon }) => {
+                        const amount = totalsByType[value] || 0;
+                        return (
+                          <div key={value} className="p-4 bg-red-50 rounded-lg border border-red-100">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-2 text-sm font-medium text-red-700">
+                                {Icon ? <Icon className="h-4 w-4 text-red-500" /> : null}
+                                {label}
+                              </span>
+                              <span className="text-base font-semibold text-red-900">
+                                {formatCurrency(amount)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="p-4 bg-red-100 rounded-lg border-2 border-red-300">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold">Total Monthly Expenses</span>
+                        <span className="font-bold text-red-700 text-lg">
+                          {formatCurrency(totalMonthly)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
 

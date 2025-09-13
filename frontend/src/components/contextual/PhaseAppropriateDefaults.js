@@ -5,7 +5,6 @@
  */
 
 import { LIFECYCLE_PHASES } from '../../hooks/useLifecyclePhase';
-import cfaGuidanceService from '../../services/cfaGuidance';
 
 class PhaseAppropriateDefaults {
   constructor() {
@@ -170,7 +169,7 @@ class PhaseAppropriateDefaults {
    * @param {number} age - User's age
    * @returns {Object} Goal timeframe recommendations
    */
-  getGoalTimeframeDefaults(lifecyclePhase, age = 30) {
+  getGoalTimeframeDefaults(lifecyclePhase, age = 30, dependents = 0) {
     const retirementAge = 65;
     const yearsToRetirement = Math.max(0, retirementAge - age);
 
@@ -285,7 +284,7 @@ class PhaseAppropriateDefaults {
       savings_rate: this.getSavingsRateDefaults(lifecyclePhase, income),
       emergency_fund: this.getEmergencyFundDefaults(lifecyclePhase, expenses, dependents),
       insurance_coverage: this.getInsuranceDefaults(lifecyclePhase, userProfile),
-      goal_timeframes: this.getGoalTimeframeDefaults(lifecyclePhase, age),
+      goal_timeframes: this.getGoalTimeframeDefaults(lifecyclePhase, age, dependents),
       risk_tolerance: this.getRiskToleranceDefaults(lifecyclePhase, age),
       budget_allocation: this.getBudgetAllocationDefaults(lifecyclePhase, income),
       phase_priorities: this.getPhasePriorities(lifecyclePhase),

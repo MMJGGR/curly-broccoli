@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import { 
   LifecyclePhaseIndicator, 
   ContextualGuidance, 
@@ -34,12 +34,35 @@ const ContextualTimelineDashboard = () => {
   } = useTimeline();
 
   const {
-    budgetData,
-    actualSurplus,
-    formatAmount,
-    isBudgetReady,
-    loading: budgetLoading,
-  } = useBudget();
+    expenses,
+    incomes = [],
+    loading: budgetLoading
+  } = useUnifiedFinancialContext();
+
+  // Calculate derived values from unified context
+  const totalIncome = Array.isArray(incomes)
+    ? incomes.reduce((sum, inc) => sum + (inc.monthly_amount || inc.amount || 0), 0)
+    : (incomes?.total_monthly_income || 0);
+  const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.monthly_equivalent || 0), 0) || 0;
+  const actualSurplus = totalIncome - totalExpenses;
+  const formatAmount = (amount) => `KES ${Math.round(amount).toLocaleString()}`;
+  const isBudgetReady = !budgetLoading?.global && Array.isArray(expenses) && (Array.isArray(incomes) ? incomes.length >= 0 : true);
+
+  // Mock budgetData structure for compatibility
+  const budgetData = {
+    monthlyIncome: totalIncome,
+    expenses: expenses?.reduce((acc, expense) => {
+      const category = expense.expense_category || 'miscellaneous';
+      acc[category] = (acc[category] || 0) + (expense.monthly_equivalent || 0);
+      return acc;
+    }, {}) || {},
+    goalAllocations: {
+      emergencyFund: 0,
+      retirement: 0,
+      education: 0,
+      investments: 0
+    }
+  };
 
   const [activeView, setActiveView] = useState('insights');
   const navigate = useNavigate();
@@ -53,7 +76,7 @@ const ContextualTimelineDashboard = () => {
   }, [isTimelineReady, loadTimelineJourney]);
 
   // Loading state
-  if (loading || budgetLoading) {
+  if (loading || budgetLoading?.global) {
     return (
       <div className="contextual-timeline-dashboard h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center bg-white p-8 rounded-xl shadow-lg">

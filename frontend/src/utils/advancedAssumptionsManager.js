@@ -428,7 +428,7 @@ class AdvancedAssumptionsManager {
 
     // Demographics validation
     if (assumptions.demographics) {
-      const { lifeExpectancy, retirementAge, healthAdjustment } = assumptions.demographics;
+      const { lifeExpectancy, retirementAge } = assumptions.demographics;
       
       if (lifeExpectancy < 60 || lifeExpectancy > 85) {
         warnings.push(`Life expectancy ${lifeExpectancy} is outside typical Kenya range (65-75)`);
@@ -486,7 +486,6 @@ class AdvancedAssumptionsManager {
     // Check for demographic conflicts
     if (newAssumptions.demographics && oldAssumptions.demographics) {
       const newDemo = newAssumptions.demographics;
-      const oldDemo = oldAssumptions.demographics;
       
       // Retirement age vs life expectancy conflict
       if (newDemo.retirementAge >= newDemo.lifeExpectancy) {
@@ -536,6 +535,8 @@ class AdvancedAssumptionsManager {
           if (resolved.rates.expenseDiscountRate >= resolved.rates.incomeDiscountRate) {
             resolved.rates.expenseDiscountRate = Math.max(8.0, resolved.rates.incomeDiscountRate - 1.0);
           }
+          break;
+        default:
           break;
       }
     });
@@ -673,8 +674,10 @@ class AdvancedAssumptionsManager {
 // Export singleton instance
 export const assumptionsManager = new AdvancedAssumptionsManager();
 
-export default {
+const advancedAssumptionsExports = {
   AdvancedAssumptionsManager,
   assumptionsManager,
   DEFAULT_ASSUMPTION_PROFILES
 };
+
+export default advancedAssumptionsExports;

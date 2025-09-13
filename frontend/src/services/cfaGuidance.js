@@ -75,7 +75,7 @@ class CFAGuidanceService {
    * @returns {Object} CFA-standard defaults
    */
   getPhaseAppropriateDefaults(decisionType, userProfile, lifecyclePhase) {
-    const { age = 30, income = 0, dependents = 0 } = userProfile;
+    const { age = 30, income = 0 } = userProfile;
 
     const defaults = {
       asset_allocation: this.getDefaultAssetAllocation(lifecyclePhase, age),
@@ -118,7 +118,7 @@ class CFAGuidanceService {
   // Private methods for generating specific guidance
 
   generateComprehensiveGuidance(userProfile, lifecyclePhase, budgetData) {
-    const { age = 30, income = 0, expenses = 0, netWorth = 0, goals = [] } = userProfile;
+    const { age = 30, income = 0, expenses = 0, goals = [] } = userProfile;
     const surplus = income - expenses;
 
     return {
@@ -180,7 +180,7 @@ class CFAGuidanceService {
   }
 
   getGoalSettingGuidance(userProfile, lifecyclePhase, existingGoals) {
-    const { age = 30, income = 0, dependents = 0 } = userProfile;
+    const { age = 30, income = 0 } = userProfile;
 
     return {
       recommended_goals: this.getRecommendedGoalsByPhase(lifecyclePhase, userProfile),
