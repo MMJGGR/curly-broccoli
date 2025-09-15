@@ -407,3 +407,7 @@ from .financial_modeling import (
     UserFinancialAssumptions,
     PortfolioOptimizationResult
 )
+
+# Backward-compatibility alias for legacy tests expecting `Income`
+# The canonical model name in this codebase is IncomeSource
+Income = IncomeSource

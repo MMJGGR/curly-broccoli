@@ -25,6 +25,15 @@
 | Variable Reference Errors | 2025-09-11 | ExpenseForm.jsx, IncomeOverview.jsx errors | Fixed undefined variables and imports |
 | Compilation Failures | 2025-09-11 | Missing context imports | Added proper context integration |
 
+### **✅ DEVOPS & TESTING UPDATES (COMPLETED)**
+| Change | Date | Impact |
+|--------|------|--------|
+| Removed Cypress from container builds | 2025-09-14 | Faster, smaller images; run Cypress on host only |
+| Frontend images omit devDependencies | 2025-09-14 | Smaller attack surface; faster builds (`--omit=dev`) |
+| Compose: DB healthcheck + API wait | 2025-09-14 | Stable API startup; fewer race conditions |
+| Frontend API base URL fixed | 2025-09-14 | Browser now calls `http://localhost:8000` (not `http://api:8000`) |
+| CI unchanged but compatible | 2025-09-14 | `npm --prefix frontend run e2e` inherits new env in scripts |
+
 ### **✅ PHASE 2 RETROSPECTIVE**
 **Major Achievement**: ✅ **All onboarding components now use UnifiedFinancialContext**
 - ✅ Eliminated data silos between onboarding and dashboard
@@ -113,7 +122,7 @@
 ## **⚠️ CRITICAL BLOCKERS & RISKS**
 
 ### **🚨 High Priority Issues**
-- None currently - Phase 2 + Onboarding Migration completed successfully ✅
+- RESOLVED (2025-09-14): Frontend attempted to call `http://api:8000` from the browser, causing DNS failures. Fixed by pointing to `http://localhost:8000` via compose env.
 
 ### **🔍 Medium Priority Risks**  
 - **Performance**: Need to monitor context re-render frequency as more components migrate
@@ -165,5 +174,5 @@
 
 *Last Updated: 2025-09-13*  
 *Current Phase: CR004 Phase 3 - Advanced Cross-Component Integration*  
-*Recent Achievement: ✅ BudgetCashflows category alignment (CR005) started; shared defs + icons added*  
+*Recent Achievement: ✅ Container stability + E2E pipeline improvements (DB healthcheck, host-based Cypress, frontend API URL fix)*  
 *Next Milestone: Implement real-time synchronization and smart linking features*

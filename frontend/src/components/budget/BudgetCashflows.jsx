@@ -9,6 +9,7 @@ import { useTimeline } from '../../contexts/TimelineContext';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import { Card, CardContent } from '../ui/card';
 import { EXPENSE_TYPE_DEFS } from '../expenses/expenseTypeDefs';
+import BudgetCategoryForm from './BudgetCategoryForm';
 
 const BudgetCashflows = () => {
   const {
@@ -229,6 +230,10 @@ const BudgetCashflows = () => {
                   <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
                     💳 Expense Categories
                   </h3>
+                  {/* Inline Budget Category CRUD */}
+                  <div className="mb-6">
+                    <BudgetCategoryForm />
+                  </div>
                   {/* Styled cards matching app’s card design */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {expenseTypeDefs.map(({ value, label, Icon }) => {

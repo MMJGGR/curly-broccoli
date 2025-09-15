@@ -180,3 +180,35 @@ npm run test:mock       # Frontend-only testing
 5. **Document test data requirements** and setup procedures
 
 This gives us a solid foundation for reliable, maintainable testing as our application grows!
+## CR006 E2E via Docker Compose
+
+To run the end‑to‑end tests for Change Request CR006 without installing local desktop deps for Cypress, use the `cypress` compose service.
+
+### What it does
+- Waits for `frontend` (http://frontend:3000) and `api` (http://api:8000/healthz).
+- Seeds a test user (idempotent) and baseline data (asset, salary income, rent/utilities, a budget category).
+- Runs the CR006 Cypress specs under `frontend/cypress/e2e-cr006/` in a headless container with all required Electron libraries.
+
+### Commands
+```
+docker compose up -d --build api frontend
+docker compose up --build --abort-on-container-exit cypress
+```
+
+### Credentials used
+- Email: `richard.mmacharia@gmail.com`
+- Password: `jaggerthee`
+
+You can override via environment variables `TEST_USER_EMAIL`, `TEST_USER_PASSWORD`.
+
+### Running locally (optional)
+If you prefer to run Cypress locally instead of the container, install system deps required by Cypress Electron (on Ubuntu/Debian):
+```
+sudo apt-get update && sudo apt-get install -y \
+  libnss3 libatk1.0-0 libatk-bridge2.0-0 libgtk-3-0 \
+  libasound2 libxss1 libgbm1 libxshmfence1 xvfb
+```
+Then run:
+```
+cd frontend && npm run e2e
+```

@@ -1,60 +1,46 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from '../config';
 import MessageBox from './MessageBox';
+import { useUnifiedFinancialContext } from '../contexts/TransactionContext';
 
 /**
  * Dynamic Profile Component - Uses onboarding data instead of hardcoded values
  * Displays user information from the consolidated onboarding system
  */
 const ProfileDynamic = () => {
-    const [onboardingData, setOnboardingData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
     const navigate = useNavigate();
-
-    const API_BASE = API_BASE_URL;
-
-    const fetchOnboardingData = useCallback(async () => {
-        try {
-            setLoading(true);
-            const jwt = localStorage.getItem('jwt');
-            if (!jwt) {
-                navigate('/auth');
-                return;
-            }
-
-            const response = await fetch(`${API_BASE}/api/v1/onboarding-v2-clean/state`, {
-                headers: {
-                    'Authorization': `Bearer ${jwt}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem('jwt');
-                    navigate('/auth');
-                    return;
-                }
-                throw new Error('Failed to fetch profile data');
-            }
-
-            const data = await response.json();
-            setOnboardingData(data);
-        } catch (error) {
-            console.error('Error fetching onboarding data:', error);
-            setError(error.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [API_BASE, navigate]);
+    const {
+      profile,
+      fetchProfile,
+      selectRiskProfile,
+      selectNetCashFlow,
+      selectBudgetSummary,
+      fetchAllFinancialData,
+      applyBaselineToBudget
+    } = useUnifiedFinancialContext();
 
     useEffect(() => {
-        fetchOnboardingData();
-    }, [fetchOnboardingData]);
+        const init = async () => {
+          try {
+            const jwt = localStorage.getItem('jwt');
+            if (!jwt) {
+              navigate('/auth');
+              return;
+            }
+            await Promise.all([fetchProfile(), fetchAllFinancialData()]);
+            setError(null);
+          } catch (e) {
+            setError('Failed to load profile');
+          } finally {
+            setLoading(false);
+          }
+        };
+        init();
+    }, [fetchProfile, fetchAllFinancialData, navigate]);
 
     const handleLogout = () => {
         localStorage.removeItem('jwt');
@@ -80,19 +66,20 @@ const ProfileDynamic = () => {
         return age;
     };
 
-    const calculateRiskScore = (questionnaire) => {
-        if (!questionnaire || questionnaire.length !== 5) return null;
-        const total = questionnaire.reduce((sum, answer) => sum + answer, 0);
-        return Math.round((total / 20) * 100); // Convert to percentage
+    const risk = selectRiskProfile();
+
+    const personal = {
+      firstName: profile?.first_name || '',
+      lastName: profile?.last_name || '',
+      dateOfBirth: profile?.date_of_birth || null,
+      phone: profile?.phone || '',
+      nationalId: profile?.national_id || '',
+      kraPin: profile?.kra_pin || '',
+      employmentStatus: profile?.employment_status || '',
+      dependents: profile?.dependents ?? null,
     };
 
-    const getRiskLevel = (riskScore) => {
-        if (riskScore === null) return 'Not assessed';
-        if (riskScore <= 25) return 'Conservative';
-        if (riskScore <= 50) return 'Moderate';
-        if (riskScore <= 75) return 'Balanced';
-        return 'Aggressive';
-    };
+    const preferences = profile?.preferences || {};
 
     const formatCurrency = (amount) => {
         if (!amount) return 'Not specified';
@@ -113,7 +100,7 @@ const ProfileDynamic = () => {
                 <div className="text-lg text-red-600">Failed to load profile: {error}</div>
                 <button 
                     className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
-                    onClick={fetchOnboardingData}
+                    onClick={() => { setLoading(true); Promise.all([fetchProfile(), fetchAllFinancialData()]).finally(() => setLoading(false)); }}
                 >
                     Retry
                 </button>
@@ -121,51 +108,34 @@ const ProfileDynamic = () => {
         );
     }
 
-    const personal = onboardingData?.personal_data || {};
-    const risk = onboardingData?.risk_data || {};
-    const financial = onboardingData?.financial_data || {};
-    const goals = onboardingData?.goals_data || {};
-    const preferences = onboardingData?.preferences_data || {};
-    
-    const riskScore = calculateRiskScore(risk.questionnaire);
-    const riskLevel = getRiskLevel(riskScore);
+    const riskScore = risk?.score;
+    const riskLevel = risk?.level;
+    const budget = selectBudgetSummary();
+    const netCash = selectNetCashFlow();
 
     return (
         <div className="bg-gray-100 min-h-screen flex flex-col">
             <main className="flex-grow container mx-auto p-6 md:p-8">
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Profile</h1>
 
-                {/* Completion Status */}
+                {/* Profile Summary */}
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Onboarding Status</h2>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-700">
-                                <strong>Current Step:</strong> {onboardingData?.current_step || 1} of 5
-                            </p>
-                            <p className="text-gray-700">
-                                <strong>Completed Steps:</strong> {onboardingData?.completed_steps?.join(', ') || 'None'}
-                            </p>
-                            <p className="text-gray-700">
-                                <strong>Status:</strong> 
-                                <span className={`ml-2 px-2 py-1 rounded text-sm ${
-                                    onboardingData?.is_complete 
-                                        ? 'bg-green-100 text-green-800' 
-                                        : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                    {onboardingData?.is_complete ? 'Complete' : 'In Progress'}
-                                </span>
-                            </p>
-                        </div>
-                        {!onboardingData?.is_complete && (
-                            <button
-                                onClick={() => navigate('/onboarding')}
-                                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                            >
-                                Continue Onboarding
-                            </button>
-                        )}
+                  <h2 className="text-xl font-semibold text-gray-800 mb-4">Profile Summary</h2>
+                  <div className="flex items-center justify-between">
+                    <div className="text-gray-700">
+                      <p><strong>Name:</strong> {(profile?.first_name || '') + ' ' + (profile?.last_name || '')}</p>
+                      <p><strong>Date of Birth:</strong> {profile?.date_of_birth || 'Not provided'}</p>
+                      <p><strong>Age:</strong> {profile?.age ?? 'Not provided'}</p>
+                      <p><strong>Employment:</strong> {profile?.employment_status || 'Not specified'}</p>
+                      <p><strong>Dependents:</strong> {profile?.dependents ?? 'Not specified'}</p>
                     </div>
+                    <button
+                      onClick={() => navigate('/onboarding')}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Edit Profile Data
+                    </button>
+                  </div>
                 </div>
 
                 {/* Personal Information */}
@@ -193,9 +163,9 @@ const ProfileDynamic = () => {
                     <div className="text-gray-700">
                         <p><strong>Risk Score:</strong> <span className="font-bold text-blue-600">{riskScore !== null ? `${riskScore}%` : 'Not assessed'}</span></p>
                         <p><strong>Risk Level:</strong> <span className="font-bold text-blue-600">{riskLevel}</span></p>
-                        <p><strong>Questionnaire:</strong> {risk.questionnaire?.length === 5 ? 'Completed' : 'Not completed'}</p>
-                        {risk.questionnaire?.length === 5 && (
-                            <p><strong>Responses:</strong> [{risk.questionnaire.join(', ')}]</p>
+                        <p><strong>Questionnaire:</strong> {Array.isArray(profile?.questionnaire) ? 'Completed' : 'Not completed'}</p>
+                        {Array.isArray(profile?.questionnaire) && (
+                            <p><strong>Responses:</strong> [{profile.questionnaire.join(', ')}]</p>
                         )}
                     </div>
                     <button 
@@ -210,88 +180,50 @@ const ProfileDynamic = () => {
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Financial Information</h2>
                     <div className="text-gray-700">
-                        <p><strong>Monthly Income:</strong> {formatCurrency(financial.monthlyIncome)}</p>
-                        <p><strong>Income Frequency:</strong> {financial.incomeFrequency || 'Not specified'}</p>
-                        
+                        <p><strong>Monthly Income:</strong> {formatCurrency(profile?.monthly_income)}</p>
                         <div className="mt-4">
-                            <p className="font-semibold mb-2">Monthly Expenses:</p>
-                            <div className="ml-4 space-y-1">
-                                <p>Rent: {formatCurrency(financial.rent)}</p>
-                                <p>Utilities: {formatCurrency(financial.utilities)}</p>
-                                <p>Groceries: {formatCurrency(financial.groceries)}</p>
-                                <p>Transport: {formatCurrency(financial.transport)}</p>
-                                <p>Loan Repayments: {formatCurrency(financial.loanRepayments)}</p>
-                                
-                                {/* Custom expenses */}
-                                {financial.customExpenses?.length > 0 && (
-                                    <div>
-                                        <p className="font-semibold mt-2">Additional Expenses:</p>
-                                        {financial.customExpenses.map((expense, index) => (
-                                            <p key={index} className="ml-2">
-                                                {expense.name}: {formatCurrency(expense.amount)}
-                                            </p>
-                                        ))}
-                                    </div>
-                                )}
-                                
-                                {/* Calculate total expenses - matching Budget calculation */}
-                                {financial.monthlyIncome && (
-                                    <div className="border-t pt-2 mt-2">
-                                        {(() => {
-                                            // Calculate total expenses to match Budget component calculation
-                                            const coreExpenses = (parseFloat(financial.rent) || 0) +
-                                                                (parseFloat(financial.utilities) || 0) +
-                                                                (parseFloat(financial.groceries) || 0) +
-                                                                (parseFloat(financial.transport) || 0) +
-                                                                (parseFloat(financial.loanRepayments) || 0);
-                                            
-                                            const customExpensesTotal = financial.customExpenses?.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0) || 0;
-                                            
-                                            // Add custom expenses to miscellaneous category to match Budget structure
-                                            const totalExpenses = coreExpenses + customExpensesTotal;
-                                            
-                                            const monthlyIncome = parseFloat(financial.monthlyIncome) || 0;
-                                            const availableAfterExpenses = monthlyIncome - totalExpenses;
-                                            
-                                            return (
-                                                <>
-                                                    <p className="font-semibold">
-                                                        Total Monthly Expenses: {formatCurrency(totalExpenses)}
-                                                    </p>
-                                                    <p className="font-semibold">
-                                                        Monthly Income (Net): {formatCurrency(monthlyIncome)}
-                                                    </p>
-                                                    <p className={`font-semibold ${availableAfterExpenses >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                        Available After Expenses: {formatCurrency(availableAfterExpenses)}
-                                                    </p>
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
+                          <p className="font-semibold mb-2">Monthly Totals (from Budget)</p>
+                          <div className="ml-4 space-y-1">
+                            <p>Total Expenses: {formatCurrency(budget?.total_spent || 0)}</p>
+                            <p>Remaining: {formatCurrency(budget?.remaining_budget || 0)}</p>
+                            <p className={`${(netCash || 0) >= 0 ? 'text-green-600' : 'text-red-600'} font-semibold`}>
+                              Net Cash Flow: {formatCurrency(netCash || 0)}
+                            </p>
+                          </div>
+                          <div className="mt-4">
+                            <button
+                              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                              onClick={async () => {
+                                try {
+                                  setLoading(true);
+                                  await applyBaselineToBudget();
+                                  setMessage('Baseline applied to Budget');
+                                  setShowMessageBox(true);
+                                  await fetchAllFinancialData();
+                                } catch (e) {
+                                  setError('Failed to apply baseline');
+                                } finally {
+                                  setLoading(false);
+                                }
+                              }}
+                              data-testid="apply-baseline-button"
+                            >
+                              Apply Baseline to Budget
+                            </button>
+                          </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Goals */}
-                <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+                {/* Goals (basic placeholders; full goals managed elsewhere) */}
+                {profile?.emergency_fund_target && (
+                  <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Financial Goals</h2>
                     <div className="text-gray-700">
-                        {Object.keys(goals).length > 0 ? (
-                            <div className="space-y-2">
-                                {goals.emergencyFund && <p><strong>Emergency Fund:</strong> {formatCurrency(goals.emergencyFund)}</p>}
-                                {goals.homeDownPayment && <p><strong>Home Down Payment:</strong> {formatCurrency(goals.homeDownPayment)}</p>}
-                                {goals.education && <p><strong>Education:</strong> {formatCurrency(goals.education)}</p>}
-                                {goals.retirement && <p><strong>Retirement:</strong> {formatCurrency(goals.retirement)}</p>}
-                                {goals.investment && <p><strong>Investment:</strong> {formatCurrency(goals.investment)}</p>}
-                                {goals.other && <p><strong>Other:</strong> {goals.other}</p>}
-                            </div>
-                        ) : (
-                            <p className="text-gray-500">No goals set yet</p>
-                        )}
+                      <p><strong>Emergency Fund Target:</strong> {formatCurrency(profile.emergency_fund_target)}</p>
                     </div>
-                </div>
+                  </div>
+                )}
 
                 {/* Preferences */}
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
@@ -316,7 +248,7 @@ const ProfileDynamic = () => {
                         </button>
                         <button 
                             className="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
-                            onClick={fetchOnboardingData}
+                            onClick={() => { setLoading(true); fetchProfile().finally(() => setLoading(false)); }}
                         >
                             Refresh Data
                         </button>

@@ -485,7 +485,7 @@ const ExpenseManagement = () => {
                       <SelectTrigger>
                         <SelectValue placeholder="How is this expense related?" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent data-testid="relationship-options">
                         {relationshipTypes.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}

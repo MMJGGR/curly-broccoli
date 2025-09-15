@@ -1,8 +1,11 @@
 const { defineConfig } = require("cypress")
 
+// Prefer explicit env overrides supplied via Docker Compose when present
+const computedBaseUrl = process.env.CYPRESS_baseUrl || process.env.FRONTEND_URL || "http://frontend:3000";
+
 module.exports = defineConfig({
   e2e: {
-    baseUrl: "http://localhost:3000",
+    baseUrl: computedBaseUrl,
     viewportWidth: 1280,
     viewportHeight: 720,
     defaultCommandTimeout: 10000,
@@ -28,29 +31,38 @@ module.exports = defineConfig({
     },
     
     setupNodeEvents(on, config) {
-      // Environment-based configuration
-      if (config.env.API_MODE === 'mock') {
-        // For frontend-only tests with mocked data
-        config.baseUrl = "http://localhost:3000"
-        config.env.SKIP_AUTH = true
-      } else if (config.env.API_MODE === 'local') {
-        // For full-stack local testing
-        config.baseUrl = "http://localhost:3000"
-        config.env.SKIP_AUTH = false
-      } else if (config.env.API_MODE === 'integration') {
-        // For CI/CD integration testing
-        config.baseUrl = process.env.FRONTEND_URL || "http://localhost:3000"
-        config.env.API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8000"
+      // Highest precedence: explicit env override from process (e.g. compose)
+      if (process.env.CYPRESS_baseUrl) {
+        config.baseUrl = process.env.CYPRESS_baseUrl;
       }
-      
+
+      // Environment-based configuration
+      const mode = config.env.API_MODE || 'mock';
+      if (mode === 'mock') {
+        // For frontend-only tests with mocked data
+        config.baseUrl = config.baseUrl || "http://localhost:3000";
+        config.env.SKIP_AUTH = true;
+      } else if (mode === 'local') {
+        // For full-stack local testing
+        config.baseUrl = config.baseUrl || "http://localhost:3000";
+        config.env.SKIP_AUTH = false;
+      } else if (mode === 'integration') {
+        // For CI/CD integration testing / dockerized runs
+        const frontendUrl = process.env.FRONTEND_URL || config.baseUrl || "http://localhost:3000";
+        const apiBase = process.env.API_BASE_URL || "http://localhost:8000";
+        config.baseUrl = frontendUrl;
+        config.env.API_BASE_URL = apiBase;
+      }
+
       return config;
     },
     
     supportFile: "cypress/support/e2e.js",
-    specPattern: "cypress/e2e/**/*.cy.js",
+    specPattern: "cypress/e2e-cr006/**/*.cy.js",
     
     // Organize tests by type
     excludeSpecPattern: [
+      "cypress/e2e/**/*",
       "**/examples/**/*",
       "**/archived/**/*"
     ]

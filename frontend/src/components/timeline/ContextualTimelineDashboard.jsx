@@ -36,15 +36,18 @@ const ContextualTimelineDashboard = () => {
   const {
     expenses,
     incomes = [],
-    loading: budgetLoading
+    loading: budgetLoading,
+    selectNetCashFlow,
+    selectBudgetSummary
   } = useUnifiedFinancialContext();
 
   // Calculate derived values from unified context
-  const totalIncome = Array.isArray(incomes)
+  const budget = selectBudgetSummary ? selectBudgetSummary() : null;
+  const actualSurplus = selectNetCashFlow ? selectNetCashFlow() : 0;
+  const totalIncome = budget?.total_budgeted ?? (Array.isArray(incomes)
     ? incomes.reduce((sum, inc) => sum + (inc.monthly_amount || inc.amount || 0), 0)
-    : (incomes?.total_monthly_income || 0);
-  const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.monthly_equivalent || 0), 0) || 0;
-  const actualSurplus = totalIncome - totalExpenses;
+    : (incomes?.total_monthly_income || 0));
+  const totalExpenses = budget?.total_spent ?? (expenses?.reduce((sum, expense) => sum + (expense.monthly_equivalent || 0), 0) || 0);
   const formatAmount = (amount) => `KES ${Math.round(amount).toLocaleString()}`;
   const isBudgetReady = !budgetLoading?.global && Array.isArray(expenses) && (Array.isArray(incomes) ? incomes.length >= 0 : true);
 

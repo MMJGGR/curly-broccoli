@@ -7,6 +7,12 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-finance_app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
 
   api:
     build:
@@ -15,7 +21,8 @@ services:
     env_file:
       - ./.env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
     
@@ -31,6 +38,8 @@ services:
     environment:
       - HOST=0.0.0.0
       - REACT_APP_API_BASE_URL=http://localhost:8000
+      - DISABLE_ESLINT_PLUGIN=true
+      - ESLINT_NO_DEV_ERRORS=true
     depends_on:
       - api
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import IncomeOverview from '../income/IncomeOverview';
+import IncomeManagement from './IncomeManagement';
 import GoalsOverview from '../goals/GoalsOverview';
 import ExpenseManagement from './ExpenseManagement';
 import AssetManagement from './AssetManagement';
@@ -166,7 +166,7 @@ const ToolsDashboard = () => {
       {/* Content Area */}
       <div className="flex-1 overflow-auto">
         {activeSection === 'overview' && renderOverview()}
-        {activeSection === 'income' && <IncomeOverview />}
+        {activeSection === 'income' && <IncomeManagement />}
         {activeSection === 'goals' && <GoalsOverview />}
         {activeSection === 'expenses' && <ExpenseManagement />}
         {activeSection === 'assets' && <AssetManagement />}

@@ -875,6 +875,7 @@ const BalanceSheetDashboard = () => {
                 ? 'bg-white text-purple-600 shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
+            data-testid="toggle-lifetime"
           >
             🎯 Lifetime View
           </button>
@@ -1001,7 +1002,7 @@ const BalanceSheetDashboard = () => {
                 <Building2 className="h-4 w-4 text-purple-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-green-600" data-testid="lifetime-total-assets">
                   {formatCurrency(balanceSheetData?.lifetime?.totalAssets || 0)}
                 </div>
                 <p className="text-xs text-purple-600">
