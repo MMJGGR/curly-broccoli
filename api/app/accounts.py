@@ -29,7 +29,7 @@ def read_account(
     db_account = crud_account.get_account(db=db, account_id=account_id, user_id=current_user.id)
     if db_account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
-    return Account.from_orm(db_account)
+    return Account.model_validate(db_account)
 
 @router.get("/", response_model=List[Account])
 def read_accounts(
@@ -43,7 +43,7 @@ def read_accounts(
     current_user: User = Depends(get_current_user)
 ):
     accounts = crud_account.get_accounts(db=db, user_id=current_user.id, skip=skip, limit=limit, name=name, type=type, sort_by=sort_by, sort_order=sort_order)
-    return [Account.from_orm(account) for account in accounts]
+    return [Account.model_validate(account) for account in accounts]
 
 @router.put("/{account_id}", response_model=Account)
 def update_account(
@@ -55,7 +55,7 @@ def update_account(
     db_account = crud_account.update_account(db=db, account_id=account_id, account_in=account, user_id=current_user.id)
     if db_account is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
-    return Account.from_orm(db_account)
+    return Account.model_validate(db_account)
 
 @router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_account(

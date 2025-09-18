@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
+import { Alert } from '../ui/alert';
+import { Skeleton, SkeletonText } from '../ui/skeleton';
 import { Plus, Calendar, Target, AlertCircle, DollarSign } from '../ui/icons';
 import { Badge } from '../ui/badge';
 import ExpenseForm from './ExpenseForm';
@@ -87,30 +89,35 @@ const ExpenseDashboard = () => {
 
   if (loading.expenses || loading.global) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-lg">Loading expenses...</div>
+      <div className="container mx-auto p-6 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <SkeletonText lines={2} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <SkeletonText lines={5} />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-2 text-red-700">
-              <AlertCircle className="h-5 w-5" />
-              <span>Error loading expenses: {error}</span>
-            </div>
-            <Button 
-              onClick={() => fetchAllFinancialData()} 
-              className="mt-4"
-              variant="outline"
-            >
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="container mx-auto p-6">
+        <Alert variant="danger" title="Error loading expenses">
+          {error}
+        </Alert>
+        <Button onClick={() => fetchAllFinancialData()} className="mt-4" variant="outline">
+          Retry
+        </Button>
       </div>
     );
   }

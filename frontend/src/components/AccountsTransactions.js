@@ -1,13 +1,20 @@
-// TODO: Use src/api.js listAccounts() and listTransactions() to fetch data (Epic 3 Stories 2 & 7, ~70% of account register after integration)
+// Accounts & Transactions Management using UnifiedFinancialContext
 import React, { useEffect, useState } from 'react';
 import MessageBox from './MessageBox';
-import { listAccounts, listTransactions, createAccount, updateAccount, deleteAccount } from '../api';
+import { useUnifiedFinancialContext } from '../contexts/TransactionContext';
 
 const AccountsTransactions = ({ onNextScreen }) => {
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
-    const [accounts, setAccounts] = useState([]);
-    const [transactions, setTransactions] = useState([]);
+    const { 
+      accounts,
+      transactions,
+      fetchAccounts,
+      fetchTransactions,
+      createAccount: ctxCreateAccount,
+      updateAccount: ctxUpdateAccount,
+      deleteAccount: ctxDeleteAccount
+    } = useUnifiedFinancialContext();
     const [showAddAccountForm, setShowAddAccountForm] = useState(false);
     const [editingAccount, setEditingAccount] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
@@ -35,28 +42,17 @@ const AccountsTransactions = ({ onNextScreen }) => {
         setMessage('');
     };
 
-    const fetchAccounts = async () => {
-        try {
-            const accts = await listAccounts(localStorage.getItem('jwt')); // Pass token
-            if (Array.isArray(accts)) setAccounts(accts);
-        } catch (err) {
-            console.error('Error fetching accounts:', err);
-        }
-    };
-
     useEffect(() => {
         const loadData = async () => {
             try {
-                const accts = await listAccounts(localStorage.getItem('jwt')); // Pass token
-                if (Array.isArray(accts)) setAccounts(accts);
-                const txs = await listTransactions(localStorage.getItem('jwt')); // Pass token
-                if (Array.isArray(txs)) setTransactions(txs);
+                await fetchAccounts();
+                await fetchTransactions({ limit: 100 });
             } catch (err) {
                 console.error(err);
             }
         };
         loadData();
-    }, []);
+    }, [fetchAccounts, fetchTransactions]);
 
     const handleAddAccountSubmit = async (e) => {
         e.preventDefault();
@@ -82,11 +78,11 @@ const AccountsTransactions = ({ onNextScreen }) => {
             
             if (editingAccount) {
                 console.log('Updating account:', editingAccount.id); // Debug log
-                await updateAccount(token, editingAccount.id, accountData);
+                await ctxUpdateAccount(editingAccount.id, accountData);
                 setEditingAccount(null);
             } else {
                 console.log('Creating new account'); // Debug log
-                const result = await createAccount(token, accountData);
+                const result = await ctxCreateAccount(accountData);
                 console.log('Account created:', result); // Debug log
             }
             
@@ -130,7 +126,7 @@ const AccountsTransactions = ({ onNextScreen }) => {
         }
 
         try {
-            await deleteAccount(token, accountId);
+            await ctxDeleteAccount(accountId);
             fetchAccounts();
             setShowDeleteConfirm(null);
         } catch (error) {

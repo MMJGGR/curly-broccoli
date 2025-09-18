@@ -1,6 +1,6 @@
 # File: api/app/auth.py
 
-from datetime import date
+from datetime import date, datetime
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
@@ -11,6 +11,12 @@ from app.schemas import RegisterRequest, Token, RegisterResponse, ProfileUpdate,
 from app.security import hash_password, verify_password, create_access_token, get_current_user
 from compute.risk_engine import compute_risk_score, compute_risk_level
 from app.utils import normalize_questionnaire
+from app.models import AuditLog
+# Clean-arch use case + repo for profile delegation
+from app.application.use_cases.get_user_profile import UpdateUserProfile as CAUpdateUserProfile
+from app.infrastructure.repositories.sqlalchemy_profile_repository import SqlAlchemyProfileRepository
+from app.domain.entities.profile import UserProfile as CAUserProfile
+from app.domain.value_objects.money import Money
 import json
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -332,6 +338,46 @@ def update_user_profile(
     
     db.commit()
     db.refresh(profile)
+
+    # Delegate to clean-arch UpdateUserProfile when possible (non-blocking)
+    try:
+        # Build CA entity only if we have sufficient data to pass validation
+        full_name = f"{profile.first_name or ''} {profile.last_name or ''}".strip()
+        age_years = calculate_age(profile.date_of_birth) if profile.date_of_birth else None
+        monthly_income_val = profile.monthly_income or (profile.annual_income / 12 if profile.annual_income else 0)
+        if full_name and len(full_name) >= 2 and age_years and monthly_income_val and monthly_income_val > 0:
+            repo = SqlAlchemyProfileRepository(db)
+            use_case = CAUpdateUserProfile(repo)
+            entity = CAUserProfile(
+                user_id=current_user.id,
+                full_name=full_name,
+                monthly_income=Money(monthly_income_val),
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+                id=profile.id,
+                age=age_years,
+                phone_number=profile.phone,
+                location=None
+            )
+            # Execute repository update directly to avoid async context issues
+            repo.update_user_profile(entity)
+        # else: insufficient data for CA validation; skip silently
+    except Exception:
+        # Do not block profile update on CA delegation failures
+        pass
+
+    # Audit log (non-intrusive)
+    try:
+        log = AuditLog(
+            user_id=current_user.id,
+            route="/auth/profile",
+            action="update",
+            payload=json.dumps(update_data)[:4000]
+        )
+        db.add(log)
+        db.commit()
+    except Exception:
+        db.rollback()
     
     return ProfileResponse(
         email=current_user.email,

@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import predictiveAnalytics from '../../services/predictiveAnalytics';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const ProbabilityGauge = ({ 
   probability, 
@@ -13,6 +13,7 @@ const ProbabilityGauge = ({
   animated = true,
   className = '' 
 }) => {
+  const analytics = useAnalytics();
   // Size configurations
   const sizeConfig = {
     small: { radius: 40, strokeWidth: 6, fontSize: 14 },
@@ -39,7 +40,9 @@ const ProbabilityGauge = ({
 
   const color = getColor(probability);
   const percentage = Math.round(probability * 100);
-  const description = predictiveAnalytics.getRiskLevelDescription(probability);
+  const description = analytics.getRiskLevelColor ? undefined : undefined;
+  // Use context for formatting; keep description with service's color mapping replacement
+  const formattedPercentage = analytics.formatPercentage(probability);
 
   return (
     <div className={`probability-gauge ${size} ${className}`}>
@@ -85,7 +88,8 @@ const ProbabilityGauge = ({
           </div>
           {showLabel && (
             <div className="description" style={{ fontSize: `${fontSize * 0.5}px` }}>
-              {description}
+              {/* Keep a generic label if no description in context */}
+              {`Success`}
             </div>
           )}
         </div>
@@ -96,7 +100,7 @@ const ProbabilityGauge = ({
         <div className="confidence-level">
           <span className="label">Success Probability:</span>
           <span className="value" style={{ color }}>
-            {predictiveAnalytics.formatPercentage(probability)}
+            {formattedPercentage}
           </span>
         </div>
       </div>

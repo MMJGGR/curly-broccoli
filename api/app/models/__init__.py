@@ -98,6 +98,16 @@ class Profile(Base):
 
     owner = relationship("User", back_populates="profile")
 
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True)
+    route = Column(String, index=True)
+    action = Column(String, index=True)
+    payload = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class RiskProfile(Base):
     __tablename__ = "risk_profiles"
 

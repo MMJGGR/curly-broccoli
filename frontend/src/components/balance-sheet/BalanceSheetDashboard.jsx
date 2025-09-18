@@ -32,7 +32,8 @@ const BalanceSheetDashboard = () => {
   } = useUnifiedFinancialContext();
 
   const [activeView, setActiveView] = useState('overview');
-  const [balanceSheetMode, setBalanceSheetMode] = useState('traditional'); // 'traditional' or 'lifetime'
+  // Simplify to lifetime-only (CFA methodology)
+  const [balanceSheetMode, setBalanceSheetMode] = useState('lifetime');
   const [balanceSheetData, setBalanceSheetData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -849,48 +850,15 @@ const BalanceSheetDashboard = () => {
 
   const renderOverview = () => (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header with Mode Toggle */}
+      {/* Header - Lifetime-only */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Balance Sheet Overview</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Lifetime Balance Sheet (CFA)</h1>
         <p className="text-gray-600 mt-2">
-          Comprehensive view of your financial position with CFA-compliant analysis
-        </p>
-        
-        {/* Clean Toggle */}
-        <div className="mt-6 inline-flex bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setBalanceSheetMode('traditional')}
-            className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-              balanceSheetMode === 'traditional'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            📊 Current Position
-          </button>
-          <button
-            onClick={() => setBalanceSheetMode('lifetime')}
-            className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-              balanceSheetMode === 'lifetime'
-                ? 'bg-white text-purple-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            data-testid="toggle-lifetime"
-          >
-            🎯 Lifetime View
-          </button>
-        </div>
-        
-        {/* Mode Description */}
-        <p className="text-sm text-gray-500 mt-3">
-          {balanceSheetMode === 'traditional' 
-            ? 'Your current assets and liabilities today'
-            : 'Lifetime earning capacity vs. expenses (CFA-compliant with Kenya adjustments)'
-          }
+          Lifetime earning capacity vs. expenses with Kenya-specific assumptions
         </p>
 
-        {/* Discount Rate Override Button (Lifetime View Only) */}
-        {balanceSheetMode === 'lifetime' && (
+        {/* Discount Rate Override Button */}
+        {true && (
           <div className="mt-4 flex flex-col items-center space-y-4">
             <div className="flex items-center justify-center space-x-4">
               <Badge variant="outline" className="bg-blue-50 text-blue-700">
@@ -933,7 +901,7 @@ const BalanceSheetDashboard = () => {
         )}
         
         {/* CFA Methodology Note */}
-        {balanceSheetMode === 'lifetime' && (
+        {true && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-xs text-blue-700">
               <strong>CFA Methodology Applied:</strong> Life expectancy: {profileData?.profile?.age ? Math.min(78, 66 + (profileData.profile.monthly_income >= 150000 ? 3 : 0)) : 71} years | 
@@ -943,58 +911,8 @@ const BalanceSheetDashboard = () => {
         )}
       </div>
 
-      {/* Key Metrics - Dynamic based on mode */}
+      {/* Key Metrics - Lifetime only */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {balanceSheetMode === 'traditional' ? (
-          <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Current Assets</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(balanceSheetData?.traditional?.totalAssets || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Physical assets you own today
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Current Liabilities</CardTitle>
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {formatCurrency(balanceSheetData?.traditional?.totalLiabilities || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Debts you owe today
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Current Net Worth</CardTitle>
-                <Calculator className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${
-                  (balanceSheetData?.traditional?.netWorth || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {formatCurrency(balanceSheetData?.traditional?.netWorth || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Assets minus liabilities
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        ) : (
           <>
             <Card className="border-purple-200 bg-purple-50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -1043,8 +961,48 @@ const BalanceSheetDashboard = () => {
               </CardContent>
             </Card>
           </>
-        )}
       </div>
+
+      {/* Lifecycle Visualization (Decreasing human capital vs. growing actual capital) */}
+      {balanceSheetData?.lifetime && (
+        <div className="mb-8">
+          <Card className="border-indigo-200 bg-indigo-50">
+            <CardHeader>
+              <CardTitle>Lifecycle Visualization</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const age = profile?.age || profileData?.profile?.age || 30;
+                const retire = profile?.retirement_age || profileData?.profile?.retirement_age || 65;
+                const total = Math.max(1, retire - 18);
+                const remaining = Math.max(0, retire - age);
+                const humanPct = Math.max(0, Math.min(100, Math.round((remaining / total) * 100)));
+                const currentAssets = balanceSheetData?.assets?.summary?.total_current_value || 0;
+                const lifetimeAssets = balanceSheetData?.lifetime?.totalAssets || 1;
+                const actualShare = Math.max(0, Math.min(100, Math.round((currentAssets / lifetimeAssets) * 100)));
+                return (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm text-gray-700 mb-1"><span>Human Capital Remaining</span><span>{humanPct}%</span></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${humanPct}%` }} />
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Declines to 0% by retirement age {retire}</p>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm text-gray-700 mb-1"><span>Actual Capital Share</span><span>{actualShare}%</span></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-emerald-600 h-2 rounded-full" style={{ width: `${actualShare}%` }} />
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Current assets as % of lifetime assets (assets + human capital)</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* CFA-Compliant Portfolio Risk/Return Analysis */}
       {riskReturnAnalysis && (

@@ -21,8 +21,14 @@ const BudgetCashflows = () => {
   const {
     expenses,
     incomes = [],
-    loading
+    loading,
+    fetchBudgetCategories,
+    selectBudgetCategories
   } = useUnifiedFinancialContext();
+  const goalCategories = React.useMemo(() => {
+    const list = selectBudgetCategories ? selectBudgetCategories() : [];
+    return (list || []).filter(c => typeof c.name === 'string' && c.name.startsWith('Goal: '));
+  }, [selectBudgetCategories]);
 
   // Calculate derived values
   const totalIncome = Array.isArray(incomes)
@@ -83,6 +89,11 @@ const BudgetCashflows = () => {
   const handleImportClose = () => {
     setShowImportModal(false);
   };
+
+  // Load goal budget categories (planner-created)
+  React.useEffect(() => {
+    if (fetchBudgetCategories) fetchBudgetCategories().catch(()=>{});
+  }, [fetchBudgetCategories]);
 
   // Loading state
   if (loading?.global || timelineLoading) {
@@ -364,35 +375,52 @@ const BudgetCashflows = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Import Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">Import Transactions</h3>
-            <p className="text-gray-600 mb-4">Import functionality temporarily unavailable.</p>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  console.warn('Data refreshes automatically');
-                  handleImportClose();
-                }}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-              >
-                Refresh Data
-              </button>
-              <button 
-                onClick={handleImportClose}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              >
-                Close
-              </button>
+          {/* Goal Allocations Summary */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h3 className="font-medium text-gray-800 mb-2">Goal Allocations</h3>
+            <p className="text-sm text-gray-600 mb-2">Auto-created categories from planner or onboarding</p>
+            {goalCategories.length === 0 ? (
+              <p className="text-gray-500">No goal allocation categories yet.</p>
+            ) : (
+              <ul className="space-y-1 text-sm">
+                {goalCategories.slice(0,5).map(gc => (
+                  <li key={gc.id} className="flex justify-between">
+                    <span className="text-gray-700">{gc.name.replace('Goal: ', '')}</span>
+                    <span className="font-medium text-gray-900">KES {Math.round(gc.budgeted_amount || 0).toLocaleString()}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          {/* Import Modal */}
+          {showImportModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 className="text-lg font-bold text-gray-800 mb-4">Import Transactions</h3>
+                <p className="text-gray-600 mb-4">Import functionality temporarily unavailable.</p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => {
+                      console.warn('Data refreshes automatically');
+                      handleImportClose();
+                    }}
+                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                  >
+                    Refresh Data
+                  </button>
+                  <button 
+                    onClick={handleImportClose}
+                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
+          )}
           </div>
-        </div>
-      )}
+          </div>
+      </div>
     </div>
   );
 };

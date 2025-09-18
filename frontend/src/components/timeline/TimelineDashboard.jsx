@@ -9,7 +9,7 @@ import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import TimelineVisualization from './TimelineVisualization';
 import AlignmentDashboard from './AlignmentDashboard';
 import GoalAnalyticsDashboard from '../analytics/GoalAnalyticsDashboard';
-import predictiveAnalytics from '../../services/predictiveAnalytics';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const TimelineDashboard = () => {
   // Helper function for milestone icons
@@ -83,12 +83,13 @@ const TimelineDashboard = () => {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [timelineCollapsed, setTimelineCollapsed] = useState(false);
   const navigate = useNavigate();
+  const analytics = useAnalytics();
 
   const loadDashboardAnalytics = useCallback(async () => {
     setLoadingAnalytics(true);
     try {
       // Load dashboard insights
-      const insights = await predictiveAnalytics.getDashboardInsights();
+      const insights = await analytics.getDashboardInsights();
       setDashboardInsights(insights);
 
       // Load analytics for each milestone/goal
@@ -98,7 +99,7 @@ const TimelineDashboard = () => {
           .slice(0, 5) // Limit to first 5 for performance
           .map(async (milestone) => {
             try {
-              const analysis = await predictiveAnalytics.analyzeGoalTrajectory(milestone.id);
+              const analysis = await analytics.analyzeGoalTrajectory(milestone.id);
               return { id: milestone.id, analysis };
             } catch (error) {
               console.warn(`Analytics failed for milestone ${milestone.id}:`, error);
@@ -140,7 +141,7 @@ const TimelineDashboard = () => {
 
   const refreshAnalytics = async () => {
     // Clear cache and reload analytics
-    predictiveAnalytics.clearCache();
+    analytics.clearCache();
     await loadDashboardAnalytics();
   };
 
@@ -402,7 +403,7 @@ const TimelineDashboard = () => {
                       </div>
                       {nextMilestone.target_amount && (
                         <div className="text-lg font-semibold text-green-600 mt-2">
-                          {predictiveAnalytics.formatCurrency(nextMilestone.target_amount)}
+                          {analytics.formatCurrency(nextMilestone.target_amount)}
                         </div>
                       )}
                       
@@ -414,12 +415,12 @@ const TimelineDashboard = () => {
                             <span 
                               className="font-semibold"
                               style={{ 
-                                color: predictiveAnalytics.getRiskLevelColor(
+                                color: analytics.getRiskLevelColor(
                                   goalAnalytics[nextMilestone.id].success_probability
                                 )
                               }}
                             >
-                              {predictiveAnalytics.formatPercentage(
+                              {analytics.formatPercentage(
                                 goalAnalytics[nextMilestone.id].success_probability
                               )}
                             </span>
@@ -719,10 +720,10 @@ const TimelineDashboard = () => {
                                 <div 
                                   className="font-semibold"
                                   style={{ 
-                                    color: predictiveAnalytics.getRiskLevelColor(analytics.success_probability)
+                                    color: analytics.getRiskLevelColor(analytics.success_probability)
                                   }}
                                 >
-                                  {predictiveAnalytics.formatPercentage(analytics.success_probability)}
+                                  {analytics.formatPercentage(analytics.success_probability)}
                                 </div>
                               </div>
                               <div>
@@ -734,7 +735,7 @@ const TimelineDashboard = () => {
                               <div className="col-span-2">
                                 <span className="text-gray-500">Current:</span>
                                 <div className="font-semibold text-green-600">
-                                  {predictiveAnalytics.formatCurrency(analytics.current_progress?.actual_amount || 0)}
+                                  {analytics.formatCurrency(analytics.current_progress?.actual_amount || 0)}
                                 </div>
                               </div>
                               {analytics.recommendations && analytics.recommendations.length > 0 && (

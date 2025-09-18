@@ -28,5 +28,4 @@ class AccountInDBBase(AccountBase):
 
 class Account(AccountInDBBase):
     class Config:
-        orm_mode = True
         from_attributes = True

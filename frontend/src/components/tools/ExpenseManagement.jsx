@@ -21,7 +21,8 @@ const ExpenseManagement = () => {
     createExpense,
     updateExpense,
     deleteExpense,
-    fetchAllFinancialData
+    fetchAllFinancialData,
+    profile
   } = useUnifiedFinancialContext();
 
   // Local UI state only
@@ -577,6 +578,57 @@ const ExpenseManagement = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Lifetime Expense Timeline */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lifetime Expense Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(() => {
+            const currentAge = profile?.age || 30;
+            const retirementAge = profile?.retirement_age || profile?.target_retirement_age || 65;
+            const yearsToRetirement = Math.max(1, retirementAge - currentAge);
+            const monthsUntil = (dateStr) => {
+              try {
+                const now = new Date();
+                const tgt = new Date(dateStr);
+                const diff = (tgt - now) / (1000 * 60 * 60 * 24 * 30);
+                return Math.max(0, Math.round(diff));
+              } catch { return 0; }
+            };
+            if ((expenses || []).length === 0) {
+              return <div className="text-gray-500">Add expenses to visualize timing.</div>;
+            }
+            return (
+              <div className="space-y-3">
+                {expenses.map((exp) => {
+                  let months = 0;
+                  if (exp.payment_end_date) {
+                    months = monthsUntil(exp.payment_end_date);
+                  } else if (exp.is_finite_payment && exp.total_payments_remaining && exp.frequency === 'monthly') {
+                    months = parseInt(exp.total_payments_remaining, 10) || 0;
+                  } else {
+                    months = yearsToRetirement * 12; // ongoing
+                  }
+                  const widthPct = Math.max(5, Math.min(100, (months / (yearsToRetirement * 12)) * 100));
+                  return (
+                    <div key={`exp-tl-${exp.id}`}>
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>{exp.description}</span>
+                        <span>{exp.payment_end_date || (exp.is_finite_payment ? `${months} months left` : 'ongoing')}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-red-500 h-2 rounded-full" style={{ width: `${widthPct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
     </div>
   );
 };

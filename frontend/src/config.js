@@ -2,13 +2,18 @@
 // This ensures we always use the correct API URL regardless of environment variable issues
 
 const getApiBaseUrl = () => {
-  // In development, always use localhost:8000
+  // Always prefer explicit env override when provided (works in Docker too)
+  if (process.env.REACT_APP_API_BASE_URL) {
+    return process.env.REACT_APP_API_BASE_URL;
+  }
+
+  // Development default for local non-Docker runs
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:8000';
   }
-  
-  // Use environment variable if available, otherwise fallback to localhost
-  return process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
+  // Fallback
+  return 'http://localhost:8000';
 };
 
 export const API_BASE_URL = getApiBaseUrl();

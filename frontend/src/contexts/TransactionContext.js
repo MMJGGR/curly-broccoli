@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import { authFetch, getAuthToken } from '../utils/authFetch';
 import { deriveExpenseCategory, monthlyEquivalent, normalizeExpenseType } from '../utils/expenseTaxonomy';
 
 // UnifiedFinancialContext for managing all financial data - Single Source of Truth
@@ -47,6 +48,12 @@ const UNIFIED_FINANCIAL_ACTIONS = {
   CREATE_TRANSACTION: 'CREATE_TRANSACTION',
   UPDATE_TRANSACTION: 'UPDATE_TRANSACTION',
   DELETE_TRANSACTION: 'DELETE_TRANSACTION',
+
+  // Accounts CRUD
+  SET_ACCOUNTS: 'SET_ACCOUNTS',
+  CREATE_ACCOUNT: 'CREATE_ACCOUNT',
+  UPDATE_ACCOUNT: 'UPDATE_ACCOUNT',
+  DELETE_ACCOUNT: 'DELETE_ACCOUNT',
   
   // Budget Categories CRUD
   SET_BUDGET_CATEGORIES: 'SET_BUDGET_CATEGORIES',
@@ -72,6 +79,7 @@ const initialUnifiedState = {
   loading: {
     assets: false,
     liabilities: false,
+    accounts: false,
     income: false,
     expenses: false,
     transactions: false,
@@ -85,6 +93,7 @@ const initialUnifiedState = {
   errors: {
     assets: null,
     liabilities: null,
+    accounts: null,
     income: null,
     expenses: null,
     transactions: null,
@@ -97,6 +106,7 @@ const initialUnifiedState = {
   // Core Financial Entities
   assets: [],
   liabilities: [],
+  accounts: [],
   incomeSource: [],
   expenses: [],
   expenseTypes: [],
@@ -194,6 +204,37 @@ const unifiedFinancialReducer = (state, action) => {
       return {
         ...state,
         assets: state.assets.filter(asset => asset.id !== action.payload),
+        lastUpdated: new Date().toISOString()
+      };
+
+    // Accounts CRUD
+    case UNIFIED_FINANCIAL_ACTIONS.SET_ACCOUNTS: {
+      const accounts = Array.isArray(action.payload?.accounts) ? action.payload.accounts : [];
+      return {
+        ...state,
+        accounts,
+        accountSummary: action.payload?.summary || state.accountSummary,
+        loading: { ...state.loading, accounts: false },
+        errors: { ...state.errors, accounts: null },
+        lastUpdated: new Date().toISOString()
+      };
+    }
+    case UNIFIED_FINANCIAL_ACTIONS.CREATE_ACCOUNT:
+      return {
+        ...state,
+        accounts: [...state.accounts, action.payload],
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.UPDATE_ACCOUNT:
+      return {
+        ...state,
+        accounts: state.accounts.map(acc => acc.id === action.payload.id ? { ...acc, ...action.payload } : acc),
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.DELETE_ACCOUNT:
+      return {
+        ...state,
+        accounts: state.accounts.filter(acc => acc.id !== action.payload),
         lastUpdated: new Date().toISOString()
       };
 
@@ -341,6 +382,34 @@ const unifiedFinancialReducer = (state, action) => {
         errors: { ...state.errors, expenses: null }
       };
 
+    // Transactions CRUD
+    case UNIFIED_FINANCIAL_ACTIONS.SET_TRANSACTIONS:
+      return {
+        ...state,
+        transactions: Array.isArray(action.payload) ? action.payload : [],
+        loading: { ...state.loading, transactions: false },
+        errors: { ...state.errors, transactions: null },
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.CREATE_TRANSACTION:
+      return {
+        ...state,
+        transactions: [...state.transactions, action.payload],
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.UPDATE_TRANSACTION:
+      return {
+        ...state,
+        transactions: state.transactions.map(tx => tx.id === action.payload.id ? { ...tx, ...action.payload } : tx),
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.DELETE_TRANSACTION:
+      return {
+        ...state,
+        transactions: state.transactions.filter(tx => tx.id !== action.payload),
+        lastUpdated: new Date().toISOString()
+      };
+
     // Budget Categories (local CRUD; endpoints may not exist yet)
     case UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES:
       return {
@@ -440,13 +509,186 @@ const unifiedFinancialReducer = (state, action) => {
 export const UnifiedFinancialProvider = ({ children }) => {
   const [state, dispatch] = useReducer(unifiedFinancialReducer, initialUnifiedState);
 
-  // Local memo cache helpers
-  const memo = React.useRef({});
+  // Local refs
 
   // --- Utility: API Base ---
   const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
+  // --- Auth/me coalescing to prevent request stampedes ---
+  const meInFlightRef = React.useRef(null);
+  const meLastTsRef = React.useRef(0);
+  const ME_MIN_INTERVAL_MS = 2000; // coalesce calls within 2s
+
   // API Service Methods
+  // Accounts CRUD
+  const fetchAccounts = useCallback(async () => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/accounts-v2/`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed to load accounts');
+      const data = await res.json();
+      const accounts = Array.isArray(data) ? data : (data.accounts || []);
+      const summary = Array.isArray(data) ? null : (data.summary || null);
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ACCOUNTS, payload: { accounts, summary } });
+      return accounts;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { accounts: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: false } });
+    }
+  }, [API_BASE]);
+
+  const createAccount = useCallback(async (accountData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/deprecated/accounts/`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(accountData)
+      });
+      if (!res.ok) throw new Error('Failed to create account');
+      const body = await res.json();
+      const acc = body?.account || body;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_ACCOUNT, payload: acc });
+      return acc;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { accounts: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: false } });
+    }
+  }, [API_BASE]);
+
+  const updateAccount = useCallback(async (accountId, accountData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/deprecated/accounts/${accountId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(accountData)
+      });
+      if (!res.ok) throw new Error('Failed to update account');
+      const body = await res.json();
+      const acc = body?.account || body;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_ACCOUNT, payload: acc });
+      return acc;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { accounts: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: false } });
+    }
+  }, [API_BASE]);
+
+  const deleteAccount = useCallback(async (accountId, force = false) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: true } });
+      const token = localStorage.getItem('jwt');
+      const url = `${API_BASE}/api/v1/deprecated/accounts/${accountId}${force ? '?force=true' : ''}`;
+      const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed to delete account');
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_ACCOUNT, payload: accountId });
+      return accountId;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { accounts: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: false } });
+    }
+  }, [API_BASE]);
+
+  // --- Transactions CRUD ---
+  const fetchTransactions = useCallback(async (filters = {}) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: true } });
+      const token = localStorage.getItem('jwt');
+      const params = new URLSearchParams();
+      if (filters.accountId) params.set('account_id', filters.accountId);
+      if (filters.category) params.set('category', filters.category);
+      if (filters.startDate) params.set('start_date', filters.startDate);
+      if (filters.endDate) params.set('end_date', filters.endDate);
+      params.set('limit', String(filters.limit || 100));
+      params.set('offset', String(filters.offset || 0));
+      const res = await fetch(`${API_BASE}/api/v1/transactions-v2/?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed to load transactions');
+      const data = await res.json();
+      const txs = Array.isArray(data) ? data : (data.transactions || []);
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_TRANSACTIONS, payload: txs });
+      return txs;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { transactions: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: false } });
+    }
+  }, [API_BASE]);
+
+  const createTransaction = useCallback(async (transactionData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/deprecated/transactions/`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(transactionData)
+      });
+      if (!res.ok) throw new Error('Failed to create transaction');
+      const body = await res.json();
+      const created = body?.transaction || body;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_TRANSACTION, payload: created });
+      return created;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { transactions: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: false } });
+    }
+  }, [API_BASE]);
+
+  const updateTransaction = useCallback(async (transactionId, transactionData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/deprecated/transactions/${transactionId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(transactionData)
+      });
+      if (!res.ok) throw new Error('Failed to update transaction');
+      const body = await res.json();
+      const updated = body?.transaction || body;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_TRANSACTION, payload: updated });
+      return updated;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { transactions: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: false } });
+    }
+  }, [API_BASE]);
+
+  const deleteTransaction = useCallback(async (transactionId) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/deprecated/transactions/${transactionId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to delete transaction');
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_TRANSACTION, payload: transactionId });
+      return transactionId;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { transactions: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: false } });
+    }
+  }, [API_BASE]);
   const createAsset = useCallback(async (assetData) => {
     try {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: true } });
@@ -920,7 +1162,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
     try {
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         ...options,
         signal: controller.signal
       });
@@ -953,15 +1195,21 @@ export const UnifiedFinancialProvider = ({ children }) => {
     try {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: true } });
       
-      const token = localStorage.getItem('jwt');
+      const token = getAuthToken();
+      if (!token) {
+        // Not authenticated yet; skip background fetch to avoid 401 noise
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: false } });
+        return;
+      }
       
       // Fetch all financial data in parallel - using onboarding-integrated endpoints with timeout
-      const [assetsRes, liabilitiesRes, incomesRes, expensesRes, goalsRes] = await Promise.all([
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/liabilities-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/goals-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } })
+      const [assetsRes, liabilitiesRes, incomesRes, expensesRes, goalsRes, accountsRes] = await Promise.all([
+        fetchWithTimeout(`${API_BASE}/api/v1/assets-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/liabilities-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/income-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/expenses-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/goals-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/accounts-v2/`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       if (assetsRes.ok) {
@@ -1001,8 +1249,20 @@ export const UnifiedFinancialProvider = ({ children }) => {
       }
 
       if (goalsRes.ok) {
-        const goals = await goalsRes.json();
-        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: goals });
+        const goalsResponse = await goalsRes.json();
+        const goalsArray = Array.isArray(goalsResponse)
+          ? goalsResponse
+          : (goalsResponse?.goals || []);
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: goalsArray });
+      } else {
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: [] });
+      }
+
+      if (accountsRes.ok) {
+        const accountsResponse = await accountsRes.json();
+        const accountsArr = Array.isArray(accountsResponse) ? accountsResponse : (accountsResponse?.accounts || []);
+        const summary = Array.isArray(accountsResponse) ? null : (accountsResponse?.summary || null);
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ACCOUNTS, payload: { accounts: accountsArr, summary } });
       }
 
     } catch (error) {
@@ -1010,27 +1270,40 @@ export const UnifiedFinancialProvider = ({ children }) => {
     } finally {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: false } });
     }
-  }, [fetchWithTimeout, state.loading.global]);
+  }, [API_BASE, fetchWithTimeout, state.loading.global]);
 
-  // Load data on mount only once
-  React.useEffect(() => {
-    fetchAllFinancialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array to run only once on mount
+  // Stable fetchProfile with in-flight coalescing and fallback
+  const fetchProfile = useCallback(async () => {
+    const token = localStorage.getItem('jwt');
+    if (!token) return null;
 
-  const value = {
-    // State
-    ...state,
-    // Backward-compatibility aliases for legacy consumers
-    incomes: state.incomeSource || [],
-    profile: state.userProfile || null,
+    const now = Date.now();
+    if (meInFlightRef.current && (now - meLastTsRef.current) < ME_MIN_INTERVAL_MS) {
+      // Reuse in-flight promise within window
+      return meInFlightRef.current;
+    }
 
-    // Actions
-    fetchProfile: async () => {
-      const token = localStorage.getItem('jwt');
-      if (!token) return null;
+    const runner = (async () => {
       try {
-        // Try auth/me first
+        // Clean-arch profile insights (profile-v2)
+        let insights = null;
+        try {
+          const v2 = await fetchWithTimeout(`${API_BASE}/api/v1/profile-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }, 8000);
+          if (v2.ok) {
+            const data = await v2.json();
+            insights = {
+              age_category: data?.financial_planning?.age_category,
+              emergency_fund_target: data?.financial_planning?.emergency_fund_target,
+              expected_return_rate: data?.risk_profile?.expected_return_rate ?? data?.financial_planning?.expected_return_rate,
+              recommended_asset_allocation: data?.risk_profile?.recommended_asset_allocation || null,
+            };
+          }
+        } catch (e) {
+          // Insights endpoint optional; ignore failures
+          console.debug('profile-v2 insights unavailable');
+        }
+
+        // Use auth/me for comprehensive profile fields
         let res = await fetchWithTimeout(`${API_BASE}/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } }, 10000);
         let profilePayload = null;
         let hasProfile = false;
@@ -1054,7 +1327,15 @@ export const UnifiedFinancialProvider = ({ children }) => {
               current_savings: p.current_savings ?? null,
               retirement_age: p.retirement_age || p.target_retirement_age || 65,
               questionnaire: p.questionnaire || null,
-              risk_tolerance: p.risk_tolerance || null
+              risk_tolerance: p.risk_tolerance || null,
+              // Preferences mapping
+              preferences: p.preferences || p.investment_preferences || null,
+              investment_preferences: p.investment_preferences || null,
+              // Planning insights from clean-arch
+              age_category: insights?.age_category,
+              emergency_fund_target: insights?.emergency_fund_target,
+              expected_return_rate: insights?.expected_return_rate,
+              recommended_asset_allocation: insights?.recommended_asset_allocation
             };
             hasProfile = true;
           }
@@ -1087,15 +1368,17 @@ export const UnifiedFinancialProvider = ({ children }) => {
               current_savings: financial.currentSavings ?? null,
               retirement_age: onboarding?.goals_data?.retirement || 65,
               questionnaire: Array.isArray(risk.questionnaire) ? risk.questionnaire : null,
-              risk_tolerance: null
+              risk_tolerance: null,
+              age_category: insights?.age_category,
+              emergency_fund_target: insights?.emergency_fund_target,
+              expected_return_rate: insights?.expected_return_rate,
+              recommended_asset_allocation: insights?.recommended_asset_allocation
             };
           }
         }
 
         if (profilePayload) {
           dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PROFILE, payload: profilePayload });
-          // Trigger recalculation based on latest profile + existing incomes/expenses
-          recalc();
           return profilePayload;
         }
         return null;
@@ -1103,20 +1386,134 @@ export const UnifiedFinancialProvider = ({ children }) => {
         // Non-fatal for UI
         return null;
       }
-    },
+    })();
 
-    updateProfile: async (updates) => {
-      const token = localStorage.getItem('jwt');
-      if (!token) throw new Error('Not authenticated');
+    meLastTsRef.current = now;
+    meInFlightRef.current = runner.finally(() => {
+      // clear after completion so next call can proceed
+      meInFlightRef.current = null;
+    });
+    return meInFlightRef.current;
+  }, [API_BASE, fetchWithTimeout]);
+
+  // Stable updateProfile using useCallback
+  const updateProfile = useCallback(async (updates) => {
+    const token = localStorage.getItem('jwt');
+    if (!token) throw new Error('Not authenticated');
+    // Try clean-arch endpoint first
+    let ok = false;
+    try {
+      const v2 = await fetch(`${API_BASE}/api/v1/profile-v2/`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      ok = v2.ok;
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok) {
+      // Fallback to legacy auth endpoint
       const res = await fetch(`${API_BASE}/auth/profile`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
       });
       if (!res.ok) throw new Error('Failed to update profile');
-      // refresh
-      await value.fetchProfile();
-      return true;
+    }
+    // refresh
+    await fetchProfile();
+    return true;
+  }, [API_BASE, fetchProfile]);
+
+  // --- Budget categories fetcher (stable, inside provider scope) ---
+  const fetchBudgetCategories = useCallback(async () => {
+    const token = localStorage.getItem('jwt');
+    // Try dedicated Budget V2 endpoint first
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/budget-v2/categories`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const mapped = (data.categories || []).map((c, idx) => ({
+          id: `bc_${idx}_${c.name}`,
+          name: c.name,
+          budgeted_amount: typeof c.allocated_amount === 'number' ? c.allocated_amount : (typeof c.budgeted_amount === 'number' ? c.budgeted_amount : 0),
+          actual_amount: typeof c.actual_amount === 'number' ? c.actual_amount : 0,
+          category_type: c.category_type || 'expense',
+          is_active: !!c.is_active
+        }));
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES, payload: mapped });
+        return mapped;
+      }
+    } catch (e) {
+      // fall through to comparison
+    }
+    // Fallback to budget comparison (deprecated endpoint)
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/deprecated/transactions/budget-comparison`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch budget categories');
+      const data = await res.json();
+      const mapped = (data.budget_comparison || []).map((c, idx) => ({
+        id: `bc_${idx}_${c.category}`,
+        name: c.category,
+        budgeted_amount: c.budgeted,
+        actual_amount: c.actual,
+        category_type: 'expense',
+        is_active: true
+      }));
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES, payload: mapped });
+      return mapped;
+    } catch (e) {
+      console.warn('Budget categories fetch failed, using local state only:', e.message);
+      return state.budgetCategories;
+    }
+  }, [API_BASE, state.budgetCategories]);
+
+  // Load data on mount only once
+  React.useEffect(() => {
+    fetchAllFinancialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array to run only once on mount
+
+  const value = {
+    // State
+    ...state,
+    // Backward-compatibility aliases for legacy consumers
+    incomes: state.incomeSource || [],
+    profile: state.userProfile || null,
+
+    // Actions
+    // fetchProfile injected from useCallback (stable identity)
+    fetchProfile,
+
+    // updateProfile injected from useCallback (stable identity)
+    updateProfile,
+    
+    // Accounts
+    accounts: state.accounts,
+    accountSummary: state.accountSummary,
+    fetchAccounts,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+
+    // Transactions
+    transactions: state.transactions,
+    fetchTransactions,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+    
+    // Error helpers
+    isLoading: state.loading.global,
+    error: state.errors.global || null,
+    clearError: (key = 'global') => dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CLEAR_ERROR, payload: key }),
+    updatePreferences: async (prefs) => {
+      return await value.updateProfile({ investment_preferences: prefs });
     },
 
     // Selectors (memoized)
@@ -1124,51 +1521,48 @@ export const UnifiedFinancialProvider = ({ children }) => {
     selectNetCashFlow: () => computeNetCashFlow(state.incomeSource, state.expenses),
     selectBudgetSummary: () => computeBudgetSummary(state.incomeSource, state.expenses),
     selectRiskProfile: () => computeRiskProfile(state.userProfile),
+    selectBudgetCategories: () => state.budgetCategories,
+
+    // Budget overview and analytics helpers
+    budgetOverview: state.budgetOverview,
+    fetchBudgetOverview: async () => {
+      const overview = computeBudgetSummary(state.incomeSource, state.expenses);
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_OVERVIEW, payload: overview });
+      return overview;
+    },
+    spendingAnalytics: {
+      categoryBreakdown: Array.from(
+        (state.expenses || []).reduce((map, exp) => {
+          const cat = exp.expense_category || 'miscellaneous';
+          const amt = Math.abs(parseFloat(exp.monthly_equivalent || exp.amount || 0) || 0);
+          map.set(cat, (map.get(cat) || 0) + amt);
+          return map;
+        }, new Map())
+      ).map(([category, amount]) => ({ category, amount }))
+    },
+    fetchSpendingAnalytics: async () => {
+      // Use local computation for now
+      const breakdown = Array.from(
+        (state.expenses || []).reduce((map, exp) => {
+          const cat = exp.expense_category || 'miscellaneous';
+          const amt = Math.abs(parseFloat(exp.monthly_equivalent || exp.amount || 0) || 0);
+          map.set(cat, (map.get(cat) || 0) + amt);
+          return map;
+        }, new Map())
+      ).map(([category, amount]) => ({ category, amount }));
+      return { categoryBreakdown: breakdown };
+    },
+    getBudgetComparison: async (period = 'month') => {
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/deprecated/transactions/budget-comparison?period=${encodeURIComponent(period)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to fetch budget comparison');
+      return await res.json();
+    },
 
     // Budget categories (API-backed where available with fallback)
-    fetchBudgetCategories: async () => {
-      const token = localStorage.getItem('jwt');
-      // Try dedicated Budget V2 endpoint first
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/budget-v2/categories`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const mapped = (data.categories || []).map((c, idx) => ({
-            id: `bc_${idx}_${c.name}`,
-            name: c.name,
-            budgeted_amount: typeof c.allocated_amount === 'number' ? c.allocated_amount : (typeof c.budgeted_amount === 'number' ? c.budgeted_amount : 0),
-            actual_amount: typeof c.actual_amount === 'number' ? c.actual_amount : 0,
-            category_type: c.category_type,
-            is_active: !!c.is_active
-          }));
-          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES, payload: mapped });
-          return mapped;
-        }
-      } catch (e) {
-        // fall through to comparison
-      }
-      // Fallback to budget comparison
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/budget-comparison`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Failed to fetch budget categories');
-        const data = await res.json();
-        const mapped = (data.budget_comparison || []).map((c, idx) => ({
-          id: `bc_${idx}_${c.category}`,
-          name: c.category,
-          budgeted_amount: c.budgeted,
-          actual_amount: c.actual
-        }));
-        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES, payload: mapped });
-        return mapped;
-      } catch (e) {
-        console.warn('Budget categories fetch failed, using local state only:', e.message);
-        return state.budgetCategories;
-      }
-    },
+    fetchBudgetCategories: fetchBudgetCategories,
     createBudgetCategory: async ({ name, budgeted_amount }) => {
       const token = localStorage.getItem('jwt');
       try {
@@ -1389,3 +1783,5 @@ export const useUnifiedFinancialContext = () => {
   return context;
 };
 
+// Backward-compatibility alias for components importing useTransactions
+export const useTransactions = useUnifiedFinancialContext;

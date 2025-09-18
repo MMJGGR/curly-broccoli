@@ -56,55 +56,87 @@ async def get_goals_overview_v2(
         total_current = 0
         goals_data = []
         
-        # Add onboarding goals first
+        # Add onboarding goals first (enhanced: support goals_meta & other_goal)
         if onboarding and onboarding.goals_data:
-            goals_data_raw = onboarding.goals_data  # Already deserialized by SQLAlchemy
-            
-            # Map onboarding goals to standardized format
-            onboarding_goals = [
-                {"name": "Emergency Fund", "target": goals_data_raw.get('emergencyFund', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('emergencyFund', '1-year')},
-                {"name": "Home Down Payment", "target": goals_data_raw.get('homeDownPayment', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('homeDownPayment', '5-years')},
-                {"name": "Education", "target": goals_data_raw.get('education', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('education', '10-years')},
-                {"name": "Retirement", "target": goals_data_raw.get('retirement', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('retirement', '30-years')},
-                {"name": "Investment", "target": goals_data_raw.get('investment', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('investment', '10-years')},
-                {"name": "Debt Payoff", "target": goals_data_raw.get('debtPayoff', 0), "timeframe": goals_data_raw.get('timeframes', {}).get('debtPayoff', '3-years')}
+            gd = onboarding.goals_data  # Already deserialized
+            tf = gd.get('timeframes', {})
+            meta = gd.get('goals_meta', {})
+
+            def tf_to_date(tf_str: str | None) -> str:
+                if not tf_str:
+                    return (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
+                try:
+                    if 'year' in tf_str:
+                        years = int(tf_str.split('-')[0])
+                        return (datetime.now() + timedelta(days=years*365)).strftime('%Y-%m-%d')
+                    if 'month' in tf_str:
+                        months = int(tf_str.split('-')[0])
+                        return (datetime.now() + timedelta(days=months*30)).strftime('%Y-%m-%d')
+                except Exception:
+                    pass
+                return (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
+
+            mapping = [
+                ("Emergency Fund", 'emergencyFund'),
+                ("Home Down Payment", 'homeDownPayment'),
+                ("Education", 'education'),
+                ("Retirement", 'retirement'),
+                ("Investment", 'investment'),
+                ("Debt Payoff", 'debtPayoff')
             ]
-            
-            for i, goal in enumerate(onboarding_goals):
-                if goal['target'] and float(goal['target']) > 0:
-                    target_amount = float(goal['target'])
-                    current_amount = 0  # Onboarding doesn't track progress yet
-                    
-                    total_target += target_amount
-                    total_current += current_amount
-                    
-                    # Convert timeframe to actual date
-                    timeframe = goal['timeframe']
-                    target_date = None
-                    if timeframe:
-                        try:
-                            if 'year' in timeframe:
-                                years = int(timeframe.split('-')[0])
-                                target_date = (datetime.now() + timedelta(days=years*365)).strftime('%Y-%m-%d')
-                            elif 'month' in timeframe:
-                                months = int(timeframe.split('-')[0])
-                                target_date = (datetime.now() + timedelta(days=months*30)).strftime('%Y-%m-%d')
-                            else:
-                                target_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
-                        except:
-                            target_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
-                    else:
-                        target_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
-                    
+
+            idx = 0
+            for display_name, key in mapping:
+                raw_target = gd.get(key, 0)
+                try:
+                    target_amount = float(raw_target) if raw_target else 0
+                except Exception:
+                    target_amount = 0
+                if target_amount <= 0:
+                    continue
+                m = meta.get(key, {}) if isinstance(meta, dict) else {}
+                try:
+                    current_amount = float(m.get('current_amount', 0) or 0)
+                except Exception:
+                    current_amount = 0
+                tdate = m.get('target_date') or tf_to_date(tf.get(key))
+                total_target += target_amount
+                total_current += current_amount
+                goals_data.append({
+                    "id": f"onboarding-goal-{idx}",
+                    "name": f"{display_name} (from onboarding)",
+                    "target_amount": target_amount,
+                    "current_amount": current_amount,
+                    "progress_percentage": round((current_amount / target_amount * 100) if target_amount > 0 else 0, 1),
+                    "target_date": tdate,
+                    "is_achieved": current_amount >= target_amount,
+                    "source": "onboarding",
+                    "priority": (m.get('priority') if isinstance(m, dict) else None) or None
+                })
+                idx += 1
+
+            # Other custom goal (single)
+            other = gd.get('other_goal')
+            if isinstance(other, dict) and other.get('name') and other.get('target_amount'):
+                try:
+                    t = float(other.get('target_amount') or 0)
+                    c = float(other.get('current_amount') or 0)
+                except Exception:
+                    t, c = 0, 0
+                if t > 0:
+                    total_target += t
+                    total_current += c
+                    tdate = other.get('target_date') or tf_to_date('3-years')
                     goals_data.append({
-                        "id": f"onboarding-goal-{i}",
-                        "name": f"{goal['name']} (from onboarding)",
-                        "target_amount": target_amount,
-                        "current_amount": current_amount,
-                        "progress_percentage": 0,
-                        "target_date": target_date,
-                        "is_achieved": False,
-                        "source": "onboarding"
+                        "id": f"onboarding-goal-{idx}",
+                        "name": f"{other.get('name')} (from onboarding)",
+                        "target_amount": t,
+                        "current_amount": c,
+                        "progress_percentage": round((c / t * 100) if t > 0 else 0, 1),
+                        "target_date": tdate,
+                        "is_achieved": c >= t,
+                        "source": "onboarding",
+                        "priority": other.get('priority') or None
                     })
         
         # Add goals from dedicated table
@@ -343,6 +375,90 @@ async def get_goals_v2(
             detail=f"Error retrieving goals: {str(e)}"
         )
 
+
+from pydantic import BaseModel
+
+
+class GoalUpdate(BaseModel):
+    name: str | None = None
+    target_amount: float | None = None
+    target_date: str | None = None
+
+
+@router.put("/{goal_id}")
+async def update_goal_v2(
+    goal_id: int,
+    goal_update: GoalUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update general properties of a goal (name, target_amount, target_date). Use /progress for progress updates.
+
+    Accepts partial updates. Validates values and persists changes.
+    """
+    try:
+        goal = db.query(GoalModel).filter(
+            GoalModel.id == goal_id,
+            GoalModel.user_id == current_user.id
+        ).first()
+
+        if not goal:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Goal {goal_id} not found"
+            )
+
+        # Apply updates if provided
+        if goal_update.name is not None:
+            name = goal_update.name
+            if len(name.strip()) == 0 or len(name) > 100:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid goal name")
+            goal.name = name
+
+        if goal_update.target_amount is not None:
+            target_amount = goal_update.target_amount
+            if target_amount <= 0 or target_amount > 100_000_000:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid target amount")
+            goal.target = str(target_amount)
+            # Recalculate progress if current exists
+            try:
+                curr = float(goal.current) if goal.current else 0
+                goal.progress = (curr / target_amount * 100) if target_amount > 0 else 0
+            except Exception:
+                goal.progress = 0
+
+        if goal_update.target_date is not None:
+            target_date = goal_update.target_date
+            # Basic format sanity check (YYYY-MM-DD) without strict parsing
+            if len(target_date.strip()) == 0:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid target date")
+            goal.target_date = target_date
+
+        db.commit()
+        db.refresh(goal)
+
+        # Build response
+        tgt = float(goal.target) if goal.target else 0
+        curr = float(goal.current) if goal.current else 0
+        progress_pct = (curr / tgt * 100) if tgt > 0 else 0
+
+        return {
+            "id": goal.id,
+            "name": goal.name,
+            "target_amount": tgt,
+            "current_amount": curr,
+            "progress_percentage": round(progress_pct, 1),
+            "target_date": goal.target_date,
+            "is_achieved": progress_pct >= 100
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error updating goal: {str(e)}"
+        )
 
 @router.delete("/{goal_id}")
 async def delete_goal_v2(

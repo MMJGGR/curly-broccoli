@@ -1,11 +1,15 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Skeleton, SkeletonText } from './ui/skeleton';
 import { useNavigate } from 'react-router-dom';
+import { useUnifiedFinancialContext } from '../contexts/TransactionContext';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const navigate = useNavigate();
+  const { fetchProfile, profile } = useUnifiedFinancialContext();
+  const lastRefreshTsRef = useRef(0);
 
   const checkUserProfile = useCallback(async () => {
     try {
@@ -14,46 +18,19 @@ export default function Dashboard() {
         navigate('/auth');
         return;
       }
-
-      const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('jwt');
-          navigate('/auth');
-          return;
-        }
-        if (response.status === 404) {
-          // Profile not found - new user who hasn't completed onboarding yet
-          // This is expected, show the incomplete profile UI
-          setUser({ email: localStorage.getItem('userEmail') || 'user' });
-          setIsProfileComplete(false);
-          setLoading(false);
-          return;
-        }
-        throw new Error('Failed to fetch profile');
-      }
-
-      const userData = await response.json();
-      setUser(userData);
-      
-      // Check if profile is complete (not using default values)
-      const profile = userData.profile || {};
+      // Use unified financial context to fetch and normalize profile
+      const fetched = await fetchProfile();
+      setUser({ email: localStorage.getItem('userEmail') || 'user' });
+      const p = fetched || profile || {};
       
       // A profile is incomplete if it has ANY default values
-      const hasDefaultFirstName = profile.first_name === 'New';
-      const hasDefaultLastName = profile.last_name === 'User';
-      const hasDefaultDob = profile.dob === '1990-01-01';
-      const hasDefaultNationalId = profile.nationalId === '12345678';
+      const hasDefaultFirstName = p.first_name === 'New';
+      const hasDefaultLastName = p.last_name === 'User';
+      const hasDefaultDob = (p.dob || p.date_of_birth) === '1990-01-01';
+      const hasDefaultNationalId = (p.nationalId || p.national_id) === '12345678';
       
       // Also check if essential fields are missing
-      const hasRequiredFields = profile.first_name && profile.last_name && profile.dob;
+      const hasRequiredFields = p.first_name && p.last_name && (p.dob || p.date_of_birth);
       
       const isProfileIncomplete = hasDefaultFirstName || hasDefaultLastName || hasDefaultDob || hasDefaultNationalId || !hasRequiredFields;
       const isComplete = !isProfileIncomplete;
@@ -94,11 +71,10 @@ export default function Dashboard() {
     
     // Also check on focus in case user completed onboarding in same tab
     const handleFocus = () => {
-      if (localStorage.getItem('onboardingCompleted')) {
-        console.log('Onboarding completed (same tab), refreshing profile...');
-        checkUserProfile();
-        localStorage.removeItem('onboardingCompleted');
-      }
+      const now = Date.now();
+      if (now - lastRefreshTsRef.current < 1500) return; // debounce 1.5s
+      lastRefreshTsRef.current = now;
+      checkUserProfile();
     };
 
     window.addEventListener('focus', handleFocus);
@@ -127,10 +103,10 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
+        <div className="w-full max-w-3xl space-y-4">
+          <Skeleton className="h-8 w-64" />
+          <SkeletonText lines={4} />
         </div>
       </div>
     );

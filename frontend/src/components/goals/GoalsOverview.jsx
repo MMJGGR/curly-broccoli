@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import MessageBox from '../MessageBox';
 
@@ -12,6 +13,7 @@ const GoalsOverview = ({ onNextScreen }) => {
     deleteGoal,
     fetchAllFinancialData
   } = useUnifiedFinancialContext();
+  const navigate = useNavigate();
 
   const [message, setMessage] = useState('');
   const [showMessageBox, setShowMessageBox] = useState(false);
@@ -179,12 +181,20 @@ const GoalsOverview = ({ onNextScreen }) => {
       <main className="flex-grow container mx-auto p-6 md:p-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Financial Goals</h1>
-          <button
+          <div className="flex items-center gap-3">
+            <button
+              className="bg-blue-100 text-blue-700 py-2 px-4 rounded-lg font-semibold hover:bg-blue-200 transition-all duration-300 shadow-sm"
+              onClick={() => navigate('/app/tools?section=reality-check')}
+            >
+              🧭 Run Reality Check
+            </button>
+            <button
             className="bg-green-500 text-white py-2 px-6 rounded-lg font-semibold hover:bg-green-600 transition-all duration-300 shadow-lg"
             onClick={() => setShowAddForm(!showAddForm)}
           >
             {showAddForm ? 'Cancel' : '+ Add New Goal'}
-          </button>
+            </button>
+          </div>
         </div>
 
         {/* Goals Overview Summary */}

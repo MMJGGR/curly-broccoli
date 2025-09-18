@@ -3,6 +3,7 @@
  * Following the successful OnboardingContext pattern
  */
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { authFetch, getAuthToken } from '../utils/authFetch';
 
 const TimelineContext = createContext();
 
@@ -78,10 +79,7 @@ const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 export const TimelineProvider = ({ children }) => {
   const [state, dispatch] = useReducer(timelineReducer, initialState);
 
-  // Get auth token from localStorage
-  const getAuthToken = useCallback(() => {
-    return localStorage.getItem('authToken');
-  }, []);
+  // Token helper comes from utils/authFetch
 
   // Load Timeline journey data
   const loadTimelineJourney = useCallback(async () => {
@@ -91,7 +89,7 @@ export const TimelineProvider = ({ children }) => {
     dispatch({ type: 'LOADING' });
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/timeline/journey`, {
+      const response = await authFetch(`${API_BASE}/api/v1/timeline/journey`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -125,7 +123,7 @@ export const TimelineProvider = ({ children }) => {
         payload: error.message
       });
     }
-  }, [getAuthToken]);
+  }, []);
 
   // Load alignment details
   const loadAlignmentDetails = useCallback(async () => {
@@ -133,7 +131,7 @@ export const TimelineProvider = ({ children }) => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/timeline/alignment`, {
+      const response = await authFetch(`${API_BASE}/api/v1/timeline/alignment`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -159,7 +157,7 @@ export const TimelineProvider = ({ children }) => {
     } catch (error) {
       console.error('Alignment loading failed:', error);
     }
-  }, [getAuthToken]);
+  }, []);
 
   // Load dashboard overview
   const loadDashboardOverview = useCallback(async () => {
@@ -167,7 +165,7 @@ export const TimelineProvider = ({ children }) => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/timeline/dashboard-overview`, {
+      const response = await authFetch(`${API_BASE}/api/v1/timeline/dashboard-overview`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -196,7 +194,7 @@ export const TimelineProvider = ({ children }) => {
     } catch (error) {
       console.error('Dashboard overview loading failed:', error);
     }
-  }, [getAuthToken]);
+  }, []);
 
   // Add new milestone
   const addMilestone = useCallback(async (milestoneData) => {
@@ -204,7 +202,7 @@ export const TimelineProvider = ({ children }) => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/timeline/milestone`, {
+      const response = await authFetch(`${API_BASE}/api/v1/timeline/milestone`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -240,7 +238,7 @@ export const TimelineProvider = ({ children }) => {
       console.error('Milestone creation failed:', error);
       throw error;
     }
-  }, [getAuthToken]);
+  }, []);
 
   // Initialize Timeline on mount
   useEffect(() => {
@@ -249,7 +247,7 @@ export const TimelineProvider = ({ children }) => {
       loadTimelineJourney();
       loadDashboardOverview();
     }
-  }, [getAuthToken, loadTimelineJourney, loadDashboardOverview]);
+  }, [loadTimelineJourney, loadDashboardOverview]);
 
   // Context value
   const value = {

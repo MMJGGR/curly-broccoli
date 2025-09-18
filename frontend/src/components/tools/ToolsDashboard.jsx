@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import IncomeManagement from './IncomeManagement';
 import GoalsOverview from '../goals/GoalsOverview';
 import ExpenseManagement from './ExpenseManagement';
 import AssetManagement from './AssetManagement';
 import LiabilityManagement from './LiabilityManagement';
+import GoalRealityCheck from './GoalRealityCheck';
 
 const ToolsDashboard = () => {
-  const [activeSection, setActiveSection] = useState('overview');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialSection = useMemo(() => new URLSearchParams(location.search).get('section') || 'overview', [location.search]);
+  const [activeSection, setActiveSection] = useState(initialSection);
+
+  // Keep section in sync with query param
+  useEffect(() => {
+    const current = new URLSearchParams(location.search).get('section') || 'overview';
+    if (current !== activeSection) setActiveSection(current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   const toolSections = [
     {
@@ -23,9 +35,9 @@ const ToolsDashboard = () => {
     },
     {
       id: 'goals',
-      name: 'Goals Management', 
+      name: 'Goals & Reality Check', 
       icon: '🎯',
-      description: 'SMART goals framework and tracking'
+      description: 'Set goals and validate timelines vs surplus'
     },
     {
       id: 'expenses',
@@ -77,7 +89,12 @@ const ToolsDashboard = () => {
           <div
             key={section.id}
             className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 cursor-pointer border border-gray-100"
-            onClick={() => setActiveSection(section.id)}
+            onClick={() => {
+              setActiveSection(section.id);
+              const params = new URLSearchParams(location.search);
+              params.set('section', section.id);
+              navigate({ search: params.toString() }, { replace: true });
+            }}
           >
             <div className="flex items-center mb-4">
               <div className="text-3xl mr-4">{section.icon}</div>
@@ -110,8 +127,8 @@ const ToolsDashboard = () => {
           >
             Create New Goal
           </button>
-          <button className="bg-white text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            Run Financial Health Check
+          <button onClick={() => setActiveSection('goals')} className="bg-white text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            Run Goal Reality Check
           </button>
         </div>
       </div>
@@ -167,7 +184,14 @@ const ToolsDashboard = () => {
       <div className="flex-1 overflow-auto">
         {activeSection === 'overview' && renderOverview()}
         {activeSection === 'income' && <IncomeManagement />}
-        {activeSection === 'goals' && <GoalsOverview />}
+        {activeSection === 'goals' && (
+          <div className="space-y-6">
+            <GoalsOverview />
+            <div className="max-w-6xl mx-auto">
+              <GoalRealityCheck />
+            </div>
+          </div>
+        )}
         {activeSection === 'expenses' && <ExpenseManagement />}
         {activeSection === 'assets' && <AssetManagement />}
         {activeSection === 'liabilities' && <LiabilityManagement />}

@@ -14,11 +14,12 @@ api_router.include_router(onboarding_consolidated.router, tags=["onboarding-v2-c
 # Legacy endpoints (DEPRECATED - use onboarding endpoints instead)
 # api_router.include_router(profile.router, tags=["profile"]) # DEPRECATED: Use onboarding data
 # api_router.include_router(profile_clean.router, prefix="/profile", tags=["profile-clean"]) # DEPRECATED: Use onboarding data
-api_router.include_router(timeline_clean.router, prefix="/timeline", tags=["timeline-clean"])
+api_router.include_router(timeline_clean.router, tags=["timeline-clean"])
 
 # New real data integration endpoints
-api_router.include_router(transactions.router, tags=["transactions"])
-api_router.include_router(accounts.router, tags=["accounts"])
+# Legacy v1 endpoints (deprecated) are mounted under /api/v1/deprecated/* to avoid overlap
+api_router.include_router(transactions.router, prefix="/deprecated", tags=["transactions-deprecated"])
+api_router.include_router(accounts.router,     prefix="/deprecated", tags=["accounts-deprecated"])
 # Clean Architecture endpoints (New)
 api_router.include_router(income_v2_clean.router, tags=["income-v2-clean"])  # Fixed: Income V2 Clean Architecture
 api_router.include_router(goals_v2_clean.router, tags=["goals-v2-clean"])

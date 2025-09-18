@@ -2,14 +2,16 @@
  * Simplified Income Management (CR006 compliant)
  */
 import React, { useState, useEffect } from 'react';
+import { Skeleton, SkeletonText } from '../ui/skeleton';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
+import { computeIncomeTimeline, widthPctFromMonths } from '../../utils/relationshipEngine';
 
 const IncomeManagement = () => {
-  const { incomeSource, assets, loading, createIncome, updateIncome, deleteIncome, fetchAllFinancialData } = useUnifiedFinancialContext();
+  const { incomeSource, assets, loading, createIncome, updateIncome, deleteIncome, fetchAllFinancialData, profile } = useUnifiedFinancialContext();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
@@ -48,10 +50,16 @@ const IncomeManagement = () => {
     resetForm();
   };
 
+  // Profile-derived lifecycle values for visualizations
+  const currentAge = profile?.age || 30;
+  const retirementAge = profile?.retirement_age || profile?.target_retirement_age || 65;
+  const yearsToRetirement = Math.max(0, retirementAge - currentAge);
+
   if (loading.income || loading.global) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-lg">Loading income data...</div>
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <SkeletonText lines={6} />
       </div>
     );
   }
@@ -128,6 +136,74 @@ const IncomeManagement = () => {
                 <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
               </div>
             </form>
+          )}
+          {/* Income list and totals */}
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-600">Total Monthly Income</p>
+              <p className="text-xl font-bold text-green-700">KES {Math.round((incomeSource || []).reduce((s, inc) => s + (parseFloat(inc.monthly_amount || 0) || 0), 0)).toLocaleString()}</p>
+            </div>
+            {(incomeSource || []).length === 0 ? (
+              <div className="text-center text-gray-500 py-8">No income sources yet.</div>
+            ) : (
+              <div className="space-y-3">
+                {incomeSource.map((inc) => (
+                  <div key={inc.id} className="border rounded-lg p-4 bg-gray-50">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-semibold text-gray-800">{inc.source_name}</div>
+                        <div className="text-sm text-gray-600">Type: {inc.source_type} • Frequency: {inc.frequency}</div>
+                        <div className="text-sm text-gray-800 mt-1">KES {Math.round(inc.monthly_amount || 0).toLocaleString()} / month</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => {
+                          setEditingIncome(inc);
+                          setFormData({
+                            description: inc.source_name || '',
+                            amount: inc.monthly_amount != null ? String(inc.monthly_amount) : '',
+                            income_type: inc.source_type || 'salary',
+                            frequency: inc.frequency || 'monthly',
+                            linked_asset_id: inc.linked_asset_id || null,
+                            asset_relationship_type: inc.asset_relationship_type || ''
+                          });
+                          setShowAddForm(true);
+                        }}>Edit</Button>
+                        <Button variant="outline" size="sm" onClick={async () => { if (window.confirm('Delete this income source?')) { await deleteIncome(inc.id); } }} className="text-red-600">Delete</Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Lifetime Income Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600 mb-3">Based on profile retirement age {(profile?.retirement_age || profile?.target_retirement_age || 65)}.</p>
+          {(incomeSource || []).length === 0 ? (
+            <div className="text-gray-500">Add income sources to visualize.</div>
+          ) : (
+            <div className="space-y-2">
+              {incomeSource.map((inc) => {
+                const { months, reason } = computeIncomeTimeline(inc, { profile, assets });
+                const widthPct = widthPctFromMonths(months, yearsToRetirement * 12);
+                return (
+                  <div key={`tl-${inc.id}`}>
+                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                      <span>{inc.source_name}</span>
+                      <span>{months === 0 ? 'ended' : (months == null ? 'ongoing' : reason)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-emerald-600 h-2 rounded-full" style={{ width: `${widthPct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>

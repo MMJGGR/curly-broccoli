@@ -24,7 +24,7 @@ def read_profile(
 
     return ProfileResponse(
         email=current_user.email,
-        profile=ProfileOut.from_orm(profile),
+        profile=ProfileOut.model_validate(profile),
         risk_score=risk_profile.risk_score if risk_profile else None,
         risk_level=risk_profile.risk_level if risk_profile else None,
     )
@@ -56,7 +56,7 @@ def update_profile(
 
     return ProfileResponse(
         email=current_user.email,
-        profile=ProfileOut.from_orm(profile),
+        profile=ProfileOut.model_validate(profile),
         risk_score=risk_profile.risk_score if risk_profile else None,
         risk_level=risk_profile.risk_level if risk_profile else None,
     )

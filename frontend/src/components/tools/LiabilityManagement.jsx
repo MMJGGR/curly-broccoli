@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Skeleton, SkeletonText } from '../ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -149,7 +150,12 @@ const LiabilityManagement = () => {
   const unsecuredDebt = totalLiabilities - securedDebt;
 
   if (loading.liabilities || loading.global) {
-    return <div className="flex justify-center items-center h-64">Loading liabilities...</div>;
+    return (
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <SkeletonText lines={6} />
+      </div>
+    );
   }
 
   return (

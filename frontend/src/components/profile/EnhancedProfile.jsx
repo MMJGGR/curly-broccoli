@@ -5,11 +5,7 @@ import { api } from '../../api';
 const EnhancedProfile = () => {
   const {
     accounts,
-    budgetCategories,
-    spendingAnalytics,
-    fetchAccounts,
-    fetchBudgetCategories,
-    fetchSpendingAnalytics
+    fetchAccounts
   } = useTransactions();
 
   const [userProfile, setUserProfile] = useState(null);
@@ -26,19 +22,15 @@ const EnhancedProfile = () => {
         
         // Load profile data from clean endpoints
         const [profileResponse, onboardingResponse] = await Promise.all([
-          api.get('/profile/timeline-data'),
-          api.get('/onboarding/state')
+          api.get('/api/v1/timeline/journey'),
+          api.get('/api/v1/onboarding-v2-clean/state')
         ]);
         
         setUserProfile(profileResponse.data);
         setOnboardingData(onboardingResponse.data);
         
         // Load financial data
-        await Promise.all([
-          fetchAccounts(),
-          fetchBudgetCategories(),
-          fetchSpendingAnalytics()
-        ]);
+        await fetchAccounts();
         
       } catch (err) {
         console.error('Failed to load profile:', err);
@@ -49,7 +41,7 @@ const EnhancedProfile = () => {
     };
 
     loadProfileData();
-  }, [fetchAccounts, fetchBudgetCategories, fetchSpendingAnalytics]);
+  }, [fetchAccounts]);
 
   const handleEditSection = (section) => {
     setEditingSection(section);
@@ -75,20 +67,20 @@ const EnhancedProfile = () => {
     try {
       if (section === 'personal') {
         // Update profile via timeline impact endpoint
-        await api.put('/profile/timeline-impact', {
+        await api.put('/api/v1/profile-v2/', {
           first_name: editFormData.firstName,
           last_name: editFormData.lastName,
           employment_status: editFormData.employment_status,
           dependents: parseInt(editFormData.dependents) || 0
         });
       } else if (section === 'financial') {
-        await api.put('/profile/timeline-impact', {
+        await api.put('/api/v1/profile-v2/', {
           annual_income: parseFloat(editFormData.annual_income) || 0
         });
       }
       
       // Reload profile data
-      const profileResponse = await api.get('/profile/timeline-data');
+      const profileResponse = await api.get('/api/v1/timeline/journey');
       setUserProfile(profileResponse.data);
       
       setEditingSection(null);

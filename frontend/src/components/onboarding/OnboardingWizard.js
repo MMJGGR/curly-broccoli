@@ -25,7 +25,9 @@ const OnboardingWizard = () => {
   // Use UnifiedFinancialContext for financial data
   const {
     loading,
-    errors
+    errors,
+    createBudgetCategory,
+    createGoal
   } = useUnifiedFinancialContext();
   
   // Local state for onboarding flow management
@@ -331,6 +333,64 @@ const OnboardingWizard = () => {
     const result = await completeOnboarding();
     if (!result.success) {
       console.error('Failed to complete onboarding:', result.error);
+    }
+    // Create initial goals from entered onboarding goals (only those with positive targets)
+    try {
+      const planPref = goalsData?.planPreference;
+      if (planPref?.applyOnComplete && planPref.strategy === 'B') {
+        const monthlyIncome = parseFloat(financialData?.monthlyIncome) || 0;
+        const baselineExpenses = ['rent','utilities','groceries','transport','loanRepayments']
+          .map(k => parseFloat(financialData?.[k]) || 0).reduce((a,b)=>a+b,0);
+        const surplus = monthlyIncome - baselineExpenses;
+        const tf = goalsData?.timeframes || {};
+        const meta = goalsData?.goals_meta || {};
+        const monthsFromTf = (tfv) => {
+          if (!tfv) return 12; try {
+            if (tfv.includes('month')) return parseInt(tfv);
+            if (tfv.includes('year')) return parseInt(tfv) * 12;
+          } catch (e) { return 12; }
+          return 12;
+        };
+        const req = (t, c, m) => { const T=parseFloat(t)||0, C=parseFloat(c)||0, M=Math.max(1,m||0); return Math.max(0,(T-C)/M); };
+        const entries = [
+          { key:'emergencyFund', name:'Emergency Fund', target: goalsData.emergencyFund, m: meta.emergencyFund, tf: tf.emergencyFund },
+          { key:'homeDownPayment', name:'Home Down Payment', target: goalsData.homeDownPayment, m: meta.homeDownPayment, tf: tf.homeDownPayment },
+          { key:'education', name:'Education', target: goalsData.education, m: meta.education, tf: tf.education },
+          { key:'retirement', name:'Retirement', target: goalsData.retirement, m: meta.retirement, tf: tf.retirement },
+          { key:'investment', name:'Investment', target: goalsData.investment, m: meta.investment, tf: tf.investment },
+          { key:'debtPayoff', name:'Debt Payoff', target: goalsData.debtPayoff, m: meta.debtPayoff, tf: tf.debtPayoff },
+        ].filter(e => parseFloat(e.target) > 0);
+        const extras = goalsData?.other_goal && goalsData.other_goal.name && parseFloat(goalsData.other_goal.target_amount) > 0
+          ? [{ key:'other', name: goalsData.other_goal.name, target: goalsData.other_goal.target_amount, m: goalsData.other_goal, tf: '3-years' }] : [];
+        const all = [...entries, ...extras];
+
+        // Create goals in backend for tracking and visibility
+        for (const g of all) {
+          try {
+            await createGoal({
+              name: g.name,
+              target_amount: parseFloat(g.target),
+              current_amount: parseFloat(g.m?.current_amount || 0) || 0,
+              target_date: g.m?.target_date || null,
+              priority: g.m?.priority || undefined
+            });
+          } catch (_) { /* non-fatal */ }
+        }
+
+        if (all.length > 0 && surplus > 0) {
+          const per = surplus / all.length;
+          for (const g of all) {
+            const months = g.m?.target_date ? Math.max(1, Math.round((new Date(g.m.target_date)- new Date())/(1000*60*60*24*30))) : monthsFromTf(g.tf);
+            const required = req(g.target, g.m?.current_amount, months);
+            const budgeted = Math.round(Math.max(0, Math.min(per, required || per)));
+            try {
+              await createBudgetCategory({ name: `Goal: ${g.name}`, budgeted_amount: budgeted });
+            } catch (e) { /* non-fatal */ }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Post-completion plan apply failed:', e.message);
     }
   };
   

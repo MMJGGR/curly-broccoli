@@ -2,6 +2,65 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MessageBox from './MessageBox';
 import { useUnifiedFinancialContext } from '../contexts/TransactionContext';
+import ProfileHealth from './profile/ProfileHealth';
+import ProfileHighlights from './profile/ProfileHighlights';
+import ProfileEditPersonal from './profile/ProfileEditPersonal';
+import ProfileEditEmployment from './profile/ProfileEditEmployment';
+import ProfilePreferences from './profile/ProfilePreferences';
+import ProfileBudgetPreferences from './profile/ProfileBudgetPreferences';
+import ProfilePlanningAssumptions from './profile/ProfilePlanningAssumptions';
+import ProfileActions from './profile/ProfileActions';
+import RecommendedAllocation from './profile/RecommendedAllocation';
+import { useUnifiedFinancialContext as useUFC } from '../contexts/TransactionContext';
+
+// Compact goals overview used in Profile
+const GoalsMiniOverview = () => {
+  const { goals = [], loading, fetchAllFinancialData } = useUFC();
+  useEffect(() => {
+    if ((Array.isArray(goals) ? goals.length : 0) === 0) {
+      fetchAllFinancialData().catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const list = Array.isArray(goals) ? goals : (goals?.goals || []);
+  if (loading?.goals || loading?.global) return null;
+  if (!list || list.length === 0) return null;
+
+  const progressPct = (g) => {
+    const t = parseFloat(g.target_amount || g.target || 0) || 0;
+    const c = parseFloat(g.current_amount || g.current || 0) || 0;
+    if (!t) return 0;
+    return Math.min(100, (c / t) * 100);
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xl font-semibold text-gray-800">Financial Goals</h2>
+        <a href="/app/tools?section=goals" className="text-blue-600 hover:text-blue-800 text-sm">Manage Goals →</a>
+      </div>
+      <div className="grid md:grid-cols-3 gap-4">
+        {list.slice(0, 3).map((g) => (
+          <div key={g.id || g.name} className="p-4 bg-gray-50 rounded-lg border">
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-medium text-gray-800 truncate" title={g.name}>{g.name}</p>
+              {g.is_achieved && (
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Achieved</span>
+              )}
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${progressPct(g).toFixed(1)}%` }} />
+            </div>
+            <div className="text-xs text-gray-600">
+              <span>{progressPct(g).toFixed(1)}% complete</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /**
  * Dynamic Profile Component - Uses onboarding data instead of hardcoded values
@@ -42,13 +101,6 @@ const ProfileDynamic = () => {
         init();
     }, [fetchProfile, fetchAllFinancialData, navigate]);
 
-    const handleLogout = () => {
-        localStorage.removeItem('jwt');
-        setMessage('Logged out successfully');
-        setShowMessageBox(true);
-        setTimeout(() => navigate('/auth'), 1000);
-    };
-
     const hideMessageBox = () => {
         setShowMessageBox(false);
         setMessage('');
@@ -79,7 +131,7 @@ const ProfileDynamic = () => {
       dependents: profile?.dependents ?? null,
     };
 
-    const preferences = profile?.preferences || {};
+    // Preferences are presented/edited in child components; no local var needed
 
     const formatCurrency = (amount) => {
         if (!amount) return 'Not specified';
@@ -118,6 +170,10 @@ const ProfileDynamic = () => {
             <main className="flex-grow container mx-auto p-6 md:p-8">
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Profile</h1>
 
+                {/* Profile Health and Highlights */}
+                <ProfileHealth />
+                <ProfileHighlights />
+
                 {/* Profile Summary */}
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
                   <h2 className="text-xl font-semibold text-gray-800 mb-4">Profile Summary</h2>
@@ -138,21 +194,28 @@ const ProfileDynamic = () => {
                   </div>
                 </div>
 
-                {/* Personal Information */}
+                {/* Personal Snapshot (avoid duplicating with editable section below) */}
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Personal Information</h2>
-                    <div className="grid md:grid-cols-2 gap-4 text-gray-700">
+                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Personal Snapshot</h2>
+                    <div className="grid md:grid-cols-3 gap-4 text-gray-700">
                         <div>
                             <p><strong>Name:</strong> {personal.firstName || 'Not provided'} {personal.lastName || ''}</p>
-                            <p><strong>Date of Birth:</strong> {personal.dateOfBirth || 'Not provided'}</p>
                             <p><strong>Age:</strong> {calculateAge(personal.dateOfBirth)}</p>
-                            <p><strong>Phone:</strong> {personal.phone || 'Not provided'}</p>
                         </div>
                         <div>
-                            <p><strong>National ID:</strong> {personal.nationalId || 'Not provided'}</p>
-                            <p><strong>KRA PIN:</strong> {personal.kraPin || 'Not provided'}</p>
                             <p><strong>Employment:</strong> {personal.employmentStatus || 'Not specified'}</p>
                             <p><strong>Dependents:</strong> {personal.dependents !== undefined ? personal.dependents : 'Not specified'}</p>
+                        </div>
+                        <div className="flex items-start md:items-center">
+                            <button 
+                                className="mt-2 md:mt-0 inline-flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                                onClick={() => {
+                                  const el = document.getElementById('edit-personal-section');
+                                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                            >
+                                Edit Personal Info
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -175,6 +238,11 @@ const ProfileDynamic = () => {
                         Retake Risk Assessment
                     </button>
                 </div>
+
+                {/* Recommended Allocation from profile-v2 insights */}
+                {profile?.recommended_asset_allocation && (
+                  <RecommendedAllocation allocation={profile.recommended_asset_allocation} />
+                )}
 
                 {/* Financial Information */}
                 <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
@@ -215,51 +283,20 @@ const ProfileDynamic = () => {
                     </div>
                 </div>
 
-                {/* Goals (basic placeholders; full goals managed elsewhere) */}
-                {profile?.emergency_fund_target && (
-                  <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Financial Goals</h2>
-                    <div className="text-gray-700">
-                      <p><strong>Emergency Fund Target:</strong> {formatCurrency(profile.emergency_fund_target)}</p>
-                    </div>
-                  </div>
-                )}
+                {/* Goals Overview (reads from unified context goals) */}
+                <GoalsMiniOverview />
 
-                {/* Preferences */}
-                <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Preferences</h2>
-                    <div className="text-gray-700">
-                        <p><strong>Notifications:</strong> {preferences.notifications !== undefined ? (preferences.notifications ? 'Enabled' : 'Disabled') : 'Not set'}</p>
-                        <p><strong>Data Sharing:</strong> {preferences.dataSharing !== undefined ? (preferences.dataSharing ? 'Enabled' : 'Disabled') : 'Not set'}</p>
-                        <p><strong>Marketing Emails:</strong> {preferences.marketingEmails !== undefined ? (preferences.marketingEmails ? 'Enabled' : 'Disabled') : 'Not set'}</p>
-                        <p><strong>Newsletter:</strong> {preferences.newsletterSubscription !== undefined ? (preferences.newsletterSubscription ? 'Enabled' : 'Disabled') : 'Not set'}</p>
-                    </div>
+                {/* Editable Sections */}
+                <div id="edit-personal-section">
+                  <ProfileEditPersonal />
                 </div>
+                <ProfileEditEmployment />
+                <ProfilePreferences />
+                <ProfileBudgetPreferences />
+                <ProfilePlanningAssumptions />
 
                 {/* Account Actions */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-4">Account Actions</h2>
-                    <div className="flex flex-wrap gap-2">
-                        <button 
-                            className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
-                            onClick={() => navigate('/onboarding')}
-                        >
-                            Edit Profile Data
-                        </button>
-                        <button 
-                            className="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
-                            onClick={() => { setLoading(true); fetchProfile().finally(() => setLoading(false)); }}
-                        >
-                            Refresh Data
-                        </button>
-                        <button 
-                            className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors"
-                            onClick={handleLogout}
-                        >
-                            Logout
-                        </button>
-                    </div>
-                </div>
+                <ProfileActions />
             </main>
 
             {showMessageBox && <MessageBox message={message} onClose={hideMessageBox} />}

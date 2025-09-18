@@ -18,7 +18,9 @@
     "lint:strict": "eslint src --max-warnings 0",
     "format": "prettier --write src",
     "format:check": "prettier --check src",
-    "validate": "npm run lint:strict && npm run format:check && npm run test -- --watchAll=false"
+    "validate": "npm run lint:strict && npm run format:check && npm run test -- --watchAll=false",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook"
   },
   "dependencies": {
     "autoprefixer": "^10.4.13",
