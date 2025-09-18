@@ -14,6 +14,7 @@ import { EXPENSE_TYPE_DEFS } from '../expenses/expenseTypeDefs';
 import { AssetDashboard } from '../assets';
 import { formatCurrency } from '../../utils/formatters';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
+import { pvHumanCapital, pvOfExpenses } from '../../utils/valuation';
 import DiscountRateOverrideModal from './DiscountRateOverrideModal';
 import AdvancedAssumptionPanel from './AdvancedAssumptionPanel';
 import TemporalLiabilityAnalyzer from './TemporalLiabilityAnalyzer';
@@ -28,7 +29,8 @@ const BalanceSheetDashboard = () => {
     profile,
     loading: contextLoading,
     error: contextError,
-    fetchAllFinancialData
+    fetchAllFinancialData,
+    selectSchedules
   } = useUnifiedFinancialContext();
 
   const [activeView, setActiveView] = useState('overview');
@@ -190,9 +192,27 @@ const BalanceSheetDashboard = () => {
       const traditionalAssets = assetsData.summary?.total_current_value || 0;
       const traditionalLiabilities = liabilitiesData.total_liabilities || 0;
       const traditionalNetWorth = traditionalAssets - traditionalLiabilities;
-      
-      const lifetimeAssets = traditionalAssets + calculateHumanCapital(profileData, expensesData, customRates, advancedAssumptions);
-      const lifetimeExpenseLiabilities = calculateLifetimeExpenseLiabilities(profileData, expensesData, customRates, advancedAssumptions);
+
+      // Use valuation utilities + schedule engine via selector for PV consistency
+      const age = profile?.age || 30;
+      const retireAge = advancedAssumptions?.demographics?.retirementAge || 65;
+      const lifeExp = advancedAssumptions?.demographics?.lifeExpectancy || 71;
+      const horizonYears = Math.max(1, (Math.max(lifeExp, retireAge) - age));
+      const horizonMonths = Math.min(480, Math.round(horizonYears * 12));
+
+      // Build expense flows from schedules (negative amounts)
+      const schedules = selectSchedules(horizonMonths, {
+        incomeGrowthRate: customRates.incomeGrowthRate,
+        expenseInflationRate: customRates.expenseInflationRate
+      });
+      const expenseFlows = schedules
+        .filter(f => f.type === 'expense' || f.type === 'goal_contribution')
+        .map(f => ({ t: f.t, amount: f.amount }));
+
+      const mode = customRates.valuationMode || 'nominal';
+      const lifetimeHumanCapital = pvHumanCapital({ monthlyIncome: profile?.monthly_income || 0, age, retirementAge: retireAge }, customRates.incomeGrowthRate / 100, customRates.incomeDiscountRate / 100);
+      const lifetimeExpenseLiabilities = pvOfExpenses(expenseFlows, customRates.expenseDiscountRate / 100, customRates.expenseInflationRate / 100, mode);
+      const lifetimeAssets = traditionalAssets + lifetimeHumanCapital;
       const totalLifetimeLiabilities = traditionalLiabilities + lifetimeExpenseLiabilities;
       
       // Calculate comprehensive risk/return analysis
@@ -220,7 +240,7 @@ const BalanceSheetDashboard = () => {
           netWorth: lifetimeAssets - totalLifetimeLiabilities,
           totalAssets: lifetimeAssets,
           totalLiabilities: totalLifetimeLiabilities,
-          humanCapital: calculateHumanCapital(profileData, expensesData, customRates, advancedAssumptions)
+          humanCapital: lifetimeHumanCapital
         },
         riskReturn: riskReturn
       });
@@ -857,7 +877,7 @@ const BalanceSheetDashboard = () => {
           Lifetime earning capacity vs. expenses with Kenya-specific assumptions
         </p>
 
-        {/* Discount Rate Override Button */}
+        {/* Discounting Mode and Assumptions */}
         {true && (
           <div className="mt-4 flex flex-col items-center space-y-4">
             <div className="flex items-center justify-center space-x-4">
@@ -867,6 +887,14 @@ const BalanceSheetDashboard = () => {
               <Badge variant="outline" className="bg-purple-50 text-purple-700">
                 Expense Rate: {customRates.expenseDiscountRate}%
               </Badge>
+              <div className="text-xs text-gray-600 bg-white border px-2 py-1 rounded">
+                Mode:
+                <select className="ml-1 text-xs" onChange={(e) => setCustomRates({ ...customRates, valuationMode: e.target.value })} defaultValue={customRates.valuationMode || 'nominal'}>
+                  <option value="nominal">Nominal</option>
+                  <option value="real">Real</option>
+                  <option value="risk_adj">Risk-Adjusted</option>
+                </select>
+              </div>
               <Button
                 onClick={() => setShowRateOverride(true)}
                 variant="outline"

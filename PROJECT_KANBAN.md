@@ -38,6 +38,22 @@ Status: Active | Confidence: High
 - Balance Sheet: simplified to Lifetime-only (CFA) with Lifecycle Visualization (human capital vs actual capital)
 - Added generic Relationship Engine for temporal links (asset/liability-linked flows, exclusivity, finite payments)
 
+#### ✅ Completed (Trial Balance + Schedules + Valuation)
+- Trial Balance (derived, suggestive): selectTrialBalance and applySuggestions in UnifiedFinancialContext
+- Schedule Engine: monthly schedules for income/expenses/liability interest/goal funding
+- Valuation module: PV utilities (flows, human capital, expenses)
+- Balance Sheet wired to valuation + schedules for PV of expenses and human capital
+- Trial Balance Audit tool (Tools) with Apply All suggestions
+- Timeline overlay shows schedule tracks (Income/Expenses/Goal Funding) across horizon
+
+#### ✅ Completed (Enhancements in this pass)
+- Trial Balance Audit: month navigation and journal-style audit log (local)
+- Expanded suggestions: asset-linked maintenance/insurance/property tax; loan payment creation/update
+- Per-item overrides: income growth and expense inflation via forms; schedule engine consumes overrides
+- Backend: TB audit entries endpoint (GET/POST/DELETE) for server-side persistence
+- Timeline: click on Expenses track suggests rent end date at selected month
+ - Timeline: Scenario A/B — save/load/delete scenarios and overlay tracks for comparison
+
 ### 🎯 Sprint Goal
 - Complete CA profile update pipeline and adopt AnalyticsContext in priority views, including recommended allocation UI.
 
@@ -56,17 +72,17 @@ Status: Active | Confidence: High
 2) AnalyticsContext adoption across remaining analytics views (post‑sprint remainder)
 3) Optional: PII encryption (feature‑flagged) for nationalId/phone; add migration before enabling
 
-4) Trial Balance (TB) as derived suggestive layer
-   - Implement `selectTrialBalance(period='month', horizon)` in UnifiedFinancialContext
-   - Normalize frequencies; compute Income Statement, Net CF, Assets/Liabilities, Equity
-   - Emit proposed postings (rent end, goal contributions, loan amortization splits)
+4) Trial Balance (TB) Enhancements
+   - Add journal-style audit log for applied suggestions
+   - Expand suggestions: liability amortization split checks; asset-linked maintenance suggestions
 
-5) Schedule + Valuation engines
-   - scheduleEngine: per-item monthly schedules (income/expense/liability amortization/goal phases)
-   - valuation: nominal/real/risk-adjusted/curve discounting; unify with Lifetime BS
+5) Schedule + Valuation Enhancements
+   - Add per-item growth/inflation overrides surfaced in UI
+   - Add curve-based and risk-adjusted modes; Monte Carlo hooks for flows
 
-6) Trial Balance Audit tool (Tools)
-   - Show balances by account type, reconciliation checks, proposed postings with “Apply” actions
+6) Timeline Integration
+   - Add scenario branches (A/B timelines) and diffing of schedules
+   - Drag/resize interactions produce suggestions; batch apply from overlay
 
 ---
 

@@ -21,7 +21,8 @@ const IncomeManagement = () => {
     income_type: 'salary',
     frequency: 'monthly',
     linked_asset_id: null,
-    asset_relationship_type: ''
+    asset_relationship_type: '',
+    growth_rate_override: ''
   });
 
   useEffect(() => {
@@ -46,7 +47,19 @@ const IncomeManagement = () => {
       linked_asset_id: formData.linked_asset_id ? parseInt(formData.linked_asset_id) : null,
       asset_relationship_type: formData.asset_relationship_type || null
     };
-    if (editingIncome) await updateIncome(editingIncome.id, payload); else await createIncome(payload);
+    if (editingIncome) {
+      const updated = await updateIncome(editingIncome.id, payload);
+      if (formData.growth_rate_override !== '') {
+        const { setIncomeGrowthOverride } = await import('../../utils/overridesStore');
+        setIncomeGrowthOverride(updated?.id || editingIncome.id, Number(formData.growth_rate_override));
+      }
+    } else {
+      const created = await createIncome(payload);
+      if (created?.id && formData.growth_rate_override !== '') {
+        const { setIncomeGrowthOverride } = await import('../../utils/overridesStore');
+        setIncomeGrowthOverride(created.id, Number(formData.growth_rate_override));
+      }
+    }
     resetForm();
   };
 
@@ -169,8 +182,12 @@ const IncomeManagement = () => {
                           setShowAddForm(true);
                         }}>Edit</Button>
                         <Button variant="outline" size="sm" onClick={async () => { if (window.confirm('Delete this income source?')) { await deleteIncome(inc.id); } }} className="text-red-600">Delete</Button>
-                      </div>
-                    </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Growth Rate Override (%)</label>
+                  <Input type="number" step="0.01" value={formData.growth_rate_override} onChange={e => setFormData({ ...formData, growth_rate_override: e.target.value })} placeholder="e.g. 3" />
+                </div>
+              </div>
                   </div>
                 ))}
               </div>

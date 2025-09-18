@@ -6,6 +6,9 @@ import ExpenseManagement from './ExpenseManagement';
 import AssetManagement from './AssetManagement';
 import LiabilityManagement from './LiabilityManagement';
 import GoalRealityCheck from './GoalRealityCheck';
+import CashFlowStatement from './CashFlowStatement';
+import IncomeStatement from './IncomeStatement';
+import TrialBalanceAudit from './TrialBalanceAudit';
 
 const ToolsDashboard = () => {
   const location = useLocation();
@@ -56,6 +59,24 @@ const ToolsDashboard = () => {
       name: 'Liability Management',
       icon: '📋',
       description: 'Debt and liability tracking'
+    },
+    {
+      id: 'trial-balance',
+      name: 'Trial Balance (Audit)',
+      icon: '🧾',
+      description: 'Monthly totals, reconciliation, and suggestions'
+    },
+    {
+      id: 'cashflow',
+      name: 'Cash Flow Statement',
+      icon: '💧',
+      description: 'Operating/Investing/Financing net cash per month'
+    },
+    {
+      id: 'pnl',
+      name: 'Income Statement',
+      icon: '📈',
+      description: 'Monthly P&L with goal contributions'
     },
     {
       id: 'calculators',
@@ -130,6 +151,12 @@ const ToolsDashboard = () => {
           <button onClick={() => setActiveSection('goals')} className="bg-white text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow">
             Run Goal Reality Check
           </button>
+          <button
+            onClick={() => setActiveSection('trial-balance')}
+            className="bg-white text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+          >
+            Open Trial Balance
+          </button>
         </div>
       </div>
     </div>
@@ -195,6 +222,13 @@ const ToolsDashboard = () => {
         {activeSection === 'expenses' && <ExpenseManagement />}
         {activeSection === 'assets' && <AssetManagement />}
         {activeSection === 'liabilities' && <LiabilityManagement />}
+        {activeSection === 'trial-balance' && <TrialBalanceAudit />}
+        {activeSection === 'cashflow' && <CashFlowStatement />}
+        {activeSection === 'pnl' && (
+          <div className="max-w-6xl mx-auto">
+            <IncomeStatement months={12} />
+          </div>
+        )}
         {activeSection === 'calculators' && renderPlaceholder(
           'Financial Calculators',
           'Professional calculators for loan payments, investment returns, retirement planning, and more.'

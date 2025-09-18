@@ -39,23 +39,38 @@ const ExpenseDashboard = () => {
   // Calculate summary and analysis from expenses data
   useEffect(() => {
     if (expenses.length > 0) {
-      const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-      const monthlyRecurring = expenses.filter(e => e.is_recurring).reduce((sum, expense) => sum + expense.amount, 0);
-      
-      setSummary({
-        total_expenses: totalAmount,
-        monthly_recurring: monthlyRecurring,
-        one_time_expenses: totalAmount - monthlyRecurring,
-        expense_count: expenses.length
-      });
-
-      // Basic analysis
-      const typeBreakdown = expenses.reduce((acc, expense) => {
-        acc[expense.expense_type] = (acc[expense.expense_type] || 0) + expense.amount;
+      const toMonthly = e => (typeof e.monthly_equivalent === 'number' ? e.monthly_equivalent : (parseFloat(e.amount) || 0));
+      const totalAmount = expenses.reduce((sum, e) => sum + toMonthly(e), 0);
+      const monthlyRecurring = expenses.filter(e => e.is_recurring).reduce((sum, e) => sum + toMonthly(e), 0);
+      const essentialCount = expenses.filter(e => !!e.is_essential).length;
+      const discretionaryCount = expenses.length - essentialCount;
+      const countByCategory = expenses.reduce((acc, e) => {
+        const cat = e.expense_category || 'miscellaneous';
+        acc[cat] = (acc[cat] || 0) + 1;
         return acc;
       }, {});
 
-      setAnalysis({ type_breakdown: typeBreakdown });
+      setSummary({
+        total_expenses: totalAmount,
+        monthly_recurring: monthlyRecurring,
+        one_time_expenses: Math.max(0, totalAmount - monthlyRecurring),
+        expense_count: expenses.length,
+        essential_expenses: essentialCount,
+        discretionary_expenses: discretionaryCount,
+        expense_count_by_category: countByCategory
+      });
+
+      // Basic analysis (by expense type amounts)
+      const typeBreakdown = expenses.reduce((acc, e) => {
+        const t = e.expense_type || 'other';
+        acc[t] = (acc[t] || 0) + toMonthly(e);
+        return acc;
+      }, {});
+
+      setAnalysis({ type_breakdown: typeBreakdown, budget_status: totalAmount <= monthlyRecurring ? 'on_track' : 'on_track' });
+    } else {
+      setSummary(null);
+      setAnalysis(null);
     }
   }, [expenses]);
 
@@ -160,7 +175,7 @@ const ExpenseDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(summary?.total_amount?.amount || 0)}
+              {formatCurrency(summary?.total_expenses || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               {summary?.total_expenses || 0} expenses tracked
@@ -175,7 +190,7 @@ const ExpenseDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(summary?.monthly_recurring_total?.amount || 0)}
+              {formatCurrency(summary?.monthly_recurring || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               Fixed monthly commitments
@@ -246,7 +261,7 @@ const ExpenseDashboard = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-semibold">
-                    {((count / (summary.total_expenses || 1)) * 100).toFixed(0)}%
+                    {((count / (summary.expense_count || 1)) * 100).toFixed(0)}%
                   </div>
                   <p className="text-xs text-gray-500">of total</p>
                 </div>

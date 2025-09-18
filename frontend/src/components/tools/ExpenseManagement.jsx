@@ -34,13 +34,15 @@ const ExpenseManagement = () => {
     expense_type: '',
     frequency: 'monthly',
     is_recurring: true,
+    is_essential: false,
     related_asset_id: null,
     related_liability_id: null,
     relationship_type: '',
     is_finite_payment: false,
     total_payments_remaining: null,
     payment_end_date: null,
-    notes: ''
+    notes: '',
+    inflation_rate_override: ''
   });
 
   const expenseTypes = EXPENSE_TYPE_DEFS;
@@ -79,15 +81,24 @@ const ExpenseManagement = () => {
       const payload = {
         ...formData,
         amount: parseFloat(formData.amount),
+        is_essential: !!formData.is_essential,
         related_asset_id: formData.related_asset_id || null,
         related_liability_id: formData.related_liability_id || null,
         total_payments_remaining: formData.total_payments_remaining ? parseInt(formData.total_payments_remaining) : null
       };
 
       if (editingExpense) {
-        await updateExpense(editingExpense.id, payload);
+        const updated = await updateExpense(editingExpense.id, payload);
+        if (formData.inflation_rate_override !== '') {
+          const { setExpenseInflationOverride } = await import('../../utils/overridesStore');
+          setExpenseInflationOverride(updated?.id || editingExpense.id, Number(formData.inflation_rate_override));
+        }
       } else {
-        await createExpense(payload);
+        const created = await createExpense(payload);
+        if (created?.id && formData.inflation_rate_override !== '') {
+          const { setExpenseInflationOverride } = await import('../../utils/overridesStore');
+          setExpenseInflationOverride(created.id, Number(formData.inflation_rate_override));
+        }
       }
 
       setIsFormOpen(false);
@@ -410,6 +421,26 @@ const ExpenseManagement = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="mr-2">Essential?</Label>
+                  <input
+                    type="checkbox"
+                    checked={!!formData.is_essential}
+                    onChange={(e) => setFormData({ ...formData, is_essential: e.target.checked })}
+                    data-testid="essential-checkbox"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="inflation_rate_override">Inflation Rate Override (%)</Label>
+                  <Input
+                    id="inflation_rate_override"
+                    type="number"
+                    step="0.01"
+                    value={formData.inflation_rate_override}
+                    onChange={(e) => setFormData({ ...formData, inflation_rate_override: e.target.value })}
+                    placeholder="e.g. 5.5"
+                  />
                 </div>
               </div>
 

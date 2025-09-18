@@ -108,6 +108,17 @@ class AuditLog(Base):
     payload = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class TBAuditEntry(Base):
+    __tablename__ = "tb_audit_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    suggestions_json = Column(Text, nullable=False)  # JSON string of suggestions array
+    meta_json = Column(Text, nullable=True)          # optional metadata json
+
+    owner = relationship("User")
+
 class RiskProfile(Base):
     __tablename__ = "risk_profiles"
 

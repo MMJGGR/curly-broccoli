@@ -13,7 +13,7 @@ import MonteCarloSimulation from './MonteCarloSimulation';
 import DebtRepaymentPlanner from './DebtRepaymentPlanner';
 import AdviceModuleDetail from './AdviceModuleDetail';
 import LifetimeJourneyTimeline from './LifetimeJourneyTimeline';
-import Profile from './Profile';
+import ProfileDynamic from './ProfileDynamic';
 
 // Clean Architecture V2 Components
 import IncomeOverview from './income/IncomeOverview';
@@ -43,7 +43,7 @@ const MainAppLayout = () => {
           <Route path="debt-planner" element={<DebtRepaymentPlanner />} />
           <Route path="advice" element={<AdviceModuleDetail />} />
           <Route path="timeline" element={<LifetimeJourneyTimeline />} />
-          <Route path="profile" element={<Profile />} />
+          <Route path="profile" element={<ProfileDynamic />} />
           {/* Add more routes for other main app sections here */}
         </Routes>
         <Outlet /> {/* This is where nested routes will render */}

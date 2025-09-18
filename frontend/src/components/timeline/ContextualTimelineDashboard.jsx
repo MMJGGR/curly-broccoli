@@ -38,12 +38,20 @@ const ContextualTimelineDashboard = () => {
     incomes = [],
     loading: budgetLoading,
     selectNetCashFlow,
-    selectBudgetSummary
+    selectBudgetSummary,
+    selectSurplusAfterGoals,
+    selectGoalAllocationsTotal,
+    fetchBudgetCategories,
+    budgetCategories = [],
+    planningStartDate,
+    setPlanningStartDate
   } = useUnifiedFinancialContext();
 
   // Calculate derived values from unified context
   const budget = selectBudgetSummary ? selectBudgetSummary() : null;
   const actualSurplus = selectNetCashFlow ? selectNetCashFlow() : 0;
+  const afterGoalsSurplus = selectSurplusAfterGoals ? selectSurplusAfterGoals() : actualSurplus;
+  const goalAllocationsTotal = selectGoalAllocationsTotal ? selectGoalAllocationsTotal() : 0;
   const totalIncome = budget?.total_budgeted ?? (Array.isArray(incomes)
     ? incomes.reduce((sum, inc) => sum + (inc.monthly_amount || inc.amount || 0), 0)
     : (incomes?.total_monthly_income || 0));
@@ -76,6 +84,12 @@ const ContextualTimelineDashboard = () => {
     if (!isTimelineReady) {
       loadTimelineJourney();
     }
+    // Ensure budget categories (for goal allocations) are present
+    try {
+      if ((budgetCategories || []).length === 0 && fetchBudgetCategories) {
+        fetchBudgetCategories();
+      }
+    } catch {}
   }, [isTimelineReady, loadTimelineJourney]);
 
   // Loading state
@@ -195,7 +209,7 @@ const ContextualTimelineDashboard = () => {
               {activeView === 'insights' && (
                 <>
                   {/* Key Metrics Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
                       <div className="flex items-center justify-between">
                         <div>
@@ -205,6 +219,18 @@ const ContextualTimelineDashboard = () => {
                           </div>
                         </div>
                         <div className="text-3xl">💰</div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-emerald-800">After Goals Surplus</div>
+                          <div className={`text-2xl font-bold ${afterGoalsSurplus >= 0 ? 'text-emerald-600' : 'text-orange-600'} mt-1`}>
+                            {formatAmount(afterGoalsSurplus || 0)}
+                          </div>
+                          <div className="text-[11px] text-gray-600 mt-1">Goals allocations: {formatAmount(goalAllocationsTotal || 0)}</div>
+                        </div>
+                        <div className="text-3xl">🎯</div>
                       </div>
                     </div>
                     
@@ -218,6 +244,19 @@ const ContextualTimelineDashboard = () => {
                         </div>
                         <div className="text-3xl">📊</div>
                       </div>
+                    </div>
+                    {/* Planning start month control */}
+                    <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-200">
+                      <div className="text-sm font-medium text-gray-800 mb-1">Planning Start</div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="month"
+                          value={(planningStartDate || '').slice(0,7)}
+                          onChange={(e) => setPlanningStartDate(e.target.value)}
+                          className="border rounded px-2 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="text-[11px] text-gray-500 mt-1">Base month for schedules and labels</div>
                     </div>
                     
                     <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-200">
