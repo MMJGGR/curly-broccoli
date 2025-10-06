@@ -11,6 +11,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import { API_BASE_URL } from '../../config';
+import { saveOnboardingStep, completeOnboardingApi } from '../../services/onboarding';
 
 // Import step components
 import PersonalInfoStep from './PersonalInfoStep';
@@ -97,24 +98,7 @@ const OnboardingWizard = () => {
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/v1/onboarding-v2-clean/save-step`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          step_number: stepNumber,
-          step_data: stepData
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Failed to save step ${stepNumber}`);
-      }
-      
-      const result = await response.json();
+      const result = await saveOnboardingStep({ stepNumber, stepData, token, base: API_BASE_URL });
       console.log(`✅ Step ${stepNumber} saved successfully:`, result);
       
       // Mark step as completed
@@ -149,29 +133,11 @@ const OnboardingWizard = () => {
         throw new Error('No authentication token found');
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/v1/onboarding-v2-clean/complete`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          onboarding_data: {
-            personalData,
-            riskData,
-            financialData,
-            goalsData,
-            employmentData
-          }
-        })
+      const result = await completeOnboardingApi({
+        data: { personalData, riskData, financialData, goalsData, employmentData },
+        token,
+        base: API_BASE_URL
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to complete onboarding');
-      }
-      
-      const result = await response.json();
       console.log('✅ Onboarding completed successfully:', result);
       
       // Mark onboarding as complete locally

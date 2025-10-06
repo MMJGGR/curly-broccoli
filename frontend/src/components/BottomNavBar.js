@@ -4,9 +4,14 @@ import React from 'react';
 const BottomNavBar = ({ onTabClick, activeTab = 'dashboard' }) => {
 
     const tabs = [
-        { id: 'budget', name: 'Budget', icon: (
+        { id: 'dashboard', name: 'Dashboard', icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m-3-3c-1.115 0-2.01-.895-2.01-2s.895-2 2.01-2 2.01.895 2.01 2-.895 2-2.01 2z"></path>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2 2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+        )},
+        { id: 'plan', name: 'Plan', icon: (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6M7 8h10m1-4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2z"></path>
             </svg>
         )},
         { id: 'balance-sheet', name: 'Balance Sheet', icon: (
@@ -14,19 +19,14 @@ const BottomNavBar = ({ onTabClick, activeTab = 'dashboard' }) => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
             </svg>
         )},
-        { id: 'dashboard', name: 'Dashboard', icon: (
+        { id: 'cash-flow', name: 'Cash Flow', icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2 2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m-3-3c-1.115 0-2.01-.895-2.01-2s.895-2 2.01-2 2.01.895 2.01 2-.895 2-2.01 2z"></path>
             </svg>
         )},
-        { id: 'goals', name: 'Tools', icon: (
+        { id: 'timeline', name: 'Timeline', icon: (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4a2 2 0 100 4m-3 13a3 3 0 116 0m-6 0a3 3 0 006 0m-6 0h6m-5-9a1 1 0 11-2 0 1 1 0 012 0zm4 0a1 1 0 11-2 0 1 1 0 012 0zm-3 4a1 1 0 11-2 0 1 1 0 012 0zm4 0a1 1 0 11-2 0 1 1 0 012 0zm-3 4a1 1 0 11-2 0 1 1 0 012 0zm4 0a1 1 0 11-2 0 1 1 0 012 0z"></path>
-            </svg>
-        )},
-        { id: 'profile', name: 'Profile', icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v8m-6-4h12m-9 8h6a2 2 0 002-2V6a2 2 0 00-2-2H9a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
         )},
     ];
@@ -44,7 +44,8 @@ const BottomNavBar = ({ onTabClick, activeTab = 'dashboard' }) => {
                                 ? 'text-blue-600' 
                                 : 'text-gray-600 hover:text-blue-600'
                         }`}
-                        data-cy={`nav-${tab.id}`}
+                        data-cy={tab.id === 'cash-flow' ? 'nav-budget' : `nav-${tab.id}`}
+                        data-testid={tab.id === 'cash-flow' ? 'nav-budget' : undefined}
                         onClick={() => onTabClick(tab.id)}
                     >
                         {tab.icon}

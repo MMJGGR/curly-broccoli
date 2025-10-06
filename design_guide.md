@@ -126,3 +126,34 @@ Located under `frontend/src/components/ui` and exported via `index.js`.
 
 This guide evolves with the product. Please update tokens, components, and examples as the brand and UI mature.
 
+## 13. UI/UX Review Guidelines (2025-09)
+
+The following guidance reflects a holistic review and should inform ongoing work:
+
+- Navigation & Layout
+  - Ensure all pages are scrollable under fixed navigation; add bottom padding (`pb-20`) to avoid overlap.
+  - Constrain content width (`max-w-7xl`) with consistent page paddings; use a Layout wrapper where possible.
+
+- Data Presentation
+  - Use `formatCurrencyCompact` for summary tiles; use full `formatCurrency` in details.
+  - Right‑align numeric columns; clamp long text in cards with `line-clamp-2`.
+
+- Loading / Empty / Error
+  - Prefer localized skeletons over page‑blocking spinners. If loads run long, offer a "Continue anyway" CTA and progressively enhance.
+  - Always include EmptyState with primary CTA for empty datasets, and Alert for errors.
+
+- Consistency
+  - Use standardized Buttons (primary/secondary/ghost/destructive) instead of ad‑hoc links for primary actions (e.g., “More” becomes a secondary Button with chevron icon).
+  - Normalize Card padding (`p-6`), spacing, and heading hierarchy; avoid mixing borders and shadows.
+
+- Accessibility
+  - Maintain visible focus rings, adequate color contrast, and ARIA labels for interactive controls and charts.
+  - Support keyboard navigation for modals; `Escape` closes modals/drawers.
+
+- Copy & Tone
+  - Prefer action‑oriented microcopy; trim long paragraphs; progressively disclose details with accordions or popovers.
+
+- Patterns
+  - Timeline labels every 6 months; sparkline colors with sufficient contrast.
+  - Trial Balance suggestions provide granular apply/undo; audit log remains accessible.
+

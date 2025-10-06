@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import { Card, CardContent } from '../ui/card';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatCurrencyCompact } from '../../utils/formatters';
 
 const BudgetOverview = () => {
   const {
@@ -100,8 +100,8 @@ const BudgetOverview = () => {
               <div className="ml-4 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Monthly Income</dt>
-                  <dd className="text-lg font-semibold text-blue-600">
-                    {formatCurrency(budgetOverview.total_budgeted || 0)}
+                  <dd className="text-lg font-semibold text-blue-600 break-all">
+                    {formatCurrencyCompact(budgetOverview.total_budgeted || 0)}
                   </dd>
                 </dl>
               </div>
@@ -120,8 +120,8 @@ const BudgetOverview = () => {
               <div className="ml-4 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Total Expenses</dt>
-                  <dd className="text-lg font-semibold text-orange-600">
-                    {formatCurrency(budgetOverview.total_spent || 0)}
+                  <dd className="text-lg font-semibold text-orange-600 break-all">
+                    {formatCurrencyCompact(budgetOverview.total_spent || 0)}
                   </dd>
                 </dl>
               </div>
@@ -142,8 +142,8 @@ const BudgetOverview = () => {
               <div className="ml-4 w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Remaining</dt>
-                  <dd className={`text-lg font-semibold ${(budgetOverview.remaining_budget || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(budgetOverview.remaining_budget || 0)}
+                  <dd className={`text-lg font-semibold ${(budgetOverview.remaining_budget || 0) >= 0 ? 'text-green-600' : 'text-red-600'} break-all`}>
+                    {formatCurrencyCompact(budgetOverview.remaining_budget || 0)}
                   </dd>
                 </dl>
               </div>

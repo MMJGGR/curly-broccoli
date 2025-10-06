@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import predictiveAnalytics from '../../services/predictiveAnalytics';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 import ProbabilityGauge from './ProbabilityGauge';
 import ConfidenceIntervalChart from './ConfidenceIntervalChart';
 import ProjectionChart from './ProjectionChart';
@@ -33,10 +33,11 @@ const GoalAnalyticsDashboard = ({
 
     try {
       // Load all analytics data in parallel
+      const analytics = useAnalytics();
       const [trajectoryData, simulationResults, projectionData] = await Promise.allSettled([
-        predictiveAnalytics.analyzeGoalTrajectory(goalId),
-        predictiveAnalytics.runMonteCarloSimulation(goalId),
-        predictiveAnalytics.getGoalProjections(goalId, { 
+        analytics.analyzeGoalTrajectory(goalId),
+        analytics.runMonteCarloSimulation(goalId),
+        analytics.getGoalProjections(goalId, { 
           scenario: selectedScenario,
           yearsAhead: 10 
         })
@@ -75,10 +76,11 @@ const GoalAnalyticsDashboard = ({
     setRefreshing(true);
     try {
       // Update goal progress first
-      await predictiveAnalytics.updateGoalProgress(goalId, true);
+      const analytics = useAnalytics();
+      await analytics.updateGoalProgress(goalId, true);
       
       // Clear cache and reload
-      predictiveAnalytics.clearCache();
+      analytics.clearCache();
       await loadAnalyticsData();
       
       if (onProgressUpdate) {
@@ -110,9 +112,8 @@ const GoalAnalyticsDashboard = ({
     };
   }, [analyticsData, simulationData]);
 
-  const formatCurrency = (amount) => {
-    return predictiveAnalytics.formatCurrency(amount);
-  };
+  const analytics = useAnalytics();
+  const formatCurrency = (amount) => analytics.formatCurrency(amount);
 
   if (loading && !analyticsData) {
     return (

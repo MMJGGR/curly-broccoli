@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import MessageBox from '../MessageBox';
+import { EmptyState } from '../ui/empty-state';
+import Layout from '../layout/Layout';
 
 const IncomeOverview = ({ onNextScreen }) => {
   // Use UnifiedFinancialContext instead of direct API calls
@@ -221,12 +223,14 @@ const IncomeOverview = ({ onNextScreen }) => {
 
   return (
     <div className="bg-gray-100 min-h-screen flex flex-col">
-      <main className="flex-grow container mx-auto p-6 md:p-8">
+      <main className="flex-grow">
+        <Layout className="py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Income Management</h1>
           <button
             className="bg-green-500 text-white py-2 px-6 rounded-lg font-semibold hover:bg-green-600 transition-all duration-300 shadow-lg"
             onClick={() => setShowAddForm(!showAddForm)}
+            aria-label="Add Income Source"
           >
             {showAddForm ? 'Cancel' : '+ Add Income Source'}
           </button>
@@ -407,25 +411,18 @@ const IncomeOverview = ({ onNextScreen }) => {
               </div>
             ))
           ) : (
-            <div className="md:col-span-3 text-center py-12">
-              <div className="text-gray-500 mb-4">
-                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Income Sources Yet</h3>
-              <p className="text-gray-600 mb-4">
-                Start by adding your income incomeSource to track your financial progress.
-              </p>
-              <button
-                className="bg-green-500 text-white py-2 px-6 rounded-lg font-semibold hover:bg-green-600 transition-all duration-300 shadow-lg"
-                onClick={() => setShowAddForm(true)}
-              >
-                Add Your First Income Source
-              </button>
+            <div className="md:col-span-3">
+              <EmptyState
+                icon="💰"
+                title="No Income Sources"
+                description="Add your first income source to begin tracking cash inflows."
+                actionLabel="Add Income Source"
+                onAction={() => setShowAddForm(true)}
+              />
             </div>
           )}
         </div>
+        </Layout>
       </main>
 
       {showMessageBox && <MessageBox message={message} onClose={hideMessageBox} />}

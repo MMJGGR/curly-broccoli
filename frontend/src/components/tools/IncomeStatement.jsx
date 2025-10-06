@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
@@ -6,8 +6,49 @@ const KES = (n) => `KES ${Math.round(n || 0).toLocaleString()}`;
 
 export default function IncomeStatement({ months = 12 }) {
   const { selectSchedules, planningStartDate } = useUnifiedFinancialContext();
+  const [serverData, setServerData] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const base = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        const token = localStorage.getItem('jwt');
+        const res = await fetch(`${base}/api/v1/pl/statement?months=${encodeURIComponent(months)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled && json && Array.isArray(json.rows)) {
+          setServerData(json);
+        }
+      } catch (_) {
+        // Fallback to schedules
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [months]);
 
   const data = useMemo(() => {
+    // Prefer server data when available
+    if (serverData && Array.isArray(serverData.rows)) {
+      const rows = serverData.rows.map((r, idx) => ({
+        idx,
+        label: (() => {
+          try {
+            const [y, m] = String(r.period).split('-').map(Number);
+            const d = new Date(y, (m || 1) - 1, 1);
+            return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+          } catch { return r.period; }
+        })(),
+        income: r.income || 0,
+        operating_expenses: r.operating_expenses || 0,
+        goal_contributions: r.goal_contributions || 0,
+        net_income: r.net_income || 0
+      }));
+      return { rows, totals: serverData.totals || { income: 0, operating_expenses: 0, goal_contributions: 0, net_income: 0 } };
+    }
+
     try {
       const flows = selectSchedules(months);
       const byMonth = Array.from({ length: months }, () => ({ income: 0, expenses: 0, goals: 0 }));
@@ -41,7 +82,7 @@ export default function IncomeStatement({ months = 12 }) {
     } catch {
       return { rows: [], totals: { income: 0, operating_expenses: 0, goal_contributions: 0, net_income: 0 } };
     }
-  }, [selectSchedules, planningStartDate, months]);
+  }, [selectSchedules, planningStartDate, months, serverData]);
 
   return (
     <div className="p-6 space-y-6">
@@ -86,4 +127,3 @@ export default function IncomeStatement({ months = 12 }) {
     </div>
   );
 }
-

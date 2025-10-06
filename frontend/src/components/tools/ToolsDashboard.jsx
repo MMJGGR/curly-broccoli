@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import IncomeManagement from './IncomeManagement';
+import Layout from '../layout/Layout';
 import GoalsOverview from '../goals/GoalsOverview';
 import ExpenseManagement from './ExpenseManagement';
 import AssetManagement from './AssetManagement';
@@ -182,7 +183,7 @@ const ToolsDashboard = () => {
     <div className="h-full bg-gray-50">
       {/* Header with Section Tabs */}
       <div className="bg-white shadow-sm border-b">
-        <div className="px-6 py-4">
+        <Layout className="py-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-800">Financial Tools</h1>
             {activeSection !== 'overview' && (
@@ -204,11 +205,11 @@ const ToolsDashboard = () => {
               <span>{toolSections.find(s => s.id === activeSection)?.description}</span>
             </div>
           )}
-        </div>
+        </Layout>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-auto">
+      <Layout className="flex-1 overflow-auto py-6">
         {activeSection === 'overview' && renderOverview()}
         {activeSection === 'income' && <IncomeManagement />}
         {activeSection === 'goals' && (
@@ -241,7 +242,7 @@ const ToolsDashboard = () => {
           'Financial Planning',
           'Comprehensive financial planning tools including estate planning, tax optimization, and scenario analysis.'
         )}
-      </div>
+      </Layout>
     </div>
   );
 };

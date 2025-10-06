@@ -239,6 +239,58 @@ A feature is considered "done" when it meets the following criteria:
 *   The feature has been reviewed and approved by at least one other developer.
 *   The feature has been tested against the user's specific use cases.
 
+---
+
+## 4. Milestones + Pro Forma (Selectors & Components)
+
+Milestones are time‑bound targets that coordinate budget, goals, assets/liabilities, and timeline. A Pro Forma snapshot computes how the Balance Sheet and P&L look at a future date if the plan is followed.
+
+### 4.1 Selectors (contract)
+```typescript
+// Current snapshots
+selectCurrentSnapshotBS(): { assets: Asset[]; liabilities: Liability[]; netWorth: number; liquidity: number; leverage: number }
+selectSnapshotPnL(opts: { months: number }): Array<{ label: string; income: number; operating_expenses: number; goal_contributions: number; net: number }>
+
+// Pro Forma
+selectDesiredBalanceSheet(dateISO: string): { snapshot: SnapshotBS; delta: SnapshotBSDeltas }
+selectNetWorthSeries(opts: { months: number }): { labels: string[]; current: number[]; proForma: number[] }
+
+// Milestones
+selectMilestones(): Milestone[]
+selectMilestoneProgress(id: string): number // 0..1
+selectMilestoneLikelihood(id: string): 'green' | 'amber' | 'red'
+
+// Audits (feed milestones)
+selectIncomeAudit(): AuditResult
+selectExpenseAudit(): AuditResult
+selectAssetsAudit(): AuditResult
+selectLiabilitiesAudit(): AuditResult
+selectGoalsAudit(): AuditResult
+```
+
+Implementation notes:
+- Pro Forma uses schedule engine + goal mappings (e.g., home purchase → create asset + mortgage; rent → mortgage/tax/maint).
+- Audits compute “required/month vs allocated/month” coverage, timeline slack, and dependency readiness.
+
+### 4.2 Components (shared)
+- Pro Forma Bar: toggle + date (labels based on planningStartDate)
+- Milestone Card: shows Current vs Milestone snapshots, progress bar, likelihood color, two micro charts (bar + donut), contextual actions
+- KPI Card: big number + delta vs milestone, consistent formatting
+
+---
+
+## 5. Information Architecture (5 Tabs)
+
+Tabs: Dashboard, Plan, Balance Sheet, Cash Flow, Timeline
+
+- Dashboard: Current Position + Nearest Milestone cards; KPIs; sparkline
+- Plan: Goals + Budget + Milestones + Audits; coverage bars; quick budget edits
+- Balance Sheet: Current vs Pro Forma KPIs; allocation donuts; liability stack; net worth trend; Goals Impact
+- Cash Flow: Income/Expenses CRUD; Income Statement; Cash Flow Statement; audit banners; Trial Balance (Advanced)
+- Timeline: Milestone markers; Pro Forma preview for selected month
+
+Tools/calculators are accessed contextually via “More” menus in Plan and Cash Flow (no standalone Tools tab).
+
 ## 4. Frontend Architecture Standards
 
 ### 4.1. Component Structure

@@ -25,11 +25,21 @@ const timelineReducer = (state, action) => {
         loading: false,
         error: action.payload
       };
-    case 'UPDATE_ALIGNMENT':
+    case 'UPDATE_ALIGNMENT': {
+      const payload = action.payload;
+      // Accept either a numeric score or an object with details
+      const score = typeof payload === 'number' ? payload : (payload?.score ?? state.alignmentScore);
+      const trend = typeof payload === 'object' && payload !== null ? (payload.trend ?? state.alignmentTrend) : state.alignmentTrend;
+      const status = typeof payload === 'object' && payload !== null ? (payload.status ?? state.alignmentStatus) : state.alignmentStatus;
+      const recommendations = typeof payload === 'object' && payload !== null ? (payload.recommendations ?? state.alignmentRecommendations) : state.alignmentRecommendations;
       return {
         ...state,
-        alignmentScore: action.payload
+        alignmentScore: score,
+        alignmentTrend: trend,
+        alignmentStatus: status,
+        alignmentRecommendations: recommendations
       };
+    }
     case 'ADD_MILESTONE':
       return {
         ...state,
@@ -68,6 +78,7 @@ const initialState = {
   alignmentScore: null,
   alignmentTrend: null,
   alignmentStatus: null,
+  alignmentRecommendations: null,
   // Dashboard data
   nextMilestone: null,
   quickActions: [],
@@ -236,6 +247,15 @@ export const TimelineProvider = ({ children }) => {
 
     } catch (error) {
       console.error('Milestone creation failed:', error);
+      // Local-first fallback
+      try {
+        const loc = { ...(milestoneData || {}), id: `local_ms_${Date.now()}` };
+        const raw = localStorage.getItem('milestones_local') || '[]';
+        const arr = JSON.parse(raw);
+        localStorage.setItem('milestones_local', JSON.stringify([...arr, loc]));
+        dispatch({ type: 'ADD_MILESTONE', payload: loc });
+        return { success: true, milestone: loc, fallback: true };
+      } catch (_) {}
       throw error;
     }
   }, []);

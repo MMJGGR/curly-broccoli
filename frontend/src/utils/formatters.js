@@ -140,3 +140,21 @@ export const truncateText = (text, maxLength = 50) => {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
 };
+
+// Compact currency (e.g., KES 1.2M) for tight UI cards
+export const formatCurrencyCompact = (amount, maximumFractionDigits = 0) => {
+  if (amount === null || amount === undefined) return 'KES 0';
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) return 'KES 0';
+  try {
+    return new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: 'KES',
+      notation: 'compact',
+      maximumFractionDigits
+    }).format(numAmount);
+  } catch {
+    // Fallback to regular formatting on unsupported environments
+    return formatCurrency(numAmount);
+  }
+};

@@ -1,7 +1,7 @@
 # 🏦 Personal Finance Application — Kanban (Overhauled)
 
-## 🚀 Current Status: Clean Architecture Alignment + Profile Hub
-Status: Active | Confidence: High
+## 🚀 Current Status: CR012 Completed (Client Journeys) + CR013 Scope Finalized (Advisor)
+Status: Completed | Confidence: High
 
 - Clean-arch endpoints in production use for assets, liabilities, income, expenses, goals, relationships, timeline.
 - Legacy endpoints mounted under /deprecated and /api/v1/deprecated with Deprecation + Sunset, warning logs, and no UI usage.
@@ -10,7 +10,63 @@ Status: Active | Confidence: High
 
 ---
 
-## 🎯 Active Sprint: Clean‑Arch Completion + Profile Hub Polish (P0)
+## 🎯 Active Sprint: CR012 Enterprise Readiness (Client Journeys) — Completed
+
+### ✅ Completed (this sprint)
+- Backend: Canonical P&L endpoint `/api/v1/pl/statement` (MVP)
+- Backend: Asset reference endpoints `/api/v1/asset-reference/*` with seeded Kenya categories/types
+- Frontend: AssetForm uses server categories/types (no hardcoded models)
+- Frontend: IncomeStatement prefers server P&L with schedule fallback
+ - Relationships v2: Replace mock income repo with SQLAlchemyIncomeRepository; asset↔income linking flows unblocked
+ - Transactions→Budget variance: Month-to-date variance and basic alerts surfaced in Plan
+ - Debt payoff optimizer v1 (snowball): summary panel in Plan (months, interest saved)
+ - Retirement readiness v1: readiness score and monthly gap panel in Plan
+ - Enforcement & a11y: ESLint rule bans fetch in components (allowlist for auth/onboarding); basic Layout/Stat components added
+ - CR009 carryover: Goals Impact panel v1 (avg coverage, under/fully-funded counts)
+
+### 📌 Committed (P0) — Completed
+✅ 1) Relationships v2 — Verified E2E asset↔income linking flows (tracking tests)
+✅ 2) Transactions→Budget variance drilldowns and alert tuning
+✅ 3) Debt payoff optimizer: avalanche option and per‑debt breakdown
+✅ 4) Retirement readiness: parameterized assumptions; sensitivity surfaced
+✅ 5) Enforcement & a11y — Layout/Stat + skeletons/EmptyState rolled out across major views
+✅ 6) Carryovers (from prior CRs, in‑scope) — Closed
+   - CR004: removed residual direct fetches (AuthScreen, AdvisorOnboardingComplete, OnboardingWizard, ProfileActions, legacy tools); all financial components use context selectors
+   - CR005: finalized budget‑v2 category normalization and goal‑linked naming; de‑duplicated category names
+   - CR006: consolidated profile read/write path and coalesced `/auth/me` + insights calls across remaining views
+   - CR008: adopted AnalyticsContext across remaining analytics views
+   - CR009: finished Goals Impact panel v1; ensured snapshot cards/shared formatters across tabs
+   - CR011: Layout wrapper + Stat component; converted “More” links; skeletons/EmptyState and quick a11y fixes
+
+### 🧩 Stretch (P1) — Completed
+✅ Cross‑tab scenario overlays (Cash Flow/BS)
+✅ Expanded transaction integrations (imports/rules) and variance drilldowns
+
+### ✅ Completed (pre‑sprint groundwork)
+- Planning start month added; net‑cash‑flow sparkline + month labels
+- After‑Goals Surplus surfaced on dashboard; expense summaries normalized
+- Removed legacy FE endpoints (deprecated → v2); legacy profile UIs cleaned
+
+### 📌 Committed (P0)
+✅ 1) IA Restructure to 5 Tabs
+   - Bottom nav: Dashboard, Plan, Balance Sheet, Cash Flow, Timeline
+   - Remove Tools from primary nav; relocate calculators to contextual “More”
+✅ 2) Balance Sheet v2 (MVP)
+   - KPIs (Current vs Pro Forma), Asset Allocation donut, Liability Composition stack, Net Worth trend
+   - Pro Forma control (toggle + date), Goals Impact panel (stub → v1)
+✅ 3) Plan Tab Consolidation
+   - Goals Reality Check + Goals Audit + coverage bars by goal
+   - Milestone Cards hub; quick budget edits (adjust Goal: categories)
+✅ 4) Cash Flow Tab
+   - Income/Expenses CRUD, Income Statement, Cash Flow Statement
+   - Trial Balance Audit in Advanced area; audit banners with suggested actions
+✅ 5) Timeline Integration
+   - Milestone markers; open Pro Forma snapshot for month; jump to Plan/BS
+
+### 🧩 Stretch (P1)
+✅ Domain audits (income/expense/assets/liabilities) produce milestones + actions — Implemented client-side with Suggested Milestones in Plan
+✅ Likelihood scoring polish; export/share snapshots — Plan Likelihood gauge added; Balance Sheet snapshot export added
+✅ Scenario A/B controls surfaced in Plan/Cash Flow/Balance Sheet (diff summaries)
 
 ### ✅ Completed (this sprint)
 - Deprecated legacy routers (headers + logs) and removed legacy UI route
@@ -55,22 +111,23 @@ Status: Active | Confidence: High
  - Timeline: Scenario A/B — save/load/delete scenarios and overlay tracks for comparison
 
 ### 🎯 Sprint Goal
-- Complete CA profile update pipeline and adopt AnalyticsContext in priority views, including recommended allocation UI.
+- Lift Journey Coverage from ~67% to ~80% by delivering P&L canonical path, relationships repo, variance/alerts, and v1 advisorship features (debt payoff, retirement readiness), plus enforcement.
 
 ### 📌 Committed (P0)
 - No remaining committed items — all completed
   - Implemented initial script `test-profile-preferences-e2e.cjs` (expand as needed)
 
 ### 🧩 Stretch (P1)
-- AnalyticsContext adoption across all remaining analytics views (beyond priority ones)
+✅ AnalyticsContext adoption across all analytics views (beyond priority ones)
 
 ---
 
-## 📋 Backlog (Prioritized)
-- Note: Items previously #1, #2, and #5 moved to Active Sprint. Item #4 partially moved (priority views now; remainder stays here).
-1) Expand budget preferences (carryover strategy, strict zero‑base mode, per‑category alert thresholds)
-2) AnalyticsContext adoption across remaining analytics views (post‑sprint remainder)
-3) Optional: PII encryption (feature‑flagged) for nationalId/phone; add migration before enabling
+## 📋 Backlog — Closed
+- Domain audits and milestone generation (income/expense/assets/liabilities) — Done (client)
+- Likelihood model improvements; scenario A/B compare; export/share — Done (controls + diffs across tabs; export in BS)
+- Expand budget preferences (carryover strategy, zero‑base mode, alert thresholds) — Done
+- AnalyticsContext adoption across remaining analytics views — Done
+- Optional: PII encryption (feature‑flagged) for nationalId/phone) — Flag wired (REACT_APP_PII_ENCRYPTION)
 
 4) Trial Balance (TB) Enhancements
    - Add journal-style audit log for applied suggestions
@@ -101,14 +158,14 @@ Status: Active | Confidence: High
 
 ---
 
-## 🧪 Testing Gaps (to cover)
-- Profile preferences and planning assumptions save cycles (UI -> /auth/profile -> context refresh)
-- Merge of profile‑v2 insights with /auth/me (happy/sad paths if insights unavailable)
-- Deprecation headers + logs when legacy endpoints are hit
-- AuditLog write on profile update (table creation via create_all path)
-- AnalyticsContext usage in TimelineDashboard (and other analytics views once migrated)
-- Risk score wrapper (compute_risk_score) in both signature modes
-- Delegation in /auth/profile to CA repository (no behavioral regressions)
+## 🧪 Testing Coverage (closed gaps)
+- Profile preferences and planning assumptions save cycles (UI → /auth/profile → context refresh) — Covered
+- Merge of profile‑v2 insights with /auth/me (happy/sad paths if insights unavailable) — Covered
+- Deprecation headers + logs when legacy endpoints are hit — Covered
+- AuditLog write on profile update (table creation via create_all path) — Covered
+- AnalyticsContext usage in TimelineDashboard and other analytics views — Covered
+- Risk score wrapper (compute_risk_score) in both signature modes — Covered
+- Delegation in /auth/profile to CA repository (no regressions) — Covered
 
 ---
 
@@ -120,14 +177,14 @@ Status: Active | Confidence: High
 
 ---
 
-## 🧩 Enterprise Gaps
+## 🧩 Enterprise Gaps (tracked separately; out of CR012 scope)
 - RBAC and field‑level access (advisor vs client)
-- PII encryption feature‑flag (nationalId, phone) and migration plan
-- Observability: metrics dashboards, tracing, SLO alerts
+- PII encryption at rest (nationalId, phone) and migration plan
+- Observability: metrics dashboards, tracing, SLO alerts (server ingest endpoint in place)
 - IPS generation/storage and advisor workflows
 - Formal data retention/backups and data lineage/versioning
 
-## 🎓 CFA Alignment Gaps
+## 🎓 CFA Alignment Gaps (tracked separately; out of CR012 scope)
 - IPS document and storage (risk, goals, allocation, constraints)
 - Risk capacity integration alongside tolerance; questionnaire governance
 - Goal funding optimizer tied to recommended allocations
@@ -136,5 +193,5 @@ Status: Active | Confidence: High
 
 ---
 
-Last Updated: 2025‑09‑18
+Last Updated: 2025‑10‑06
 Owner: Engineering

@@ -15,8 +15,7 @@ from ....database import get_db
 from ....application.use_cases.manage_financial_relationships import ManageFinancialRelationships
 from ....infrastructure.repositories.sqlalchemy_relationship_repository import SQLAlchemyRelationshipRepository
 from ....infrastructure.repositories.sqlalchemy_asset_repository import SqlAlchemyAssetRepository
-# Note: Income repository needs to be created or imported from correct location
-# from ....infrastructure.repositories.sqlalchemy_income_repository import SQLAlchemyIncomeRepository  
+from ....infrastructure.repositories.sqlalchemy_income_repository import SQLAlchemyIncomeRepository
 from ....infrastructure.repositories.sqlalchemy_expense_repository import SqlAlchemyExpenseRepository
 from ....infrastructure.repositories.sqlalchemy_liability_repository import SqlAlchemyLiabilityRepository
 
@@ -70,8 +69,7 @@ def get_relationship_use_case(db: Session = Depends(get_db)) -> ManageFinancialR
     """Dependency injection for relationship use case"""
     relationship_repo = SQLAlchemyRelationshipRepository(db)
     asset_repo = SqlAlchemyAssetRepository(db)
-    # Create a mock income repository for now - needs proper implementation
-    income_repo = MockIncomeRepository()
+    income_repo = SQLAlchemyIncomeRepository(db)
     expense_repo = SqlAlchemyExpenseRepository(db)
     liability_repo = SqlAlchemyLiabilityRepository(db)
     
@@ -80,33 +78,7 @@ def get_relationship_use_case(db: Session = Depends(get_db)) -> ManageFinancialR
     )
 
 
-class MockIncomeRepository:
-    """Temporary mock income repository until proper one is implemented"""
-    async def get_by_id(self, income_id: int, user_id: int):
-        # Mock implementation - always return a valid result for validation
-        class MockIncome:
-            def __init__(self):
-                self.id = income_id
-                self.user_id = user_id
-        return MockIncome()
-    
-    async def get_by_user_id(self, user_id: int):
-        return []
-    
-    async def create(self, income):
-        return income
-    
-    async def update(self, income):
-        return income
-    
-    async def delete(self, income_id: int, user_id: int):
-        return True
-    
-    async def get_monthly_total(self, user_id: int):
-        return 0.0
-    
-    async def get_by_type(self, user_id: int, income_type: str):
-        return []
+## Removed: MockIncomeRepository (replaced with SQLAlchemyIncomeRepository)
 
 
 @router.get("/health")

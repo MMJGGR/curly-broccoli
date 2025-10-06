@@ -19,6 +19,8 @@ import BudgetCashflows from './budget/BudgetCashflows';
 
 // Tools components
 import ToolsDashboard from './tools/ToolsDashboard';
+import PlanDashboard from './plan/PlanDashboard';
+import CashFlowDashboard from './cashflow/CashFlowDashboard';
 
 // Balance Sheet components (Assets and Liabilities) - CFA-compliant structure
 import BalanceSheetDashboard from './balance-sheet/BalanceSheetDashboard';
@@ -29,7 +31,6 @@ import { IncomeDashboard } from './income';
 import { ExpenseDashboard } from './expenses';
 
 // Legacy components (for fallback/migration)  
-import Dashboard from './Dashboard';
 import ProfileDynamic from './ProfileDynamic';
 import BottomNavBar from './BottomNavBar';
 
@@ -77,17 +78,17 @@ const TimelineMainAppLayout = () => {
       case 'dashboard':
         navigate('dashboard');
         break;
-      case 'profile':
-        navigate('profile');
-        break;
-      case 'budget':
-        navigate('budget');
+      case 'plan':
+        navigate('plan');
         break;
       case 'balance-sheet':
         navigate('balance-sheet');
         break;
-      case 'goals':
-        navigate('tools');
+      case 'cash-flow':
+        navigate('cash-flow');
+        break;
+      case 'timeline':
+        navigate('timeline-legacy');
         break;
       default:
         break;
@@ -141,44 +142,51 @@ const TimelineMainAppLayout = () => {
     <TimelineProvider>
       <BudgetProvider>
         <AnalyticsProvider>
-        <div className="timeline-app h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-          <Routes>
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="dashboard" replace />} />
-            
-            {/* Contextual Timeline Dashboard (New Design) */}
-            <Route path="dashboard" element={<ContextualTimelineDashboard />} />
-            
-            {/* Legacy Timeline Dashboard (Large visualization) */}
-            <Route path="timeline-legacy" element={<TimelineDashboard />} />
-            
-            {/* Dynamic Profile using onboarding data */}
-            <Route path="profile" element={<ProfileDynamic />} />
-            
-            {/* Budget & Cashflows */}
-            <Route path="budget" element={<BudgetCashflows />} />
-            
-            {/* Balance Sheet - Assets and Liabilities (CFA-compliant structure) */}
-            <Route path="balance-sheet" element={<BalanceSheetDashboard />} />
-            <Route path="assets" element={<AssetDashboard />} />
-            
-            {/* Income Statement - Revenue and Expenses (separate from Balance Sheet) */}
-            <Route path="income" element={<IncomeDashboard />} />
-            <Route path="expenses" element={<ExpenseDashboard />} />
-            
-            {/* Financial Management Tools */}
-            <Route path="tools" element={<ToolsDashboard />} />
-            
-            {/* Legacy routes for fallback */}
-            <Route path="dashboard-legacy" element={<Dashboard />} />
-            {/* Legacy profile route removed - use /app/profile */}
-            
-            {/* Catch-all redirect */}
-            <Route path="*" element={<Navigate to="dashboard" replace />} />
-          </Routes>
+        <div className="timeline-app min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+          {/* Scrollable content area with bottom padding for fixed nav */}
+          <div className="flex flex-col" style={{ minHeight: '100vh' }}>
+            <div className="flex-1 overflow-y-auto pb-20" style={{ height: 'calc(100vh - 4rem)' }}>
+              <Routes>
+                {/* Default redirect */}
+                <Route path="/" element={<Navigate to="dashboard" replace />} />
+                
+                {/* Contextual Timeline Dashboard (New Design) */}
+                <Route path="dashboard" element={<ContextualTimelineDashboard />} />
+                
+                {/* Legacy Timeline Dashboard (Large visualization) */}
+                <Route path="timeline-legacy" element={<TimelineDashboard />} />
+                
+                {/* Dynamic Profile using onboarding data */}
+                <Route path="profile" element={<ProfileDynamic />} />
+                
+                {/* Budget & Cashflows */}
+                <Route path="budget" element={<BudgetCashflows />} />
+                <Route path="plan" element={<PlanDashboard />} />
+                <Route path="cash-flow" element={<CashFlowDashboard />} />
+                
+                {/* Balance Sheet - Assets and Liabilities (CFA-compliant structure) */}
+                <Route path="balance-sheet" element={<BalanceSheetDashboard />} />
+                <Route path="assets" element={<AssetDashboard />} />
+                
+                {/* Income Statement - Revenue and Expenses (separate from Balance Sheet) */}
+                <Route path="income" element={<IncomeDashboard />} />
+                <Route path="expenses" element={<ExpenseDashboard />} />
+                
+                {/* Financial Management Tools */}
+                <Route path="tools" element={<ToolsDashboard />} />
+                
+                {/* Legacy routes for fallback (redirect to new dashboard) */}
+                <Route path="dashboard-legacy" element={<Navigate to="dashboard" replace />} />
+                {/* Legacy profile route removed - use /app/profile */}
+                
+                {/* Catch-all redirect */}
+                <Route path="*" element={<Navigate to="dashboard" replace />} />
+              </Routes>
+            </div>
 
           {/* Bottom Navigation */}
           <BottomNavBar onTabClick={handleTabClick} activeTab={activeTab} />
+          </div>
         </div>
         </AnalyticsProvider>
       </BudgetProvider>

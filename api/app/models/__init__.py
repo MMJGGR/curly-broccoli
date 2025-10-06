@@ -432,3 +432,33 @@ from .financial_modeling import (
 # Backward-compatibility alias for legacy tests expecting `Income`
 # The canonical model name in this codebase is IncomeSource
 Income = IncomeSource
+
+
+# --- Domain reference data: Asset Categories / Types (server-canonical) ---
+class AssetCategory(Base):
+    __tablename__ = "asset_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(50), unique=True, index=True, nullable=False)
+    name = Column(String(100), nullable=False)
+    kenya_specific = Column(Boolean, default=True)
+    cfa_compliant = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    types = relationship("AssetType", back_populates="category", cascade="all, delete-orphan")
+
+
+class AssetType(Base):
+    __tablename__ = "asset_types"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category_id = Column(Integer, ForeignKey("asset_categories.id"), nullable=False, index=True)
+    code = Column(String(50), unique=True, index=True, nullable=False)
+    name = Column(String(100), nullable=False)
+    is_liquid = Column(Boolean, default=False)
+    risk_level = Column(String(20), default="moderate")  # low | moderate | high
+    is_appreciating = Column(Boolean, default=True)
+    minimum_investment = Column(Numeric(precision=15, scale=2), nullable=True)
+    cfa_classification = Column(String(50), nullable=True)
+
+    category = relationship("AssetCategory", back_populates="types")

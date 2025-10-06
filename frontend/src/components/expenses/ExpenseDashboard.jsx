@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import Layout from '../layout/Layout';
+import { Stat } from '../ui/stat';
 import { Button } from '../ui/button';
 import { Alert } from '../ui/alert';
 import { Skeleton, SkeletonText } from '../ui/skeleton';
@@ -104,7 +106,7 @@ const ExpenseDashboard = () => {
 
   if (loading.expenses || loading.global) {
     return (
-      <div className="container mx-auto p-6 space-y-4">
+      <Layout className="py-6 space-y-4">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
@@ -120,20 +122,20 @@ const ExpenseDashboard = () => {
             <SkeletonText lines={5} />
           </CardContent>
         </Card>
-      </div>
+      </Layout>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
+      <Layout className="py-6">
         <Alert variant="danger" title="Error loading expenses">
           {error}
         </Alert>
-        <Button onClick={() => fetchAllFinancialData()} className="mt-4" variant="outline">
+        <Button onClick={() => fetchAllFinancialData()} className="mt-4" variant="outline" aria-label="Retry loading expenses">
           Retry
         </Button>
-      </div>
+      </Layout>
     );
   }
 
@@ -147,7 +149,7 @@ const ExpenseDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <Layout className="py-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -160,6 +162,7 @@ const ExpenseDashboard = () => {
             setShowExpenseForm(true);
           }}
           className="flex items-center space-x-2"
+          aria-label="Add expense"
         >
           <Plus className="h-4 w-4" />
           <span>Add Expense</span>
@@ -168,75 +171,10 @@ const ExpenseDashboard = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(summary?.total_expenses || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {summary?.total_expenses || 0} expenses tracked
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Recurring</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(summary?.monthly_recurring || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Fixed monthly commitments
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Essential vs Discretionary</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Essential:</span>
-                <span className="font-semibold">{summary?.essential_expenses || 0}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Discretionary:</span>
-                <span className="font-semibold">{summary?.discretionary_expenses || 0}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Budget Status</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <Badge 
-              className={analysis?.budget_status === 'on_track' ? 
-                'bg-green-100 text-green-800 border-green-200' : 
-                'bg-yellow-100 text-yellow-800 border-yellow-200'
-              }
-              variant="outline"
-            >
-              {analysis?.budget_status === 'on_track' ? 'ON TRACK' : 'REVIEW NEEDED'}
-            </Badge>
-            <p className="text-xs text-muted-foreground mt-2">
-              Spending efficiency analysis
-            </p>
-          </CardContent>
-        </Card>
+        <Stat label="Total Expenses" value={formatCurrency(summary?.total_expenses || 0)} icon={<DollarSign className="h-4 w-4" />} tone="danger" />
+        <Stat label="Monthly Recurring" value={formatCurrency(summary?.monthly_recurring || 0)} icon={<Calendar className="h-4 w-4" />} tone="info" />
+        <Stat label="Essential" value={summary?.essential_expenses || 0} icon={<Target className="h-4 w-4" />} />
+        <Stat label="Discretionary" value={summary?.discretionary_expenses || 0} icon={<Target className="h-4 w-4" />} />
       </div>
 
       {/* Category Breakdown */}
@@ -296,7 +234,7 @@ const ExpenseDashboard = () => {
         onEditExpense={handleEditExpense}
         onDeleteExpense={handleDeleteExpense}
       />
-    </div>
+    </Layout>
   );
 };
 

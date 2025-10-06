@@ -71,7 +71,10 @@ const UnifiedFinancialContext = createContext();
   
   // Cross-Component Synchronization
   REFRESH_ALL_DATA: 'REFRESH_ALL_DATA',
-    LINK_ASSET_INCOME: 'LINK_ASSET_INCOME'
+    LINK_ASSET_INCOME: 'LINK_ASSET_INCOME',
+
+  // Planning settings
+  SET_PLANNING_START_DATE: 'SET_PLANNING_START_DATE'
   };
 
 // Unified Financial State - Single Source of Truth with Complete CRUD Support
@@ -504,6 +507,13 @@ const UnifiedFinancialContext = createContext();
         budgetOverview: action.payload
       };
     
+    // Planning settings
+    case UNIFIED_FINANCIAL_ACTIONS.SET_PLANNING_START_DATE:
+      return {
+        ...state,
+        planningStartDate: action.payload || null
+      };
+    
     default:
       return state;
   }
@@ -535,7 +545,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
         localStorage.setItem('planning_start_date', iso);
       }
       if (state.planningStartDate !== iso) {
-        dispatch({ type: 'SET_PLANNING_START_DATE', payload: iso });
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PLANNING_START_DATE, payload: iso });
       }
     } catch {
       // ignore
@@ -1424,6 +1434,13 @@ export const UnifiedFinancialProvider = ({ children }) => {
   const updateProfile = useCallback(async (updates) => {
     const token = localStorage.getItem('jwt');
     if (!token) throw new Error('Not authenticated');
+    // Feature-flagged PII encryption
+    try {
+      const { encryptPIIFields, PII_ENCRYPTION_ENABLED } = require('../utils/piiEncryption');
+      if (PII_ENCRYPTION_ENABLED) {
+        updates = encryptPIIFields(updates);
+      }
+    } catch {}
     // Try clean-arch endpoint first
     let ok = false;
     try {
@@ -1487,6 +1504,8 @@ export const UnifiedFinancialProvider = ({ children }) => {
   const value = {
     // State
     ...state,
+    // Submitting flag (placeholder for compatibility with forms)
+    isSubmitting: false,
     // Planning base date (start of the schedule/calendar)
     planningStartDate: state.planningStartDate,
     // Backward-compatibility aliases for legacy consumers
@@ -1551,8 +1570,79 @@ export const UnifiedFinancialProvider = ({ children }) => {
         surplus_after_goals: base.remaining_budget - goalAlloc
       };
     },
+    // Budget variance from transactions (month-to-date)
+    selectBudgetVariance: (opts = { thresholdPct: 0.0 }) => {
+      try {
+        const thresholdPct = typeof opts.thresholdPct === 'number' ? opts.thresholdPct : 0.0;
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const txns = Array.isArray(state.transactions) ? state.transactions : [];
+        const cats = Array.isArray(state.budgetCategories) ? state.budgetCategories : [];
+        const actualByCat = txns.reduce((map, t) => {
+          try {
+            const d = t.date ? new Date(t.date) : null;
+            if (!d || d < monthStart) return map;
+            // Treat debits as expenses; else ignore
+            const isDebit = (String(t.transaction_type || '').toLowerCase() === 'debit') || (parseFloat(t.amount) > 0 && (t.category || ''));
+            if (!isDebit) return map;
+            const cat = (t.category || 'uncategorized').toLowerCase();
+            const amt = Math.abs(parseFloat(t.amount || 0) || 0);
+            map.set(cat, (map.get(cat) || 0) + amt);
+            return map;
+          } catch { return map; }
+        }, new Map());
+        const rows = cats.map(c => {
+          const key = String(c.name || '').toLowerCase();
+          const budgeted = parseFloat(c.budgeted_amount || 0) || 0;
+          const actual = actualByCat.get(key) || 0;
+          const variance = budgeted - actual; // positive = under budget
+          const variance_pct = budgeted > 0 ? (variance / budgeted) : 0;
+          const over = actual > budgeted * (1 + thresholdPct);
+          return { id: c.id, category: c.name, budgeted, actual, variance, variance_pct, over_budget: over };
+        });
+        // Include uncategorized actuals not present in budget categories
+        for (const [k, v] of actualByCat.entries()) {
+          if (!rows.find(r => String(r.category || '').toLowerCase() === k)) {
+            rows.push({ id: `uncat_${k}`, category: k, budgeted: 0, actual: v, variance: 0 - v, variance_pct: 0, over_budget: v > 0 });
+          }
+        }
+        return rows.sort((a, b) => (b.actual - b.budgeted) - (a.actual - a.budgeted));
+      } catch {
+        return [];
+      }
+    },
+    selectBudgetAlerts: (opts = { thresholdPct: 0.0 }) => {
+      const rows = value.selectBudgetVariance ? value.selectBudgetVariance(opts) : [];
+      return rows.filter(r => r.over_budget && r.actual > 0).slice(0, 5);
+    },
     selectRiskProfile: () => computeRiskProfile(state.userProfile),
     selectBudgetCategories: () => state.budgetCategories,
+    // Debt payoff optimizer (v1) — snowball by default; returns summary
+    selectDebtPaydownPlan: (opts = { strategy: 'snowball' }) => {
+      try {
+        const strategy = opts.strategy === 'avalanche' ? 'avalanche' : 'snowball';
+        const monthlyExtra = Math.max(0, value.selectSurplusAfterGoals ? value.selectSurplusAfterGoals() : 0);
+        const plan = computeDebtPaydownPlan(state.liabilities || [], monthlyExtra, strategy);
+        return plan;
+      } catch { return null; }
+    },
+    // Retirement readiness (v1) — simple heuristic
+    selectRetirementReadiness: () => {
+      try {
+        const prof = state.userProfile || {};
+        const age = parseInt(prof.age || 30);
+        const retirementAge = parseInt(prof.retirement_age || prof.target_retirement_age || 65);
+        const years = Math.max(0, retirementAge - age);
+        // Monthly expenses from expenses list
+        const monthlyExpenses = sumMonthlyExpenses(state.expenses);
+        const monthlySurplus = computeNetCashFlow(state.incomeSource, state.expenses);
+        const accumulation = monthlySurplus > 0 ? monthlySurplus * 12 * years : 0; // simplistic accumulation
+        const need = monthlyExpenses * 12 * years; // simplistic need
+        const score = need > 0 ? Math.min(1, accumulation / need) : 0;
+        const monthlyGap = years > 0 ? Math.max(0, (need - accumulation) / (years * 12)) : (need > accumulation ? (need - accumulation) : 0);
+        return { score, monthly_gap: monthlyGap, years_to_retirement: years, monthly_expenses: monthlyExpenses, monthly_surplus: monthlySurplus };
+      } catch { return { score: null, monthly_gap: null, years_to_retirement: null }; }
+    },
     // Mutators
     setPlanningStartDate: async (isoOrMonth) => {
       try {
@@ -1564,7 +1654,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
         // Attempt to update profile (non-breaking if backend ignores extra field)
         try { await updateProfile({ planning_start_date: iso }); } catch {}
         // Update state via reducer
-        dispatch({ type: 'SET_PLANNING_START_DATE', payload: iso });
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PLANNING_START_DATE, payload: iso });
         return iso;
       } catch { return null; }
     },
@@ -1965,6 +2055,64 @@ export const UnifiedFinancialProvider = ({ children }) => {
     return { score, level };
   }
 
+  // --- Debt payoff optimizer (v1) ---
+  function computeDebtPaydownPlan(liabilities, monthlyExtra = 0, strategy = 'snowball') {
+    try {
+      const debts = (Array.isArray(liabilities) ? liabilities : []).map(l => ({
+        id: l.id,
+        name: l.name || 'Debt',
+        balance: Math.max(0, parseFloat(l.current_balance || 0) || 0),
+        rate: Math.max(0, parseFloat(l.interest_rate || 0) || 0) / 12, // monthly
+        min: Math.max(0, parseFloat(l.minimum_payment || l.monthly_payment || 0) || 0)
+      })).filter(d => d.balance > 0);
+      if (debts.length === 0) return { months: 0, interest_saved: 0, strategy, schedule: [] };
+      const orderFn = strategy === 'avalanche'
+        ? (a, b) => b.rate - a.rate
+        : (a, b) => a.balance - b.balance;
+      let totalInterestWithExtra = 0;
+      let totalInterestMinOnly = 0;
+      // Simulate min-only for baseline
+      {
+        const sim = debts.map(d => ({ ...d }));
+        for (let m = 0; m < 600 && sim.some(d => d.balance > 0.01); m++) {
+          for (const d of sim) {
+            const interest = d.balance * d.rate;
+            totalInterestMinOnly += interest;
+            const principalPay = Math.max(0, d.min - interest);
+            d.balance = Math.max(0, d.balance - principalPay);
+          }
+        }
+      }
+      // Simulate with extra
+      let months = 0;
+      {
+        const sim = debts.map(d => ({ ...d }));
+        while (months < 600 && sim.some(d => d.balance > 0.01)) {
+          months += 1;
+          // choose target debt per strategy
+          sim.sort(orderFn);
+          let extra = monthlyExtra;
+          for (const d of sim) {
+            if (d.balance <= 0.01) continue;
+            const interest = d.balance * d.rate;
+            totalInterestWithExtra += interest;
+            let payment = d.min;
+            if (extra > 0 && d === sim[0]) {
+              payment += extra;
+              extra = 0;
+            }
+            const principalPay = Math.max(0, payment - interest);
+            d.balance = Math.max(0, d.balance - principalPay);
+          }
+        }
+      }
+      const interest_saved = Math.max(0, totalInterestMinOnly - totalInterestWithExtra);
+      return { months, interest_saved, strategy };
+    } catch {
+      return { months: null, interest_saved: null, strategy };
+    }
+  }
+
   const recalc = useCallback(() => {
     // cash flow
     const cashFlow = computeNetCashFlow(state.incomeSource, state.expenses);
@@ -2003,8 +2151,3 @@ export const useUnifiedFinancialContext = () => {
 
 // Backward-compatibility alias for components importing useTransactions
 export const useTransactions = useUnifiedFinancialContext;
-    case 'SET_PLANNING_START_DATE':
-      return {
-        ...state,
-        planningStartDate: action.payload || null
-      };

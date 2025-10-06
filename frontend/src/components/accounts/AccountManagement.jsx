@@ -44,12 +44,21 @@ const AccountManagement = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(Math.abs(amount || 0));
+    try {
+      return new Intl.NumberFormat('en-KE', {
+        style: 'currency',
+        currency: 'KES',
+        notation: 'compact',
+        maximumFractionDigits: 0
+      }).format(Math.abs(amount || 0));
+    } catch {
+      return new Intl.NumberFormat('en-KE', {
+        style: 'currency',
+        currency: 'KES',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(Math.abs(amount || 0));
+    }
   };
 
   const formatDate = (dateString) => {
