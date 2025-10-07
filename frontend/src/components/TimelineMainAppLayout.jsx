@@ -7,7 +7,6 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 
 // Timeline Context
 import { TimelineProvider } from '../contexts/TimelineContext';
-import { BudgetProvider } from '../contexts/BudgetContext';
 import { AnalyticsProvider } from '../contexts/AnalyticsContext';
 
 // Timeline-first components
@@ -140,7 +139,6 @@ const TimelineMainAppLayout = () => {
 
   return (
     <TimelineProvider>
-      <BudgetProvider>
         <AnalyticsProvider>
         <div className="timeline-app min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
           {/* Scrollable content area with bottom padding for fixed nav */}
@@ -189,7 +187,6 @@ const TimelineMainAppLayout = () => {
           </div>
         </div>
         </AnalyticsProvider>
-      </BudgetProvider>
     </TimelineProvider>
   );
 };

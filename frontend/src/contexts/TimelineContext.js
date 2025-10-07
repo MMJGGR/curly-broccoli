@@ -96,16 +96,21 @@ export const TimelineProvider = ({ children }) => {
   const loadTimelineJourney = useCallback(async () => {
     const token = getAuthToken();
     if (!token) return;
-
     dispatch({ type: 'LOADING' });
 
     try {
+      // Add a timeout to prevent indefinite spinners if the API hangs
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 10000);
+
       const response = await authFetch(`${API_BASE}/api/v1/timeline/journey`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        signal: controller.signal
       });
+      clearTimeout(t);
 
       if (!response.ok) {
         throw new Error(`Failed to load Timeline: ${response.status}`);
@@ -131,7 +136,7 @@ export const TimelineProvider = ({ children }) => {
       console.error('Timeline journey loading failed:', error);
       dispatch({
         type: 'LOAD_ERROR',
-        payload: error.message
+        payload: error.name === 'AbortError' ? 'Request timed out' : (error.message || 'Failed to load')
       });
     }
   }, []);

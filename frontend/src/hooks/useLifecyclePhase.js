@@ -455,13 +455,9 @@ function getPhaseColor(phase) {
   return colors[phase] || '#6b7280';
 }
 
-function getPhaseIcon(phase) {
-  const icons = {
-    [LIFECYCLE_PHASES.ACCUMULATION]: '🚀', // Growth/Launch
-    [LIFECYCLE_PHASES.CONSOLIDATION]: '⚖️', // Balance
-    [LIFECYCLE_PHASES.SPENDING]: '🏖️' // Retirement/Leisure
-  };
-  return icons[phase] || '📊';
+function getPhaseIcon() {
+  // Emojis removed per enterprise UI guidance
+  return '';
 }
 
 export default useLifecyclePhase;

@@ -15,8 +15,15 @@ export const BudgetProvider = ({ children }) => {
   );
 };
 
+// Warn only once to avoid noisy console spam
+let __budgetWarned = false;
+
 export const useBudget = () => {
-  console.warn('DEPRECATED: useBudget() - Switch to useUnifiedFinancialContext()');
+  if (!__budgetWarned) {
+    // eslint-disable-next-line no-console
+    console.warn('DEPRECATED: useBudget() - Switch to useUnifiedFinancialContext()');
+    __budgetWarned = true;
+  }
 
   const { expenses, incomes = [], loading } = useUnifiedFinancialContext();
 

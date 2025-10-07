@@ -1470,6 +1470,10 @@ export const UnifiedFinancialProvider = ({ children }) => {
   // --- Budget categories fetcher (stable, inside provider scope) ---
   const fetchBudgetCategories = useCallback(async () => {
     const token = localStorage.getItem('jwt');
+    // If we already have categories in state, avoid re-fetching
+    if (Array.isArray(state.budgetCategories) && state.budgetCategories.length > 0) {
+      return state.budgetCategories;
+    }
     // Try dedicated Budget V2 endpoint first
     try {
       const res = await fetch(`${API_BASE}/api/v1/budget-v2/categories`, {
@@ -1493,7 +1497,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
     }
     console.warn('Budget categories API unavailable; using local state only.');
     return state.budgetCategories;
-  }, [API_BASE, state.budgetCategories]);
+  }, [API_BASE]);
 
   // Load data on mount only once
   React.useEffect(() => {

@@ -31,7 +31,7 @@ Expected Journey Coverage after CR012: ~80–83%
 - ✅ After‑Goals Surplus surfaced; expense summaries normalized
 - ✅ Legacy FE endpoints removed; legacy profile UIs cleaned
 
-**Next Sprint (P0):** CR012 workstreams above; deliver P&L endpoint, Relationships repo swap, asset types/categories API, and budget variance pipeline.
+**Next Sprint (P0):** CR017 Structured UX — adopt structured IA across tabs with read‑only backend panels (analytics‑v2, pl/statement, ledger, tb‑audit), states/a11y, and polished copy.
 
 ---
 
@@ -46,11 +46,18 @@ Expected Journey Coverage after CR012: ~80–83%
 
 ## **🧭 Information Architecture (5 Tabs)**
 
-- **Dashboard**: Current Position + Nearest Milestone; KPIs; sparkline
-- **Plan**: Goals + Budget + Milestones + Audits; coverage bars; quick budget edits; FIRE guidance surfaced as actions
-- **Balance Sheet**: Current vs Pro Forma KPIs; Asset Allocation; Liability Composition; Net Worth trend; Goals Impact panel
-- **Cash Flow**: Income/Expenses CRUD; Income Statement; Cash Flow Statement; Trial Balance (Advanced)
-- **Timeline**: Milestone markers; Pro Forma preview at month; jump to Plan/BS
+Shared principles
+- Sections: Overview → Decision Center → Progress/Health → Analytics/Evidence → Utilities
+- Consistent scaffolding (Layout, PageHeader, Card), tokenized spacing/radii/shadows
+- Action‑first: one Next Best Action with evidence‑backed recommendations
+- States: localized Skeletons; standardized EmptyState and Alert
+
+Per‑tab purpose
+- Dashboard (aggregator): cross‑cut KPIs; Decision Center; Timeline progress; Spending Trend; Journal teaser
+- Plan (decision + scenarios): scenarios (Base/What‑if/Applied); readiness gauge; goal coverage + adjustments; pro‑forma preview
+- Balance Sheet (policy + structure): composition with Policy Bands; Net Worth trend; reconciliation status; journal
+- Cash Flow (variance): server P&L (12m); monthly waterfall; variance table; runway gauge
+- Timeline (lanes): lane‑based milestones (Financial Health/Debt/Goals); dependency markers; event log
 
 Tools/calculators are accessed contextually via “More” menus in Plan and Cash Flow (no standalone Tools tab).
 - **[COMPREHENSIVE_IMPLEMENTATION_PLAN.md](COMPREHENSIVE_IMPLEMENTATION_PLAN.md)** - Overall project roadmap

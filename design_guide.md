@@ -29,6 +29,20 @@ Tailwind maps tokens in `frontend/tailwind.config.js` (`theme.extend.colors`, `b
 - Page structure: page header (title + actions), filters/toolbar, content cards in responsive grid
 - Spacing: 4pt base (use Tailwind `p-*`, `m-*` with 1/2/3/4 multiples)
 
+### 3.1 Structured IA (All Tabs)
+- Sections in order: Overview → Decision Center → Progress/Health → Analytics/Evidence → Utilities
+- Consistent scaffolding: `Layout` wrapper, `PageHeader`, `Card` containers, tokenized radii/shadows/spacing
+- Action-first: one primary “Next Best Action” per page with supporting recommendations and rationale
+- Calm visuals: tokenized neutrals, softened brand accents; compact numerals (tabular-nums)
+- States: localized `Skeleton`/`SkeletonText`, standardized `EmptyState` and `Alert`
+
+Tab nuances (examples)
+- Dashboard: aggregator; cross-cut KPIs; analytics + journal teasers
+- Plan: scenarios (Base/What‑if/Applied), readiness gauge, goal coverage with adjustments, pro‑forma preview
+- Balance Sheet: composition with policy bands, reconciliation status, journal
+- Cash Flow: server P&L (12m), monthly waterfall drivers, variance table, runway gauge
+- Timeline: lane‑based milestones (Financial Health/Debt/Goals), dependencies, event log
+
 ## 4. Components
 
 Located under `frontend/src/components/ui` and exported via `index.js`.
@@ -110,6 +124,13 @@ Located under `frontend/src/components/ui` and exported via `index.js`.
 - Reuse EmptyState/Alert/Skeleton across all pages.
 - Wrap pages with consistent padding/margins; maintain consistent max widths.
 
+### 10.1 Structured IA Adoption Checklist
+- Page uses `Layout` + `PageHeader` and tokenized Card containers
+- Sections follow the structured order; key panels implemented for that tab
+- Contains a single Next Best Action with clear evidence/recommendations
+- Localized Skeleton/EmptyState/Alert used for loading/empty/error
+- Focus management and ARIA labels verified for key actions/filters
+
 ## 11. Documentation & QA
 
 - Add Storybook to document components (future).
@@ -156,4 +177,3 @@ The following guidance reflects a holistic review and should inform ongoing work
 - Patterns
   - Timeline labels every 6 months; sparkline colors with sufficient contrast.
   - Trial Balance suggestions provide granular apply/undo; audit log remains accessible.
-

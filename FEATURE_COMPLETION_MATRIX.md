@@ -128,6 +128,32 @@ Scope Note
   - Logic: Patterns in Technical Guide; some forms already compliant.
   - Placeholders: Final sweep via validator; ensure labels/aria across all forms.
 
+## Structured IA Adoption (CR017)
+- Cross‑tab Structured IA
+  - Status: 0% → Planned (CR017)
+  - Logic: Shared scaffolding (Layout/PageHeader/Card) and per‑tab sections per mocks
+  - Placeholders: Mocks available under `design/mockups/*_final_structured.svg`; feature flag optional
+
+- Dashboard structured IA
+  - Status: Planned
+  - Logic: KPI rail, Decision Center, Timeline progress, Spending Trend (analytics‑v2), Ledger teaser
+
+- Plan structured IA
+  - Status: Planned
+  - Logic: Scenario toggle, Readiness gauge, Goal Portfolio coverage + adjustments, Pro‑Forma preview, Budget Impact
+
+- Balance Sheet structured IA
+  - Status: Planned
+  - Logic: Composition with Policy Bands, Top Accounts + liability microtrend, Net Worth trend, Reconciliation & Journal
+
+- Cash Flow structured IA
+  - Status: Planned
+  - Logic: Server P&L (12m), Waterfall (month), Variance table, Cash Runway
+
+- Timeline structured IA
+  - Status: Planned
+  - Logic: Filters; lane‑based milestones; dependencies; Event Log
+
 ## Testing
 - E2E & Integration
   - Status: 80–85%

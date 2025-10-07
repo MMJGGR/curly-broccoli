@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1120" viewBox="0 0 1440 1120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style><![CDATA[
+    .bg { fill: #f8fafc; }
+    .muted-surface { fill: #fbfdff; }
+    .surface { fill: #ffffff; }
+    .border { stroke: #e2e8f0; }
+    .muted { fill: #64748b; }
+    .fg { fill: #0f172a; }
+    .title { font: 700 24px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .subtitle { font: 400 14px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; }
+    .sectionTitle { font: 600 13px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; letter-spacing: 0.3px; }
+    .h2 { font: 600 16px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .label { font: 600 11px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; letter-spacing: 0.25px; }
+    .metric { font: 700 22px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .small { font: 400 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; }
+    .btn { rx: 8; }
+    .btnLabel { font: 600 13px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; }
+  ]]></style>
+
+  <rect class="bg" x="0" y="0" width="1440" height="1120" />
+
+  <!-- Header -->
+  <rect class="surface border" x="80" y="36" width="1280" height="112" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="title" x="112" y="80">Cash Flow</text>
+  <text class="subtitle" x="112" y="106">P&amp;L, waterfall, variance, and budget health</text>
+  <rect class="btn" x="1088" y="66" width="120" height="36" fill="#eff6ff" stroke="#93c5fd"/>
+  <text class="btnLabel" x="1116" y="90" fill="#1d4ed8">Adjust Budget</text>
+  <rect class="btn" x="1220" y="66" width="120" height="36" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="btnLabel" x="1248" y="90" fill="#0f172a">Export</text>
+
+  <!-- Period Control -->
+  <rect class="btn" x="800" y="66" width="220" height="36" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <rect class="btn" x="802" y="68" width="70" height="32" fill="#eff6ff" stroke="#93c5fd"/>
+  <text class="btnLabel" x="820" y="90" fill="#1d4ed8">Month</text>
+  <text class="btnLabel" x="874" y="90" fill="#0f172a">Qtr</text>
+  <text class="btnLabel" x="920" y="90" fill="#0f172a">Year</text>
+
+  <!-- Overview -->
+  <text class="sectionTitle" x="80" y="168">OVERVIEW</text>
+  <rect class="muted-surface border" x="80" y="180" width="1280" height="136" rx="12" fill="#fbfdff" stroke="#e6eef9"/>
+  <rect class="surface border" x="96" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="116" y="220">NET INCOME (M)</text>
+  <text class="metric" x="116" y="248">KES 90,500</text>
+
+  <rect class="surface border" x="404" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="424" y="220">OPERATING EXPENSES (M)</text>
+  <text class="metric" x="424" y="248">KES 220,000</text>
+
+  <rect class="surface border" x="712" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="732" y="220">GOAL CONTRIBUTIONS (M)</text>
+  <text class="metric" x="732" y="248">KES 66,500</text>
+
+  <rect class="surface border" x="1020" y="196" width="324" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="1040" y="220">SAVINGS RATE</text>
+  <text class="metric" x="1040" y="248">18%</text>
+
+  <!-- Left: P&L Statement & Alerts -->
+  <text class="sectionTitle" x="80" y="336">P&amp;L STATEMENT (12M)</text>
+  <rect class="surface border" x="80" y="350" width="840" height="260" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="382">Server P&amp;L (pl/statement)</text>
+  <text class="small" x="112" y="404">Income • Operating • Goal contributions • Net income</text>
+  <rect x="112" y="416" width="780" height="160" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+
+  <!-- Waterfall (month) -->
+  <text class="sectionTitle" x="80" y="626">WATERFALL (MONTH)</text>
+  <rect class="surface border" x="80" y="638" width="840" height="176" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="670">Net income drivers</text>
+  <rect x="140" y="688" width="40" height="80" fill="#bae6fd"/>
+  <rect x="220" y="660" width="40" height="108" fill="#86efac"/>
+  <rect x="300" y="716" width="40" height="52" fill="#fecaca"/>
+  <rect x="380" y="700" width="40" height="68" fill="#fecaca"/>
+  <rect x="460" y="708" width="40" height="60" fill="#86efac"/>
+
+  <rect class="surface border" x="80" y="824" width="840" height="120" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="856">Budget Alerts</text>
+  <text class="small" x="112" y="878">Discretionary overspend down 4% m/m — within tolerance</text>
+
+  <!-- Right: Spending Analytics & Journal -->
+  <text class="sectionTitle" x="940" y="336">ANALYTICS &amp; JOURNAL</text>
+  <rect class="surface border" x="940" y="350" width="420" height="240" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="382">Spending Analytics (6m)</text>
+  <text class="small" x="972" y="404">Top categories • Trend lines • m/m deltas</text>
+  <rect x="972" y="418" width="360" height="160" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+
+  <rect class="surface border" x="940" y="606" width="420" height="208" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="638">Variance Table</text>
+  <text class="small" x="972" y="660">Budget vs Actual • m/m deltas</text>
+  <rect x="972" y="672" width="360" height="120" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+
+  <rect class="surface border" x="940" y="822" width="420" height="148" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="854">Cash Runway</text>
+  <text class="small" x="972" y="876">6.2 months • Stable</text>
+  <rect x="972" y="888" width="360" height="18" rx="9" fill="#e5e7eb"/>
+  <rect x="972" y="888" width="279" height="18" rx="9" fill="#86efac"/>
+
+  <!-- Utilities -->
+  <text class="sectionTitle" x="80" y="836">UTILITIES</text>
+  <rect class="btn" x="80" y="848" width="300" height="30" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text class="btnLabel" x="96" y="868" fill="#0f172a">Open Budget</text>
+  <rect class="btn" x="392" y="848" width="300" height="30" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text class="btnLabel" x="408" y="868" fill="#0f172a">Export P&amp;L</text>
+
+</svg>

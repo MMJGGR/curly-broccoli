@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1120" viewBox="0 0 1440 1120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style><![CDATA[
+    .bg { fill: #f8fafc; }
+    .muted-surface { fill: #fbfdff; }
+    .surface { fill: #ffffff; }
+    .border { stroke: #e2e8f0; }
+    .muted { fill: #64748b; }
+    .fg { fill: #0f172a; }
+    .title { font: 700 24px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .subtitle { font: 400 14px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; }
+    .sectionTitle { font: 600 13px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; letter-spacing: 0.3px; }
+    .h2 { font: 600 16px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .label { font: 600 11px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; letter-spacing: 0.25px; }
+    .metric { font: 700 22px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .small { font: 400 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; }
+    .btn { rx: 8; }
+    .btnLabel { font: 600 13px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; }
+  ]]></style>
+
+  <rect class="bg" x="0" y="0" width="1440" height="1120" />
+
+  <!-- Header -->
+  <rect class="surface border" x="80" y="36" width="1280" height="112" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="title" x="112" y="80">Balance Sheet</text>
+  <text class="subtitle" x="112" y="106">Assets, liabilities, and net worth — fully wired</text>
+  <rect class="btn" x="1088" y="66" width="120" height="36" fill="#eff6ff" stroke="#93c5fd"/>
+  <text class="btnLabel" x="1110" y="90" fill="#1d4ed8">Add Account</text>
+  <rect class="btn" x="1220" y="66" width="120" height="36" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="btnLabel" x="1242" y="90" fill="#0f172a">Adjust Assumptions</text>
+
+  <!-- Overview -->
+  <text class="sectionTitle" x="80" y="168">OVERVIEW</text>
+  <rect class="muted-surface border" x="80" y="180" width="1280" height="136" rx="12" fill="#fbfdff" stroke="#e6eef9"/>
+  <rect class="surface border" x="96" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="116" y="220">NET WORTH</text>
+  <text class="metric" x="116" y="248">KES 8,420,000</text>
+
+  <rect class="surface border" x="404" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="424" y="220">ASSETS</text>
+  <text class="metric" x="424" y="248">KES 10,700,000</text>
+
+  <rect class="surface border" x="712" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="732" y="220">LIABILITIES</text>
+  <text class="metric" x="732" y="248">KES 2,280,000</text>
+
+  <rect class="surface border" x="1020" y="196" width="324" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="1040" y="220">DEBT RATIO</text>
+  <text class="small" x="1040" y="248">21% • Healthy</text>
+
+  <!-- Left: Composition & Accounts -->
+  <text class="sectionTitle" x="80" y="336">COMPOSITION &amp; POLICY</text>
+  <rect class="surface border" x="80" y="350" width="520" height="360" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="382">Asset Composition</text>
+  <text class="small" x="112" y="404">Real estate 45% • Cash 20% • Equity 30% • Other 5%</text>
+  <rect x="112" y="420" width="460" height="14" rx="7" fill="#e5e7eb"/>
+  <rect x="112" y="420" width="207" height="14" rx="7" fill="#93c5fd"/>
+  <rect x="319" y="420" width="92" height="14" rx="7" fill="#cbd5e1"/>
+  <rect x="411" y="420" width="138" height="14" rx="7" fill="#a5b4fc"/>
+  <text class="small" x="112" y="452">Policy Bands</text>
+  <rect x="112" y="464" width="460" height="10" rx="5" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <rect x="180" y="464" width="160" height="10" rx="5" fill="#dbeafe"/>
+  <text class="small" x="112" y="486">Equity target 25–35% • Actual 30%</text>
+
+  <rect class="surface border" x="620" y="350" width="300" height="360" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="652" y="382">Top Accounts</text>
+  <text class="small" x="652" y="404">Cash • KES 1,240,000</text>
+  <text class="small" x="652" y="424">Brokerage • KES 2,600,000</text>
+  <text class="small" x="652" y="444">Mortgage • −KES 1,880,000</text>
+  <text class="small" x="652" y="474">Liability Schedule (12m)</text>
+  <rect x="652" y="486" width="236" height="8" rx="4" fill="#e5e7eb"/>
+  <rect x="652" y="486" width="118" height="8" rx="4" fill="#fecaca"/>
+  <text class="small" x="652" y="506">Principal vs Interest trend</text>
+
+  <!-- Right: Trends & Journal -->
+  <text class="sectionTitle" x="940" y="336">TRENDS &amp; JOURNAL</text>
+  <rect class="surface border" x="940" y="350" width="420" height="200" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="382">Net Worth Trend (12m)</text>
+  <rect x="972" y="394" width="360" height="120" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text class="small" x="972" y="526">+KES 1.1m YoY</text>
+
+  <rect class="surface border" x="940" y="566" width="420" height="176" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="598">Reconciliation &amp; Journal</text>
+  <text class="small" x="972" y="620">Status: Balanced • Last run 1h ago</text>
+  <rect x="972" y="632" width="360" height="24" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text class="small" x="982" y="648">2025‑10‑03 • Depreciation • −KES 12,000</text>
+  <rect x="972" y="660" width="360" height="24" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text class="small" x="982" y="676">2025‑10‑02 • Mortgage Payment • −KES 45,000</text>
+
+  <!-- Analytics & Evidence -->
+  <text class="sectionTitle" x="80" y="740">ANALYTICS &amp; EVIDENCE</text>
+  <rect class="surface border" x="80" y="752" width="840" height="200" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="784">Trial Balance Audit</text>
+  <text class="small" x="112" y="806">Balanced • Last run: 1h ago • 0 discrepancies</text>
+
+  <rect class="surface border" x="940" y="752" width="420" height="200" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="784">Allocation vs Policy</text>
+  <text class="small" x="972" y="806">Within bands • Rebalance optional</text>
+  <rect x="972" y="818" width="360" height="100" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+
+</svg>

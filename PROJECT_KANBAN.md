@@ -155,6 +155,7 @@ Status: Completed | Confidence: High
 - Clean‑arch timeline endpoints used via TimelineContext
 - Legacy endpoint deprecation + observability
 - Docker compose stability + FE base URL + healthchecks
+- CR014 — Legacy Infra Model Removal: deleted `api/app/infrastructure/models/income_model.py` and `base.py`; repositories mapped to canonical `app.models`; dependencies verified (endpoints/use-cases/migrations/tests); API container boot verified
 
 ---
 
@@ -194,4 +195,57 @@ Status: Completed | Confidence: High
 ---
 
 Last Updated: 2025‑10‑06
+Owner: Engineering
+
+---
+
+## 🧭 New Initiative — CR017 Structured UX (Unified IA + Panels)
+Status: In Planning → Implementation
+
+### Principles (applies to all tabs)
+- Sectioned IA: Overview → Decision Center → Progress/Health → Analytics/Evidence → Utilities
+- Consistent scaffolding: Layout, PageHeader, Card; tokenized spacing/radii/shadows
+- Action-first: one Next Best Action with evidence-backed recommendations
+- States: localized Skeletons, EmptyState, Alert; a11y and quiet refresh
+
+### Mocks (SVG)
+- Dashboard: `design/mockups/dashboard_final_structured.svg`
+- Plan: `design/mockups/plan_final_structured.svg`
+- Balance Sheet: `design/mockups/balance_sheet_final_structured.svg`
+- Cash Flow: `design/mockups/cash_flow_final_structured.svg`
+- Timeline: `design/mockups/timeline_final_structured.svg`
+
+### Sprint Plan (CR017)
+P0 — Phase 1: Scaffolding + IA skeleton
+- Add/ensure Layout + PageHeader usage across tabs
+- Create per‑tab sections per mocks (empty shells)
+
+P0 — Phase 2: Panels + read wiring
+- Dashboard: KPI rail, Decision Center, Timeline progress, Spending Trend (analytics‑v2), Journal teaser
+- Plan: Scenario toggle, Readiness gauge, Goal Portfolio coverage + adjustments, Pro‑Forma preview
+- Balance Sheet: Composition + Policy Bands, Top Accounts + liability schedule microtrend, Net Worth trend, Reconciliation & Journal
+- Cash Flow: P&L (12m), Waterfall (month), Variance table, Cash Runway
+- Timeline: Filters, lane‑based milestones + dependency markers, Event Log
+
+P0 — Phase 3: States + a11y + copy polish
+- Localized skeletons/empties/alerts; ARIA labels; focus/tab order; compact numerals
+
+P1 — Optional (behind flag `REACT_APP_STRUCTURED_UX`)
+- Scenario apply paths; deeper drilldowns; exports
+
+### Tasks (Initial Breakdown)
+- FE: Add `StructuredLayout` helpers and per‑tab shells [P0]
+- FE: Wire Dashboard panels (analytics‑v2, ledger) [P0]
+- FE: Wire Plan panels (goals‑v2/budget‑v2/pro‑forma read) [P0]
+- FE: Wire Balance Sheet panels (tb‑audit, ledger, allocation/policy) [P0]
+- FE: Wire Cash Flow panels (pl/statement, waterfall, variance, runway) [P0]
+- FE: Wire Timeline panels (timeline‑clean lanes, event log) [P0]
+- A11y + States pass across tabs [P0]
+- Feature flag scaffolding (optional) [P1]
+
+### Docs
+- CR015/CR016 → Superseded by CR017
+- Design Guide, PRD, Wiki → Updated for structured IA
+
+Last Updated: 2025‑10‑07
 Owner: Engineering

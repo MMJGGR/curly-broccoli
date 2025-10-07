@@ -119,7 +119,6 @@ const ToolsDashboard = () => {
             }}
           >
             <div className="flex items-center mb-4">
-              <div className="text-3xl mr-4">{section.icon}</div>
               <h3 className="text-xl font-semibold text-gray-800">{section.name}</h3>
             </div>
             <p className="text-gray-600 mb-4">{section.description}</p>
@@ -166,7 +165,7 @@ const ToolsDashboard = () => {
   const renderPlaceholder = (title, description) => (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center max-w-md">
-        <div className="text-6xl mb-4">🚧</div>
+        <div className="mb-4" aria-hidden></div>
         <h2 className="text-2xl font-bold text-gray-700 mb-2">{title}</h2>
         <p className="text-gray-600 mb-6">{description}</p>
         <button
@@ -199,7 +198,6 @@ const ToolsDashboard = () => {
           {/* Current Section Info */}
           {activeSection !== 'overview' && (
             <div className="flex items-center text-sm text-gray-600">
-              <span className="text-lg mr-2">{toolSections.find(s => s.id === activeSection)?.icon}</span>
               <span className="font-medium">{toolSections.find(s => s.id === activeSection)?.name}</span>
               <span className="mx-2">•</span>
               <span>{toolSections.find(s => s.id === activeSection)?.description}</span>

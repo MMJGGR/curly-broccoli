@@ -13,18 +13,7 @@ import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const TimelineDashboard = () => {
   // Helper function for milestone icons
-  const getMilestoneIcon = (category) => {
-    switch (category?.toLowerCase()) {
-      case 'retirement': return '🏖️';
-      case 'education': return '🎓';
-      case 'housing': return '🏠';
-      case 'investment': return '📈';
-      case 'emergency': return '🛡️';
-      case 'healthcare': return '⚕️';
-      case 'travel': return '✈️';
-      default: return '🎯';
-    }
-  };
+  const getMilestoneIcon = () => '';
 
   const {
     loading,
@@ -223,7 +212,7 @@ const TimelineDashboard = () => {
                   }}
                   data-cy="persona-badge"
                 >
-                  ✨ {persona} Profile
+                  {persona} Profile
                 </span>
               )}
             </div>
@@ -275,7 +264,7 @@ const TimelineDashboard = () => {
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
-                📊 Overview
+                Overview
               </button>
               <button
                 onClick={() => setActiveView('analytics')}
@@ -285,7 +274,7 @@ const TimelineDashboard = () => {
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
-                📈 Analytics
+                Analytics
               </button>
               <button
                 onClick={() => setActiveView('journey')}
@@ -295,7 +284,7 @@ const TimelineDashboard = () => {
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
-                🗺️ Journey
+                Journey
               </button>
               <button
                 onClick={() => setActiveView('alignment')}
@@ -305,7 +294,7 @@ const TimelineDashboard = () => {
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
-                🎯 Alignment
+                Alignment
               </button>
             </div>
 

@@ -80,3 +80,13 @@
 .elev-2 { box-shadow: var(--elev-2); }
 .elev-3 { box-shadow: var(--elev-3); }
 .elev-4 { box-shadow: var(--elev-4); }
+
+/* Responsive text scaling for card contents to avoid overflow/wrapping issues */
+.text-scale {
+  font-size: clamp(0.875rem, 0.85rem + 0.2vw, 1rem);
+  line-height: 1.5;
+}
+
+/* Ensure long labels/numbers break gracefully within cards */
+.break-words { word-break: break-word; overflow-wrap: anywhere; }
+.tabular-nums { font-variant-numeric: tabular-nums; }

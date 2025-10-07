@@ -6,6 +6,8 @@ import CashFlowStatement from '../tools/CashFlowStatement';
 import TrialBalanceAudit from '../tools/TrialBalanceAudit';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import { Button } from '../ui/button';
+import { PageHeader } from '../ui';
+import Layout from '../layout/Layout';
 import ScenarioControls from '../analytics/ScenarioControls';
 import { loadScenario } from '../../utils/scenarioStore';
 
@@ -40,17 +42,11 @@ const CashFlowDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="border-b bg-white">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Cash Flow</h1>
-            <p className="text-sm text-gray-600">Income & Expenses, statements, and audits</p>
-          </div>
-          <Button asChild variant="outline" size="sm">
-            <a href="/app/tools?section=calculators" aria-label="Open financial calculators">More ▸ Calculators</a>
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Cash Flow"
+        description="Income & expenses, statements, and audits"
+        secondaryAction={{ label: 'Calculators', href: '/app/tools?section=calculators', variant: 'outline' }}
+      />
 
       {showAudit && (
         <div className="bg-amber-50 border-b border-amber-200">
@@ -67,7 +63,7 @@ const CashFlowDashboard = () => {
         </div>
       )}
 
-      <div className="container mx-auto p-6 space-y-6">
+      <Layout className="p-6 space-y-6 text-scale break-words">
         {/* CRUD panels */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl shadow p-4"><IncomeManagement /></div>
@@ -109,7 +105,7 @@ const CashFlowDashboard = () => {
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Trial Balance Audit</h2>
           <TrialBalanceAudit />
         </div>
-      </div>
+      </Layout>
     </div>
   );
 };

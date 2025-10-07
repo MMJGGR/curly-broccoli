@@ -1,17 +1,22 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import GoalsOverview from '../goals/GoalsOverview';
 import { EmptyState } from '../ui/empty-state';
+import { PageHeader } from '../ui';
+import SpendingAnalyticsPanel from '../analytics/SpendingAnalyticsPanel';
+import JournalViewer from '../ledger/JournalViewer';
 import GoalRealityCheck from '../tools/GoalRealityCheck';
 import { useTimeline } from '../../contexts/TimelineContext';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import { generateAudits, auditsToMilestones } from '../../utils/auditEngine';
 import { Button } from '../ui/button';
 import ProbabilityGauge from '../analytics/ProbabilityGauge';
+import { useNavigate } from 'react-router-dom';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
 import ScenarioControls from '../analytics/ScenarioControls';
 import { markStart, markEnd, report } from '../../utils/metrics';
 
 const PlanDashboard = () => {
+  const navigate = useNavigate();
   const { milestones = [], currentAge } = useTimeline();
   const {
     goals = [],
@@ -25,6 +30,14 @@ const PlanDashboard = () => {
   } = useUnifiedFinancialContext();
 
   const [editState, setEditState] = useState({});
+
+  // One-time view metric (avoid calling on every render)
+  useEffect(() => {
+    try {
+      markStart('view-plan');
+      setTimeout(() => { try { markEnd('view-plan'); report('view-plan'); } catch {} }, 0);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     try { if (fetchBudgetCategories) fetchBudgetCategories(); } catch {}
@@ -122,8 +135,13 @@ const PlanDashboard = () => {
   }, [selectRetirementReadiness]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {(() => { try { markStart('view-plan'); setTimeout(() => { markEnd('view-plan'); report('view-plan'); }, 0); } catch {} return null; })()}
+    <div className="min-h-screen bg-gray-50 text-scale break-words">
+      <PageHeader
+        title="Plan"
+        description="Goals, audits, coverage, and budget alignment"
+        secondaryAction={{ label: 'Calculators', href: '/app/tools?section=calculators', variant: 'outline' }}
+      />
+      {/* view metric handled by useEffect to avoid repeated posts */}
       <div className="border-b bg-white">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -207,7 +225,7 @@ const PlanDashboard = () => {
           </div>
           {upcomingMilestones.length === 0 ? (
             <EmptyState
-              icon="🗓️"
+              icon={null}
               title="No Milestones Yet"
               description="Add goals to populate your timeline milestone plan."
               actionLabel="Go to Goals"
@@ -222,7 +240,7 @@ const PlanDashboard = () => {
                       <div className="text-sm text-gray-500">Age {m.age}</div>
                       <div className="font-medium text-gray-800">{m.title}</div>
                     </div>
-                    <div className="text-2xl">🎯</div>
+                    <div className="text-gray-400" aria-hidden>•</div>
                   </div>
                   {m.target_amount ? (
                     <div className="mt-2 text-sm text-green-700">KES {Math.round(m.target_amount).toLocaleString()}</div>
@@ -243,7 +261,7 @@ const PlanDashboard = () => {
             <div className="space-y-3">
               {suggestedMilestones.slice(0,4).map((m, idx) => (
                 <div key={m.id || idx} className="flex items-center gap-3 border rounded p-3">
-                  <div className="text-2xl">🎯</div>
+                  <div className="text-gray-400" aria-hidden>•</div>
                   <div className="flex-1">
                     <div className="font-medium text-gray-800">{m.title}</div>
                     {m.timeline_impact && <div className="text-xs text-gray-500">{m.timeline_impact}</div>}
@@ -286,7 +304,7 @@ const PlanDashboard = () => {
           </div>
           {goalCoverage.length === 0 ? (
             <EmptyState
-              icon="🎯"
+              icon={null}
               title="No Goals Yet"
               description="Create a goal and align your budget to make steady progress."
               actionLabel="Create Goal"
@@ -395,6 +413,11 @@ const PlanDashboard = () => {
               </div>
             </div>
           )}
+        </div>
+        {/* Backend analytics & ledger (read-only) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SpendingAnalyticsPanel months={6} />
+          <JournalViewer />
         </div>
       </div>
     </div>

@@ -671,18 +671,7 @@ const getMilestoneColor = (category, theme) => {
   return colors[category] || colors.general;
 };
 
-const getMilestoneIcon = (category) => {
-  const icons = {
-    emergency: '🛡️',
-    investment: '📈',
-    education: '🎓',
-    housing: '🏠',
-    retirement: '🏖️',
-    healthcare: '⚕️',
-    general: '🎯'
-  };
-  return icons[category] || icons.general;
-};
+const getMilestoneIcon = () => '';
 
 const formatAmount = (amount) => {
   if (amount >= 1000000) {

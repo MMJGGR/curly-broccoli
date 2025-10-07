@@ -395,3 +395,26 @@ Advisor journeys (portal, IPS, recommendations, client lists) are managed under 
 - Relationships v2 must use real repositories; mock repos are not sufficient for production behavior.
 - Asset categories/types must be served by API (no hardcoded domain lists in FE forms).
 - Transactions should drive budget variance and basic alerts; modeled expenses alone are not sufficient.
+
+## 9. Structured IA (Cross‑Tab UX)
+
+To ensure consistency while preserving each tab’s unique purpose, the application adopts a structured IA across the five primary tabs.
+
+Principles
+- Sections: Overview → Decision Center → Progress/Health → Analytics/Evidence → Utilities
+- Scaffolding: Layout wrapper, PageHeader, Card containers, tokenized radii/shadows/spacing
+- Action‑first: one Next Best Action with supporting recommendations and rationale
+- States: localized Skeleton/EmptyState/Alert; WCAG AA contrast; keyboard focus and ARIA labels
+
+Per‑tab nuances
+- Dashboard: aggregator KPIs; Decision Center; Timeline progress; Spending Trend (analytics‑v2); Ledger journal teaser
+- Plan: scenarios (Base/What‑if/Applied); Readiness gauge; Goal Portfolio coverage + adjustments; Pro‑Forma preview; Budget Impact summary
+- Balance Sheet: asset composition with Policy Bands; Top Accounts + liability schedule microtrend; Net Worth trend; Reconciliation & Journal status
+- Cash Flow: Server P&L (12m); monthly Waterfall for net income drivers; Variance table (Budget vs Actual); Cash Runway gauge
+- Timeline: lane‑based milestones (Financial Health/Debt/Goals); dependency markers; Event Log (recent)
+
+Acceptance
+- All five tabs implement the structured IA with tokenized scaffolding and states
+- Each tab surfaces a Next Best Action and evidence‑backed recommendations
+- Panels wire to backend endpoints where available (graceful EmptyState otherwise)
+- A11y and performance standards met (localized skeletons; no blocking spinners)

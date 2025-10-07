@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import { PageHeader } from '../ui';
 import Layout from '../layout/Layout';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -968,8 +969,14 @@ const BalanceSheetDashboard = () => {
   }
 
   const renderOverview = () => (
-    <Layout className="p-6 space-y-6">
-      {(() => { try { markStart('view-balance-sheet'); setTimeout(() => { markEnd('view-balance-sheet'); report('view-balance-sheet'); }, 0); } catch {} return null; })()}
+    <>
+      <PageHeader
+        title="Balance Sheet"
+        description="Lifetime view of assets and liabilities"
+        secondaryAction={{ label: 'Adjust Assumptions', onClick: () => setShowRateOverride(true), variant: 'outline' }}
+      />
+      <Layout className="p-6 space-y-6 text-scale break-words">
+      {/* view metric handled by useEffect to avoid repeated posts */}
       {/* Header - Lifetime-only */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Lifetime Balance Sheet (CFA)</h1>
@@ -1978,7 +1985,8 @@ const BalanceSheetDashboard = () => {
           <span>Manage Liabilities</span>
         </Button>
       </div>
-    </Layout>
+      </Layout>
+    </>
   );
 
   // CFA-Compliant Liabilities Dashboard
