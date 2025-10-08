@@ -1,11 +1,11 @@
 // Relationship Engine
 // Generic, data-driven helpers to derive temporal logic for income/expense/goal links.
 
-// Helper: parse date and compute months from now
-function monthsUntil(dateStr) {
+// Helper: parse date and compute months until from a reference date (planning start) or now
+function monthsUntil(dateStr, refIsoDate = null) {
   try {
     if (!dateStr) return null;
-    const now = new Date();
+    const now = refIsoDate ? new Date(refIsoDate) : new Date();
     const tgt = new Date(dateStr);
     const months = Math.round(((tgt - now) / (1000 * 60 * 60 * 24)) / 30);
     return Math.max(0, months);
@@ -32,7 +32,7 @@ const RELATION_RULES = {
         const months = Math.max(0, Math.ceil(Number(liab.current_balance) / Math.max(1, Number(liab.monthly_payment))));
         return { months, reason: 'until loan payoff' };
       }
-      if (liab.due_date) return { months: monthsUntil(liab.due_date), reason: 'until due date' };
+      if (liab.due_date) return { months: monthsUntil(liab.due_date, ctx?.planningStartDate), reason: 'until due date' };
       return { months: null, reason: 'loan payoff unknown' };
     },
     asset_maintenance: ({ assets, expense }) => ({ activeWhileAsset: !!assets?.find(a => a.id === expense.related_asset_id), reason: 'while asset owned' }),
@@ -119,4 +119,3 @@ export default {
   widthPctFromMonths,
   buildContextFromState
 };
-

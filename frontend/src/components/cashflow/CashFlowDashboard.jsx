@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import { STRUCTURED_UX } from '../../config';
+import CashFlowStructured from '../structured/CashFlowStructured';
 import IncomeManagement from '../tools/IncomeManagement';
 import ExpenseManagement from '../tools/ExpenseManagement';
 import IncomeStatement from '../tools/IncomeStatement';
@@ -13,6 +15,10 @@ import { loadScenario } from '../../utils/scenarioStore';
 
 const CashFlowDashboard = () => {
   const { selectTrialBalance, selectNetCashFlow, selectSchedules } = useUnifiedFinancialContext();
+
+  if (STRUCTURED_UX) {
+    return <CashFlowStructured />;
+  }
 
   const tb = useMemo(() => {
     try { return selectTrialBalance ? selectTrialBalance(0) : null; } catch { return null; }

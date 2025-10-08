@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { STRUCTURED_UX } from '../../config';
+import BalanceSheetStructured from '../structured/BalanceSheetStructured';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { PageHeader } from '../ui';
 import Layout from '../layout/Layout';
@@ -39,6 +41,9 @@ const BalanceSheetDashboard = () => {
   } = useUnifiedFinancialContext();
 
   const [activeView, setActiveView] = useState('overview');
+  if (STRUCTURED_UX) {
+    return <BalanceSheetStructured />;
+  }
   // Simplify to lifetime-only (CFA methodology)
   const [balanceSheetMode, setBalanceSheetMode] = useState('lifetime');
   const [balanceSheetData, setBalanceSheetData] = useState(null);

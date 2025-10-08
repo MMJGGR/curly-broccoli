@@ -8,6 +8,9 @@ import React, { useState } from 'react';
 import { useTimeline } from '../../contexts/TimelineContext';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import { Card, CardContent } from '../ui/card';
+import PageHeader from '../ui/PageHeader';
+import { Stat } from '../ui/stat';
+import SeedDataImportModal from '../seed/SeedDataImportModal';
 import { EXPENSE_TYPE_DEFS } from '../expenses/expenseTypeDefs';
 import BudgetCategoryForm from './BudgetCategoryForm';
 
@@ -137,55 +140,19 @@ const BudgetCashflows = () => {
   };
 
   return (
-    <div className="budget-cashflows flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100" style={{ height: 'calc(100vh - 4rem)' }}>
-      {/* Header with budget overview */}
-      <div 
-        className="budget-header p-6 bg-white shadow-lg border-b border-gray-200 rounded-t-xl mx-4 mt-4"
-        style={{ 
-          background: `linear-gradient(135deg, ${personaTheme?.secondary || '#f8fafc'} 0%, white 100%)`,
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
-        }}
+    <div className="budget-cashflows flex flex-col bg-gray-50" style={{ height: 'calc(100vh - 4rem)' }}>
+      <PageHeader
+        title="Budget & Cashflow"
+        description={`Smart budgeting with ${persona}'s financial profile`}
+        primaryAction={{ label: 'Import Data', onClick: () => setShowImportModal(true), 'aria-label': 'Import seed data' }}
+        secondaryAction={{ label: 'Profile', href: '/app/profile', 'aria-label': 'Open profile' }}
       >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-          <div className="mb-4 lg:mb-0">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Budget & Cashflow Planning
-            </h1>
-            <p className="text-gray-600">
-              Smart budgeting with {persona}'s financial profile
-            </p>
-          </div>
-          
-          {/* Budget Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:w-2/3">
-            {/* Monthly Income */}
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <h3 className="text-sm font-medium text-green-700 mb-1">Monthly Income</h3>
-              <p className="text-2xl font-bold text-green-800">
-                {formatAmount ? formatAmount(monthlyIncome) : `KES ${monthlyIncome.toLocaleString()}`}
-              </p>
-            </div>
-            
-            {/* Total Expenses */}
-            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-              <h3 className="text-sm font-medium text-red-700 mb-1">Total Expenses</h3>
-              <p className="text-2xl font-bold text-red-800">
-                {formatAmount ? formatAmount(totalBudgetedExpenses) : `KES ${totalBudgetedExpenses.toLocaleString()}`}
-              </p>
-            </div>
-            
-            {/* Surplus/Deficit */}
-            <div className={`p-4 rounded-lg border ${surplus >= 0 ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'}`}>
-              <h3 className={`text-sm font-medium mb-1 ${surplus >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>
-                {surplus >= 0 ? 'Surplus' : 'Deficit'}
-              </h3>
-              <p className={`text-2xl font-bold ${surplus >= 0 ? 'text-blue-800' : 'text-orange-800'}`}>
-                {formatAmount ? formatAmount(Math.abs(surplus)) : `KES ${Math.abs(surplus).toLocaleString()}`}
-              </p>
-            </div>
-          </div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Stat label="Monthly Income" value={formatAmount ? formatAmount(monthlyIncome) : `KES ${monthlyIncome.toLocaleString()}`} tone="success" />
+          <Stat label="Total Expenses" value={formatAmount ? formatAmount(totalBudgetedExpenses) : `KES ${totalBudgetedExpenses.toLocaleString()}`} tone="danger" />
+          <Stat label={surplus >= 0 ? 'Surplus' : 'Deficit'} value={formatAmount ? formatAmount(Math.abs(surplus)) : `KES ${Math.abs(surplus).toLocaleString()}`} tone={surplus >= 0 ? 'info' : 'warning'} />
         </div>
-      </div>
+      </PageHeader>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 overflow-hidden">
@@ -333,7 +300,7 @@ const BudgetCashflows = () => {
               onClick={() => setShowImportModal(true)}
               className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors"
             >
-              Import Transactions
+              Import Data
             </button>
             
             <button
@@ -394,29 +361,7 @@ const BudgetCashflows = () => {
             )}
           {/* Import Modal */}
           {showImportModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                <h3 className="text-lg font-bold text-gray-800 mb-4">Import Transactions</h3>
-                <p className="text-gray-600 mb-4">Import functionality temporarily unavailable.</p>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      console.warn('Data refreshes automatically');
-                      handleImportClose();
-                    }}
-                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-                  >
-                    Refresh Data
-                  </button>
-                  <button 
-                    onClick={handleImportClose}
-                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
+            <SeedDataImportModal open={showImportModal} onClose={handleImportClose} onImported={() => { /* no-op */ }} />
           )}
           </div>
           </div>

@@ -4,6 +4,8 @@
  * Emphasizes actionable insights and phase-appropriate guidance
  */
 import React, { useState, useEffect } from 'react';
+import { STRUCTURED_UX } from '../../config';
+import DashboardStructured from '../structured/DashboardStructured';
 import { useNavigate } from 'react-router-dom';
 import { useTimeline } from '../../contexts/TimelineContext';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
@@ -102,6 +104,9 @@ const ContextualTimelineDashboard = () => {
     return () => clearTimeout(t);
   }, [loading, budgetLoading?.global]);
 
+  if (STRUCTURED_UX) {
+    return <DashboardStructured />;
+  }
   if (!forceContinue && (loading || budgetLoading?.global)) {
     return (
       <div className="contextual-timeline-dashboard h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">

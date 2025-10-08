@@ -32,6 +32,7 @@ import { ExpenseDashboard } from './expenses';
 // Legacy components (for fallback/migration)  
 import ProfileDynamic from './ProfileDynamic';
 import BottomNavBar from './BottomNavBar';
+import { Button } from './ui/button';
 
 // Config
 // import { API_BASE_URL } from '../config'; // Disabled - not needed for simplified flow
@@ -143,7 +144,20 @@ const TimelineMainAppLayout = () => {
         <div className="timeline-app min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
           {/* Scrollable content area with bottom padding for fixed nav */}
           <div className="flex flex-col" style={{ minHeight: '100vh' }}>
-            <div className="flex-1 overflow-y-auto pb-20" style={{ height: 'calc(100vh - 4rem)' }}>
+            {/* Top Header with Profile access (keeps five-tab bottom nav) */}
+            <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-gray-200">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-end">
+                <Button variant="outline" size="sm" onClick={() => navigate('profile')} aria-label="Open profile">
+                  <span className="inline-flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A7 7 0 0112 15a7 7 0 016.879 2.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Profile
+                  </span>
+                </Button>
+              </div>
+            </header>
+            <div className="flex-1 overflow-y-auto pb-20" style={{ height: 'calc(100vh - 7rem)' }}>
               <Routes>
                 {/* Default redirect */}
                 <Route path="/" element={<Navigate to="dashboard" replace />} />

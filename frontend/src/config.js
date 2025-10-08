@@ -19,3 +19,8 @@ const getApiBaseUrl = () => {
 export const API_BASE_URL = getApiBaseUrl();
 
 console.log('🔧 Config.js loaded - API_BASE_URL:', API_BASE_URL);
+
+// Feature flags
+export const STRUCTURED_UX = String(process.env.REACT_APP_STRUCTURED_UX || '').toLowerCase() === '1' 
+  || String(process.env.REACT_APP_STRUCTURED_UX || '').toLowerCase() === 'true';
+console.log('🔧 Config.js loaded - STRUCTURED_UX:', STRUCTURED_UX);

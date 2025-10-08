@@ -268,10 +268,15 @@ export const TimelineProvider = ({ children }) => {
   // Initialize Timeline on mount
   useEffect(() => {
     const token = getAuthToken();
-    if (token) {
-      loadTimelineJourney();
-      loadDashboardOverview();
-    }
+    if (!token) return;
+    // In dev (React StrictMode), effects may run twice; guard with sessionStorage for this session
+    try {
+      const guardKey = 'timeline_init_guard';
+      if (sessionStorage.getItem(guardKey) === '1') return;
+      sessionStorage.setItem(guardKey, '1');
+    } catch {}
+    loadTimelineJourney();
+    loadDashboardOverview();
   }, [loadTimelineJourney, loadDashboardOverview]);
 
   // Context value

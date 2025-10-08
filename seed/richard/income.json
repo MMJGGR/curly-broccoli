@@ -1,0 +1,29 @@
+{
+  "sources": [
+    {
+      "source_name": "Software Engineer Salary",
+      "monthly_amount": 120000,
+      "frequency": "monthly",
+      "source_type": "salary",
+      "start_date": "2020-06-01T00:00:00Z",
+      "history": [
+        { "effective_date": "2020-06-01T00:00:00Z", "amount": 100000, "frequency": "monthly" },
+        { "effective_date": "2021-07-01T00:00:00Z", "amount": 110000, "frequency": "monthly" },
+        { "effective_date": "2022-08-01T00:00:00Z", "amount": 120000, "frequency": "monthly" }
+      ]
+    },
+    {
+      "source_name": "Freelance Consulting",
+      "monthly_amount": 25000,
+      "frequency": "monthly",
+      "source_type": "freelance",
+      "start_date": "2020-06-01T00:00:00Z",
+      "history": [
+        { "effective_date": "2020-06-01T00:00:00Z", "amount": 15000, "frequency": "monthly" },
+        { "effective_date": "2021-01-01T00:00:00Z", "amount": 20000, "frequency": "monthly" },
+        { "effective_date": "2022-03-01T00:00:00Z", "amount": 25000, "frequency": "monthly" }
+      ]
+    }
+  ]
+}
+

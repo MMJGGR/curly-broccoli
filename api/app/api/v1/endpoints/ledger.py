@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
@@ -7,7 +7,7 @@ import json
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
-from app.core.database import get_db
+from app.core.database import get_db, engine
 from sqlalchemy import Column, Integer, DateTime, Text, ForeignKey, Boolean, String
 from sqlalchemy.orm import relationship
 
@@ -62,6 +62,14 @@ class JournalEntry(BaseModel):
 router = APIRouter(prefix="/ledger", tags=["ledger"])
 
 
+# Ensure ledger tables exist (idempotent)
+try:
+    ModelsBase.metadata.create_all(bind=engine)
+except Exception:
+    # Avoid hard failures if engine not ready at import-time
+    pass
+
+
 @router.get("/journal", response_model=List[JournalEntry])
 def list_journal(user=Depends(get_current_user), db: Session = Depends(get_db)):
     rows = db.query(JournalEntryModel).filter(JournalEntryModel.user_id == user.id).order_by(JournalEntryModel.timestamp.desc()).all()
@@ -91,6 +99,54 @@ def post_journal(entry: JournalEntry, user=Depends(get_current_user), db: Sessio
         return entry
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save journal entry: {e}")
+
+
+@router.get('/journal.csv')
+def journal_csv(start: str = None, end: str = None, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    q = db.query(JournalEntryModel).filter(JournalEntryModel.user_id == user.id)
+    from datetime import datetime as _dt
+    if start:
+        try:
+            s = _dt.fromisoformat(start.replace('Z','+00:00'))
+            q = q.filter(JournalEntryModel.timestamp >= s)
+        except Exception:
+            pass
+    if end:
+        try:
+            e = _dt.fromisoformat(end.replace('Z','+00:00'))
+            q = q.filter(JournalEntryModel.timestamp < e)
+        except Exception:
+            pass
+    rows = q.order_by(JournalEntryModel.timestamp.asc()).all()
+    lines = ["timestamp,description,account_type,debit,credit,memo"]
+    for r in rows:
+        try:
+            lines_data = json.loads(r.lines_json)
+        except Exception:
+            lines_data = []
+        for l in lines_data:
+            ts = r.timestamp.isoformat()
+            desc = (r.description or '').replace(',', ' ')
+            acct = str(l.get('account_type',''))
+            debit = float(l.get('debit') or 0.0)
+            credit = float(l.get('credit') or 0.0)
+            memo = str(l.get('memo') or '').replace(',', ' ')
+            lines.append(f"{ts},{desc},{acct},{debit:.2f},{credit:.2f},{memo}")
+    csv = "\n".join(lines) + "\n"
+    return Response(content=csv, media_type="text/csv")
+
+
+@router.delete('/journal')
+def clear_journal(all: int = 0, before: Optional[datetime] = None, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    q = db.query(JournalEntryModel).filter(JournalEntryModel.user_id == user.id)
+    if not all and before is None:
+        raise HTTPException(status_code=400, detail="Specify ?all=1 or ?before=ISO")
+    if not all and before is not None:
+        q = q.filter(JournalEntryModel.timestamp < before)
+    count = q.count()
+    q.delete(synchronize_session=False)
+    db.commit()
+    return { 'deleted': count }
 
 
 class COAItem(BaseModel):

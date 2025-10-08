@@ -1501,6 +1501,40 @@ export const UnifiedFinancialProvider = ({ children }) => {
 
   // Load data on mount only once
   React.useEffect(() => {
+    // Hydrate from local seed if present and state is empty
+    try {
+      const raw = localStorage.getItem('ufc_seed_data_v1');
+      if (raw) {
+        const seed = JSON.parse(raw);
+        if (seed) {
+          if (Array.isArray(seed.assets) && (state.assets || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ASSETS, payload: seed.assets });
+          }
+          if (Array.isArray(seed.liabilities) && (state.liabilities || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES, payload: seed.liabilities });
+          }
+          if (Array.isArray(seed.income) && (state.incomeSource || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: seed.income });
+          }
+          if (Array.isArray(seed.expenses) && (state.expenses || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES, payload: seed.expenses });
+          }
+          if (Array.isArray(seed.transactions) && (state.transactions || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_TRANSACTIONS, payload: seed.transactions });
+          }
+          if (Array.isArray(seed.goals) && (state.goals || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: seed.goals });
+          }
+          if (Array.isArray(seed.budgetCategories) && (state.budgetCategories || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES, payload: seed.budgetCategories });
+          }
+          if (seed.profile && !state.userProfile) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PROFILE, payload: seed.profile });
+          }
+        }
+      }
+    } catch {}
+
     fetchAllFinancialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array to run only once on mount
@@ -1618,6 +1652,101 @@ export const UnifiedFinancialProvider = ({ children }) => {
     selectBudgetAlerts: (opts = { thresholdPct: 0.0 }) => {
       const rows = value.selectBudgetVariance ? value.selectBudgetVariance(opts) : [];
       return rows.filter(r => r.over_budget && r.actual > 0).slice(0, 5);
+    },
+    // Seed importer for cross-app data
+    importSeedData: async (seedData) => {
+      try {
+        const incoming = seedData || {};
+        // Normalize alias keys
+        const profile = incoming.profile || incoming.user || null;
+        const assets = incoming.assets || [];
+        const liabilities = incoming.liabilities || [];
+        const income = incoming.income || incoming.incomes || incoming.incomeSource || [];
+        const expenses = incoming.expenses || [];
+        const transactions = incoming.transactions || incoming.tx || [];
+        const goals = incoming.goals || [];
+        const budgetCategories = incoming.budgetCategories || incoming['budget.categories'] || incoming.budget_categories || [];
+
+        if (profile) {
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PROFILE, payload: profile });
+        }
+        if (Array.isArray(assets)) {
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ASSETS, payload: assets });
+        }
+        if (Array.isArray(liabilities)) {
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES, payload: liabilities });
+        }
+        let normIncome = null;
+        if (Array.isArray(income)) {
+          // Accept CSV rows shape: name, amount, monthly_amount
+          const norm = income.map((i, idx) => ({
+            id: i.id || `inc_${idx}_${Date.now()}`,
+            name: i.name || i.description || 'Income',
+            monthly_amount: typeof i.monthly_amount === 'number' ? i.monthly_amount : (parseFloat(i.amount) || 0),
+            frequency: i.frequency || 'monthly',
+            source_type: i.source_type || 'salary',
+          }));
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: norm });
+          normIncome = norm;
+        }
+        if (Array.isArray(expenses)) {
+          const normE = expenses.map((e, idx) => ({
+            id: e.id || `exp_${idx}_${Date.now()}`,
+            description: e.description || e.name || 'Expense',
+            expense_type: e.expense_type || e.type || e.category || 'other',
+            amount: typeof e.amount === 'number' ? e.amount : (parseFloat(e.monthly_amount) || parseFloat(e.monthly_equivalent) || 0),
+            frequency: e.frequency || 'monthly',
+            is_recurring: e.is_recurring !== undefined ? !!e.is_recurring : true,
+            payment_end_date: e.payment_end_date || e.end_date || null
+          }));
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES, payload: normE });
+        }
+        if (Array.isArray(transactions)) {
+          const normT = transactions.map((t, idx) => ({
+            id: t.id || `tx_${idx}_${Date.now()}`,
+            date: t.date || t.timestamp || new Date().toISOString().slice(0,10),
+            description: t.description || t.memo || 'Transaction',
+            amount: typeof t.amount === 'number' ? t.amount : (parseFloat(t.debit) || (0 - (parseFloat(t.credit) || 0)) || 0),
+            category: t.category || t.expense_type || t.type || 'uncategorized',
+            transaction_type: t.transaction_type || (parseFloat(t.amount || t.debit || 0) >= 0 ? 'debit' : 'credit')
+          }));
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_TRANSACTIONS, payload: normT });
+        }
+        if (Array.isArray(goals)) {
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: goals });
+        }
+        if (Array.isArray(budgetCategories)) {
+          const cats = budgetCategories.map((c, idx) => ({
+            id: c.id || `bc_${idx}_${c.name || 'cat'}`,
+            name: c.name || c.category || 'Category',
+            budgeted_amount: typeof c.budgeted_amount === 'number' ? c.budgeted_amount : (parseFloat(c.allocated_amount) || 0),
+            actual_amount: typeof c.actual_amount === 'number' ? c.actual_amount : 0,
+            category_type: c.category_type || 'expense',
+            is_active: c.is_active !== undefined ? !!c.is_active : true,
+          }));
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES, payload: cats });
+        }
+
+        // Persist locally for rehydration
+        try {
+          localStorage.setItem('ufc_seed_data_v1', JSON.stringify({ profile, assets, liabilities, income: Array.isArray(income)? (normIncome || income) : [], expenses, transactions, goals, budgetCategories }));
+        } catch {}
+
+        // Recalc derived
+        recalc();
+        return {
+          profile: !!profile,
+          assets: (assets || []).length,
+          liabilities: (liabilities || []).length,
+          income: (income || []).length,
+          expenses: (expenses || []).length,
+          transactions: (transactions || []).length,
+          goals: (goals || []).length,
+          budgetCategories: (budgetCategories || []).length
+        };
+      } catch (e) {
+        throw e;
+      }
     },
     selectRiskProfile: () => computeRiskProfile(state.userProfile),
     selectBudgetCategories: () => state.budgetCategories,
@@ -2000,6 +2129,20 @@ export const UnifiedFinancialProvider = ({ children }) => {
       return true;
     }
   };
+
+  // Expose selectors to window for test/dev introspection (no-op in production)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+    try {
+      window.__UFC__ = {
+        get state() { return stateRef.current; },
+        selectors: {
+          budgetSummary: () => value.selectBudgetSummary ? value.selectBudgetSummary() : null,
+          debtPlan: (opts) => value.selectDebtPaydownPlan ? value.selectDebtPaydownPlan(opts) : null,
+          trialBalance: (periodIndex = 0, rates = {}) => value.selectTrialBalance ? value.selectTrialBalance(periodIndex, rates) : null,
+        }
+      };
+    } catch {}
+  }
 
   // --- Recalc pipeline and helpers ---
   function computeHumanCapital(profile) {

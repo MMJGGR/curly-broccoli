@@ -1,10 +1,11 @@
 import React from 'react';
-import { Card, CardHeader, CardTitle, CardContent, Button, EmptyState, Skeleton } from '../ui';
+import { Card, CardHeader, CardTitle, CardContent, Button, EmptyState, Skeleton, Alert } from '../ui';
 
 const JournalViewer = () => {
   const [entries, setEntries] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
+  const [seedStatus, setSeedStatus] = React.useState(null);
   const base = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
   const token = typeof window !== 'undefined' ? localStorage.getItem('jwt') : null;
 
@@ -25,10 +26,19 @@ const JournalViewer = () => {
   React.useEffect(() => { load(); }, [load]);
 
   const seedCOA = async () => {
+    setSeedStatus(null);
     try {
-      await fetch(`${base}/api/v1/ledger/seed-coa`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+      const res = await fetch(`${base}/api/v1/ledger/seed-coa`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) {
+        setError(`Seed failed (${res.status})`);
+        return;
+      }
+      const json = await res.json().catch(() => ({}));
+      setSeedStatus(json?.status || 'seeded');
       await load();
-    } catch {}
+    } catch (e) {
+      setError(e.message || 'Seed failed');
+    }
   };
 
   return (
@@ -36,10 +46,31 @@ const JournalViewer = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Journal Entries</CardTitle>
-          <Button variant="outline" size="sm" onClick={load} aria-label="Refresh journal">Refresh</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={load} aria-label="Refresh journal">Refresh</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async ()=>{
+                if (!window.confirm('Clear all journal entries? This cannot be undone.')) return;
+                try{
+                  const res = await fetch(`${base}/api/v1/ledger/journal?all=1`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                  await load();
+                }catch(e){ setError(e.message||'Clear failed'); }
+              }}
+              aria-label="Clear journal"
+            >
+              Clear
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="text-scale break-words">
+        {seedStatus && (
+          <Alert variant="info" title="Chart of Accounts">
+            {seedStatus === 'seeded' ? 'Accounts seeded.' : seedStatus === 'exists' ? 'Accounts already exist.' : seedStatus}
+          </Alert>
+        )}
         {loading && (
           <>
             <Skeleton className="h-6 w-1/4 mb-2" />
@@ -47,7 +78,7 @@ const JournalViewer = () => {
           </>
         )}
         {!loading && error && (
-          <EmptyState title="Unable to load journal" description="Try again in a moment." />
+          <Alert variant="warning" title="Unable to load journal">{error}</Alert>
         )}
         {!loading && !error && entries && entries.length === 0 && (
           <EmptyState

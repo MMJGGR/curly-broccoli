@@ -3,6 +3,8 @@
  * 70% Timeline, 30% contextual information
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { STRUCTURED_UX } from '../../config';
+import TimelineStructured from '../structured/TimelineStructured';
 import { useNavigate } from 'react-router-dom';
 import { useTimeline } from '../../contexts/TimelineContext';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
@@ -134,6 +136,9 @@ const TimelineDashboard = () => {
     await loadDashboardAnalytics();
   };
 
+  if (STRUCTURED_UX) {
+    return <TimelineStructured />;
+  }
   // Loading state - Enterprise-grade design matching onboarding
   if (loading || budgetLoading) {
     return (

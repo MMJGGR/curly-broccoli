@@ -21,10 +21,10 @@ export function monthlyFromFrequency(amount, frequency) {
   }
 }
 
-function monthsUntil(dateStr) {
+function monthsUntil(dateStr, refIsoDate = null) {
   try {
     if (!dateStr) return null;
-    const now = new Date();
+    const now = refIsoDate ? new Date(refIsoDate) : new Date();
     const tgt = new Date(dateStr);
     const months = Math.round(((tgt - now) / (1000 * 60 * 60 * 24)) / 30);
     return Math.max(0, months);
@@ -33,15 +33,26 @@ function monthsUntil(dateStr) {
   }
 }
 
+function monthsBetween(startIso, endIso) {
+  try {
+    if (!startIso || !endIso) return 0;
+    const a = new Date(startIso);
+    const b = new Date(endIso);
+    const months = Math.round(((b - a) / (1000 * 60 * 60 * 24)) / 30);
+    return Math.max(0, months);
+  } catch { return 0; }
+}
+
 export function generateIncomeSchedule(income, ctx, horizonMonths = 360, growthRate = 0) {
   const baseMonthly = monthlyFromFrequency(income.monthly_amount ?? income.amount, income.frequency);
   const { months } = computeIncomeTimeline(income, ctx);
   const end = months == null ? horizonMonths : Math.min(horizonMonths, months);
+  const offset = income.start_date ? monthsBetween(ctx?.planningStartDate || null, income.start_date) : 0;
   // per-item override (percentage)
   const perItemGrowth = income.growth_rate ?? getIncomeGrowthOverride(income.id);
   const g = typeof perItemGrowth === 'number' && !Number.isNaN(perItemGrowth) ? perItemGrowth / 100 : growthRate;
   const out = [];
-  for (let t = 0; t < end; t++) {
+  for (let t = offset; t < end; t++) {
     const amt = baseMonthly * Math.pow(1 + g, t / 12);
     out.push({ t, amount: amt, type: 'income', id: income.id, name: income.source_name || income.description || 'Income' });
   }
@@ -87,7 +98,7 @@ export function generateGoalFundingSchedule(goal, ctx, horizonMonths = 360) {
   const target = toNumber(goal.target_amount ?? goal.target, 0);
   const current = toNumber(goal.current_amount ?? goal.current, 0);
   const remaining = Math.max(0, target - current);
-  let months = monthsUntil(goal.target_date) ?? 0;
+  let months = monthsUntil(goal.target_date, ctx?.planningStartDate) ?? 0;
   if (months <= 0) months = 0;
   const out = [];
   if (months > 0 && remaining > 0) {
@@ -104,6 +115,7 @@ export function generateAllSchedules(state, horizonMonths = 360, rates = {}) {
     assets: state.assets || [],
     liabilities: state.liabilities || [],
     profile: state.userProfile || state.profile || null,
+    planningStartDate: state.planningStartDate || null,
   };
   const incomeGrowth = toNumber(rates.incomeGrowthRate ?? 0) / 100;
   const expenseInfl = toNumber(rates.expenseInflationRate ?? 0) / 100;

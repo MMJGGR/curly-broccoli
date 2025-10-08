@@ -1,4 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { STRUCTURED_UX } from '../../config';
+import PlanStructured from '../structured/PlanStructured';
 import GoalsOverview from '../goals/GoalsOverview';
 import { EmptyState } from '../ui/empty-state';
 import { PageHeader } from '../ui';
@@ -30,6 +32,10 @@ const PlanDashboard = () => {
   } = useUnifiedFinancialContext();
 
   const [editState, setEditState] = useState({});
+
+  if (STRUCTURED_UX) {
+    return <PlanStructured />;
+  }
 
   // One-time view metric (avoid calling on every render)
   useEffect(() => {

@@ -14,7 +14,10 @@ import TrialBalanceAudit from './TrialBalanceAudit';
 const ToolsDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const initialSection = useMemo(() => new URLSearchParams(location.search).get('section') || 'overview', [location.search]);
+  const initialSection = useMemo(() => {
+    const sec = new URLSearchParams(location.search).get('section') || 'overview';
+    return sec;
+  }, [location.search]);
   const [activeSection, setActiveSection] = useState(initialSection);
 
   // Keep section in sync with query param
@@ -78,6 +81,12 @@ const ToolsDashboard = () => {
       name: 'Income Statement',
       icon: '📈',
       description: 'Monthly P&L with goal contributions'
+    },
+    {
+      id: 'reports',
+      name: 'Reports & Exports',
+      icon: '📤',
+      description: 'Download basic CSV exports (coming soon)'
     },
     {
       id: 'calculators',
@@ -178,6 +187,10 @@ const ToolsDashboard = () => {
     </div>
   );
 
+  // Fallback for unknown section ids
+  const knownIds = new Set(toolSections.map(s => s.id));
+  const safeSection = knownIds.has(activeSection) ? activeSection : 'overview';
+
   return (
     <div className="h-full bg-gray-50">
       {/* Header with Section Tabs */}
@@ -208,9 +221,9 @@ const ToolsDashboard = () => {
 
       {/* Content Area */}
       <Layout className="flex-1 overflow-auto py-6">
-        {activeSection === 'overview' && renderOverview()}
-        {activeSection === 'income' && <IncomeManagement />}
-        {activeSection === 'goals' && (
+        {safeSection === 'overview' && renderOverview()}
+        {safeSection === 'income' && <IncomeManagement />}
+        {safeSection === 'goals' && (
           <div className="space-y-6">
             <GoalsOverview />
             <div className="max-w-6xl mx-auto">
@@ -218,25 +231,35 @@ const ToolsDashboard = () => {
             </div>
           </div>
         )}
-        {activeSection === 'expenses' && <ExpenseManagement />}
-        {activeSection === 'assets' && <AssetManagement />}
-        {activeSection === 'liabilities' && <LiabilityManagement />}
-        {activeSection === 'trial-balance' && <TrialBalanceAudit />}
-        {activeSection === 'cashflow' && <CashFlowStatement />}
-        {activeSection === 'pnl' && (
+        {safeSection === 'expenses' && <ExpenseManagement />}
+        {safeSection === 'assets' && <AssetManagement />}
+        {safeSection === 'liabilities' && <LiabilityManagement />}
+        {safeSection === 'trial-balance' && <TrialBalanceAudit />}
+        {safeSection === 'cashflow' && <CashFlowStatement />}
+        {safeSection === 'pnl' && (
           <div className="max-w-6xl mx-auto">
             <IncomeStatement months={12} />
           </div>
         )}
-        {activeSection === 'calculators' && renderPlaceholder(
+        {safeSection === 'reports' && (
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-3">Reports & Exports</h2>
+            <p className="text-gray-600 mb-4">Download CSV exports for P&L and Journal.</p>
+            <div className="flex flex-wrap gap-3">
+              <a href={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/pl/statement.csv?months=12`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Download P&L (12m)</a>
+              <a href={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/ledger/journal.csv`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Download Journal (all)</a>
+            </div>
+          </div>
+        )}
+        {safeSection === 'calculators' && renderPlaceholder(
           'Financial Calculators',
           'Professional calculators for loan payments, investment returns, retirement planning, and more.'
         )}
-        {activeSection === 'analysis' && renderPlaceholder(
+        {safeSection === 'analysis' && renderPlaceholder(
           'Portfolio Analysis',
           'Advanced portfolio optimization, risk analysis, and asset allocation tools.'
         )}
-        {activeSection === 'planning' && renderPlaceholder(
+        {safeSection === 'planning' && renderPlaceholder(
           'Financial Planning',
           'Comprehensive financial planning tools including estate planning, tax optimization, and scenario analysis.'
         )}

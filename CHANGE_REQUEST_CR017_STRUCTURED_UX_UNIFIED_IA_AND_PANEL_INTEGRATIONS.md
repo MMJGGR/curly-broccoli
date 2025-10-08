@@ -1,7 +1,7 @@
 # CHANGE REQUEST CR017 — Structured UX, Unified IA, and Panel Integrations (All Tabs)
 
 Date: 2025-10-07
-Status: Proposed → In Planning
+Status: Implementation (Phase 1–3 complete; optional P1 behind flag)
 Owner: Frontend + Design
 Reviewers: Product, Backend Lead, QA
 
@@ -56,24 +56,23 @@ Adopt a unified, structured information architecture across the 5 primary tabs (
 7) Performance: localized skeletons; no page‑blocking spinners; quiet background refresh; no repeated fetch loops.
 
 ## 6) Implementation Plan (Phased)
-Phase 1 — Scaffolding + IA Skeleton (All Tabs)
+Phase 1 — Scaffolding + IA Skeleton (All Tabs) — Completed
 - Add/ensure `Layout` + `PageHeader` usage; standardize content width (`max-w-7xl`), paddings, and elevation tiers.
 - Lay out per‑tab sections matching the mocks (empty shell components and routes only).
 
-Phase 2 — Panels + Read Wiring (Per Tab)
+Phase 2 — Panels + Read Wiring (Per Tab) — Completed
 - Dashboard: KPI rail, Decision Center, Timeline progress, Spending Trend (analytics‑v2), Journal teaser.
 - Plan: Scenario toggle, Readiness gauge, Goal Portfolio coverage bars + adjustment slider UI, Pro‑Forma preview (read‑only diff).
 - Balance Sheet: Composition with Policy Bands, Top Accounts + liability schedule microtrend, Net Worth trend, Reconciliation & Journal status.
 - Cash Flow: P&L (12m), Waterfall (month), Variance table, Cash Runway gauge.
 - Timeline: Filters, lane‑based milestone bands with basic dependency visualization, Event Log (recent).
 
-Phase 3 — States, A11y, Copy, and Polish
+Phase 3 — States, A11y, Copy, and Polish — Completed
 - Localized Skeletons/EmptyStates/Alerts across all panels; ARIA labels; tab order; focus management.
 - Tighten microcopy, metrics formatting (tabular numerals), and spacing.
 
-Phase 4 — Optional Enhancements (Feature Flag)
-- Scenario apply paths; deeper analytics drilldowns; export options.
-- Feature flag: `REACT_APP_STRUCTURED_UX=1` if staged rollout desired.
+Phase 4 — Optional Enhancements (Feature Flag) — In Progress (optional)
+- Scenario apply paths; deeper analytics drilldowns; export options (flag: `REACT_APP_STRUCTURED_UX`)
 
 ## 7) Files & Artifacts
 - Mocks (SVG): see file paths listed per tab above; annotated variant available for Dashboard.
@@ -94,8 +93,7 @@ Phase 4 — Optional Enhancements (Feature Flag)
 - Supersedes CR015 and CR016 (merge intent and design into this CR).
 - Complements CR012 (readiness gaps) and CR014 (infra cleanup).
 
-## 11) Done When
+## 11) Done When — Current Status: Met
 - All 5 tabs render with the structured IA and unique panels per mock, with states and a11y verified.
 - Analytics/P&L/Ledger read panels wired with graceful fallbacks.
 - Docs (Design Guide, PRD, Wiki, Kanban) updated and reflect this IA.
-

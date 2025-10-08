@@ -4,7 +4,7 @@ from app.api.v1.endpoints import (
     profile, onboarding_consolidated, profile_clean, timeline_clean,
     transactions, accounts, analytics, income_v2_clean, goals_v2_clean,
     accounts_clean, assets_clean, expenses_clean, liabilities_clean, profile_v2_clean,
-    transactions_clean, analytics_clean, relationships_clean, budget_v2_clean, tb_audit, ledger, metrics_ingest, audits_clean, milestones_clean, asset_reference, pl  # timeline_v2_clean temporarily disabled due to dependencies
+    transactions_clean, analytics_clean, relationships_clean, budget_v2_clean, tb_audit, ledger, metrics_ingest, audits_clean, milestones_clean, asset_reference, pl, events, seed  # timeline_v2_clean temporarily disabled due to dependencies
 )
 
 api_router = APIRouter()
@@ -34,6 +34,7 @@ api_router.include_router(relationships_clean.router, tags=["relationships-v2-cl
 api_router.include_router(budget_v2_clean.router, tags=["budget-v2-clean"])  # ✅ ENABLED - Budget V2 endpoints
 api_router.include_router(tb_audit.router, tags=["tb-audit"])  # TB audit entries
 api_router.include_router(ledger.router, tags=["ledger"])  # Journal entries
+api_router.include_router(events.router, tags=["events"])  # Consolidated recent events
 api_router.include_router(metrics_ingest.router, tags=["metrics-clean"])  # Client metrics ingestion
 api_router.include_router(audits_clean.router, tags=["audits-clean"])  # Server-side audits
 api_router.include_router(milestones_clean.router, tags=["milestones-clean"])  # Client milestones persistence
@@ -45,3 +46,4 @@ api_router.include_router(analytics.router, prefix="/analytics", tags=["analytic
 # Reference data + P&L endpoints
 api_router.include_router(asset_reference.router, tags=["asset-reference-v1"])  # Asset categories/types
 api_router.include_router(pl.router, tags=["pl-v1"])  # Canonical P&L
+api_router.include_router(seed.router, tags=["seed"])  # Seed bundle upload

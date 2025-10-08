@@ -1,0 +1,9 @@
+[
+  { "description": "Rent", "amount": 45000, "frequency": "monthly", "expense_type": "housing", "expense_date": "2020-06-05T00:00:00Z" },
+  { "description": "Utilities", "amount": 12000, "frequency": "monthly", "expense_type": "utilities", "expense_date": "2020-06-07T00:00:00Z" },
+  { "description": "Groceries", "amount": 25000, "frequency": "monthly", "expense_type": "food", "expense_date": "2020-06-10T00:00:00Z" },
+  { "description": "Transport", "amount": 18000, "frequency": "monthly", "expense_type": "transport", "expense_date": "2020-06-12T00:00:00Z" },
+  { "description": "Entertainment", "amount": 8000, "frequency": "monthly", "expense_type": "discretionary", "expense_date": "2020-06-15T00:00:00Z" },
+  { "description": "Health Insurance", "amount": 6000, "frequency": "monthly", "expense_type": "insurance", "expense_date": "2020-06-20T00:00:00Z" }
+]
+

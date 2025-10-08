@@ -38,6 +38,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - REACT_APP_API_BASE_URL=http://localhost:8000
+      - REACT_APP_STRUCTURED_UX=1
       - DISABLE_ESLINT_PLUGIN=true
       - ESLINT_NO_DEV_ERRORS=true
     depends_on:

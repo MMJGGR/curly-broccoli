@@ -1,0 +1,12 @@
+[
+  { "name": "Housing", "allocated_amount": 45000, "category_type": "expense" },
+  { "name": "Utilities", "allocated_amount": 12000, "category_type": "expense" },
+  { "name": "Food & Groceries", "allocated_amount": 25000, "category_type": "expense" },
+  { "name": "Transport", "allocated_amount": 18000, "category_type": "expense" },
+  { "name": "Entertainment", "allocated_amount": 8000, "category_type": "expense" },
+  { "name": "Insurance", "allocated_amount": 6000, "category_type": "expense" },
+  { "name": "Goal: Emergency Fund", "allocated_amount": 20000, "category_type": "expense" },
+  { "name": "Goal: Home Down Payment", "allocated_amount": 15000, "category_type": "expense" },
+  { "name": "Goal: Education Fund", "allocated_amount": 10000, "category_type": "expense" }
+]
+

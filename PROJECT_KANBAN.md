@@ -200,7 +200,7 @@ Owner: Engineering
 ---
 
 ## 🧭 New Initiative — CR017 Structured UX (Unified IA + Panels)
-Status: In Planning → Implementation
+Status: Implementation (Phase 1–2 completed, Phase 3 in progress)
 
 ### Principles (applies to all tabs)
 - Sectioned IA: Overview → Decision Center → Progress/Health → Analytics/Evidence → Utilities
@@ -216,19 +216,19 @@ Status: In Planning → Implementation
 - Timeline: `design/mockups/timeline_final_structured.svg`
 
 ### Sprint Plan (CR017)
-P0 — Phase 1: Scaffolding + IA skeleton
-- Add/ensure Layout + PageHeader usage across tabs
-- Create per‑tab sections per mocks (empty shells)
+P0 — Phase 1: Scaffolding + IA skeleton — Completed
+- Layout + PageHeader verified across tabs
+- Per‑tab sections scaffolded behind feature flag (`REACT_APP_STRUCTURED_UX`)
 
-P0 — Phase 2: Panels + read wiring
-- Dashboard: KPI rail, Decision Center, Timeline progress, Spending Trend (analytics‑v2), Journal teaser
-- Plan: Scenario toggle, Readiness gauge, Goal Portfolio coverage + adjustments, Pro‑Forma preview
-- Balance Sheet: Composition + Policy Bands, Top Accounts + liability schedule microtrend, Net Worth trend, Reconciliation & Journal
-- Cash Flow: P&L (12m), Waterfall (month), Variance table, Cash Runway
-- Timeline: Filters, lane‑based milestones + dependency markers, Event Log
+P0 — Phase 2: Panels + read wiring — Completed
+- Dashboard: KPI rail, Decision Center, Progress & Health, Spending Analytics (analytics‑v2), Journal teaser — wired
+- Plan: Scenarios panel, Readiness gauge, Goal Portfolio coverage, Spending Analytics — wired
+- Balance Sheet: Composition + Policy Bands sample, Reconciliation & Journal (ledger) — wired
+- Cash Flow: P&L (12m), Waterfall (month), Variance table, Runway — wired
+- Timeline: KPIs, lane‑based milestones panel, Event Log — wired
 
-P0 — Phase 3: States + a11y + copy polish
-- Localized skeletons/empties/alerts; ARIA labels; focus/tab order; compact numerals
+P0 — Phase 3: States + a11y + copy polish — In Progress
+- Localized skeletons/empties/alerts via child panels; ARIA labels added in key links; pass pending
 
 P1 — Optional (behind flag `REACT_APP_STRUCTURED_UX`)
 - Scenario apply paths; deeper drilldowns; exports
@@ -246,6 +246,34 @@ P1 — Optional (behind flag `REACT_APP_STRUCTURED_UX`)
 ### Docs
 - CR015/CR016 → Superseded by CR017
 - Design Guide, PRD, Wiki → Updated for structured IA
+
+Last Updated: 2025‑10‑07
+Owner: Engineering
+
+---
+
+## 🧭 New Proposal — CR018 Structured UX Completions + Temporal History
+Status: Proposed → In Planning
+
+### Scope
+- FE: icons mapping; wire stubs (Waterfall, Variance, Reports/Exports, Event Log); add Clear Journal utility
+- BE: income temporal history; P&L monthly breakdown; variance endpoint; CSV exports; events endpoint; journal clear
+
+### Tasks (Initial)
+- BE: Alembic migration for income history (start_date/end_date + history table)
+- BE: Extend /pl/statement with breakdown + CSV
+- BE: Add /budget-v2/variance and /events/recent
+- BE: Add /ledger/journal.csv and DELETE /ledger/journal (clear)
+- FE: Icon mapping pass across structured shells
+- FE: Cash Flow Waterfall → use breakdown; Variance table → use variance endpoint
+- FE: Reports & Exports → CSV download buttons
+- FE: Balance Sheet Allocation vs Policy → compute actual vs target
+- FE: Timeline Event Log → wire to /events/recent
+- FE: Journal → add Clear button with confirm
+- Docs/Tests: update guides; add smoke for CSV, variance, events
+
+### Risks
+- Data shape drift in CSV/breakdown — mitigate with schema docs and versioning
 
 Last Updated: 2025‑10‑07
 Owner: Engineering

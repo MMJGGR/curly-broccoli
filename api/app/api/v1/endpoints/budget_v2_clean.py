@@ -9,7 +9,9 @@ from datetime import date
 
 from ....security import get_current_user
 from ....core.database import get_db
-from ....models import User, Profile, ExpenseCategory, Goal
+from ....models import User, Profile, ExpenseCategory, Goal, Expense as ExpenseModel
+from datetime import datetime, timedelta
+from collections import defaultdict
 
 
 router = APIRouter(prefix="/budget-v2", tags=["budget-v2-clean"])
@@ -255,3 +257,52 @@ def get_budget_category(
         "is_active": bool(cat.is_active),
         "currency": "KES",
     }
+
+
+@router.get('/variance')
+def get_budget_variance(
+    months: int = 12,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Basic Budget vs Actual variance by category per month (last N months).
+    Budget from ExpenseCategory.budgeted_amount (assumed monthly).
+    Actual from Expenses grouped by category_override matching category name; others grouped under 'uncategorized'.
+    """
+    months = max(1, min(24, months))
+
+    # Categories and budget
+    cats = db.query(ExpenseCategory).filter(ExpenseCategory.user_id == current_user.id, ExpenseCategory.is_active == True).all()
+    cat_names = [c.name for c in cats]
+    budget_map = {c.name: float(c.budgeted_amount or 0.0) for c in cats}
+
+    now = datetime.utcnow().replace(day=1)
+    results = []
+    for i in range(months):
+        start = (now - timedelta(days=i*31)).replace(day=1)
+        nm = datetime(start.year + (1 if start.month == 12 else 0), 1 if start.month == 12 else start.month + 1, 1)
+        actuals = defaultdict(float)
+        q = db.query(ExpenseModel).filter(ExpenseModel.user_id == current_user.id, ExpenseModel.expense_date >= start, ExpenseModel.expense_date < nm)
+        for e in q:
+            try:
+                amt = float(e.amount or 0.0)
+            except Exception:
+                amt = 0.0
+            cname = None
+            try:
+                cname = getattr(e, 'category_override', None)
+            except Exception:
+                cname = None
+            cname = cname if cname in budget_map else 'uncategorized'
+            actuals[cname] += amt
+        row = {'period': start.strftime('%Y-%m'), 'categories': {}}
+        for name in cat_names:
+            b = budget_map.get(name, 0.0)
+            a = actuals.get(name, 0.0)
+            row['categories'][name] = {'budget': b, 'actual': a, 'variance': b - a}
+        if 'uncategorized' in actuals and 'uncategorized' not in row['categories']:
+            a = actuals['uncategorized']
+            row['categories']['uncategorized'] = {'budget': 0.0, 'actual': a, 'variance': -a}
+        results.append(row)
+
+    return { 'user_id': current_user.id, 'months': months, 'rows': results }

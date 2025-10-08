@@ -243,9 +243,25 @@ class IncomeSource(Base):
     name = Column(String, index=True)
     amount = Column(Float)
     frequency = Column(String)
+    start_date = Column(DateTime(timezone=True), nullable=True)
+    end_date = Column(DateTime(timezone=True), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="income_sources")
+
+
+class IncomeSourceHistory(Base):
+    __tablename__ = "income_source_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    income_source_id = Column(Integer, ForeignKey("income_sources.id"), index=True, nullable=False)
+    effective_date = Column(DateTime(timezone=True), nullable=False)
+    amount = Column(Float, nullable=False)
+    frequency = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+    owner = relationship("User")
 
 class ExpenseCategory(Base):
     __tablename__ = "expense_categories"

@@ -8,6 +8,9 @@ const SpendingAnalyticsPanel = ({ months = 6 }) => {
 
   React.useEffect(() => {
     let cancelled = false;
+    // Dev guard: avoid duplicate fetches in StrictMode by caching within session
+    const guardKey = `spending_analytics_${months}`;
+    try { if (sessionStorage.getItem(guardKey) === '1') { setLoading(false); return; } } catch {}
     (async () => {
       setLoading(true); setError(null);
       try {
@@ -25,6 +28,7 @@ const SpendingAnalyticsPanel = ({ months = 6 }) => {
         if (!cancelled) setLoading(false);
       }
     })();
+    try { sessionStorage.setItem(guardKey, '1'); } catch {}
     return () => { cancelled = true; };
   }, [months]);
 
