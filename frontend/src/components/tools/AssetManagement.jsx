@@ -14,10 +14,12 @@ const AssetManagement = () => {
   // Use UnifiedFinancialContext instead of local state
   const {
     assets,
+    expenses,
     loading,
     createAsset,
     updateAsset,
     deleteAsset,
+    createExpense,
     fetchAllFinancialData
   } = useUnifiedFinancialContext();
 
@@ -167,6 +169,8 @@ const AssetManagement = () => {
               assets.map((asset) => {
                 const IconComponent = getAssetTypeIcon(asset.asset_type);
                 const gainLoss = calculateGainLoss(asset);
+                const hasMaint = (expenses || []).some(e => e.related_asset_id === asset.id && (e.relationship_type || '') === 'asset_maintenance');
+                const hasIns = (expenses || []).some(e => e.related_asset_id === asset.id && (e.relationship_type || '') === 'insurance_premium');
                 
                 return (
                   <div key={asset.id} className="border rounded-lg p-4 bg-gray-50" data-testid="asset-item">
@@ -238,6 +242,59 @@ const AssetManagement = () => {
                             </p>
                           </div>
                         )}
+
+                        {/* CR019: Inline linking for asset maintenance/insurance */}
+                        <div className="mt-3 pt-3 border-t">
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const est = Math.round(((parseFloat(asset.current_value || 0) || 0) * 0.01) / 12);
+                                  await createExpense({
+                                    description: `Maintenance: ${asset.name}`,
+                                    amount: est,
+                                    expense_type: 'maintenance',
+                                    frequency: 'monthly',
+                                    is_recurring: true,
+                                    related_asset_id: asset.id,
+                                    relationship_type: 'asset_maintenance'
+                                  });
+                                } catch (e) {
+                                  console.warn('Failed to create maintenance expense:', e?.message || e);
+                                }
+                              }}
+                              disabled={hasMaint}
+                              data-testid={`add-maintenance-${asset.id}`}
+                            >
+                              {hasMaint ? 'Maintenance Linked' : 'Add Maintenance'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  await createExpense({
+                                    description: `Insurance: ${asset.name}`,
+                                    amount: 5000,
+                                    expense_type: 'insurance',
+                                    frequency: 'monthly',
+                                    is_recurring: true,
+                                    related_asset_id: asset.id,
+                                    relationship_type: 'insurance_premium'
+                                  });
+                                } catch (e) {
+                                  console.warn('Failed to create insurance expense:', e?.message || e);
+                                }
+                              }}
+                              disabled={hasIns}
+                              data-testid={`add-insurance-${asset.id}`}
+                            >
+                              {hasIns ? 'Insurance Linked' : 'Add Insurance'}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="flex gap-2 ml-4">

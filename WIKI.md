@@ -10,13 +10,28 @@ Enterprise-grade personal finance application for the **Kenyan market**, providi
 - **Real-time Cross-Component Sync**: Changes update instantly across all components
 - **Kenya-Specific**: Local market assumptions, KES currency, regulatory considerations
 
-### **🚀 Current Status: CR004 UnifiedFinancialContext Migration**
-**Phase 2 COMPLETE** (3 critical dashboard components migrated to unified context)
-- ✅ FinancialHealthDashboard.jsx - Removed 6 direct API calls
-- ✅ AssetDashboard.jsx - Removed 2 direct API calls  
-- ✅ BalanceSheetDashboard.jsx - Removed 4 direct API calls
+### **🚀 Current Status: CR012 Priority Execution (Advisor-style core journeys)**
+Baseline Journey Coverage (conservative): ~67%
 
-**Next: Phase 3** - Asset & Liability Management components (21+ components remaining)
+Focus: Fewer features, finished well, that fit all journeys seamlessly.
+
+Top Priorities (CR012)
+- Canonical Server P&L and FE switch (statements trust)
+- Relationships v2 with real repos (asset↔income, goal funding)
+- API‑backed asset categories/types (no hardcoded models)
+- Transactions→budget variance + simple alerts (real‑world budgeting)
+- Debt payoff optimizer v1 (snowball/avalanche)
+- Retirement readiness v1 (gap/month and readiness score)
+- Enforcement: ban direct fetch in components; a11y + skeletons universal
+
+Expected Journey Coverage after CR012: ~80–83%
+
+**Pre‑sprint groundwork COMPLETE**
+- ✅ Planning start month, timeline sparkline + month labels
+- ✅ After‑Goals Surplus surfaced; expense summaries normalized
+- ✅ Legacy FE endpoints removed; legacy profile UIs cleaned
+
+**Next Sprint (P0):** CR017 Structured UX — adopt structured IA across tabs with read‑only backend panels (analytics‑v2, pl/statement, ledger, tb‑audit), states/a11y, and polished copy.
 
 ---
 
@@ -24,15 +39,40 @@ Enterprise-grade personal finance application for the **Kenyan market**, providi
 - **[PRODUCT_REQUIREMENTS_DOCUMENT.md](PRODUCT_REQUIREMENTS_DOCUMENT.md)** - Complete user stories & feature specs
 - **[TECHNICAL_DEVELOPMENT_GUIDE.md](TECHNICAL_DEVELOPMENT_GUIDE.md)** - MANDATORY development standards
 - **[CFA_COMPLIANCE_GUIDE.md](CFA_COMPLIANCE_GUIDE.md)** - Financial analysis standards  
-- **[CHANGE_REQUEST_CR004](CHANGE_REQUEST_CR004_COMPONENT_MIGRATION.md)** - Active component migration plan
+- **[CHANGE_REQUEST_CR004](CHANGE_REQUEST_CR004_COMPONENT_MIGRATION.md)** - Component migration (historic)
+- **[CHANGE_REQUEST_CR009](CHANGE_REQUEST_CR009_BALANCE_SHEET_V2_AND_IA_RESTRUCTURE.md)** - Balance Sheet v2 + IA restructure (proposed)
+
+---
+
+## **🧭 Information Architecture (5 Tabs)**
+
+Shared principles
+- Sections: Overview → Decision Center → Progress/Health → Analytics/Evidence → Utilities
+- Consistent scaffolding (Layout, PageHeader, Card), tokenized spacing/radii/shadows
+- Action‑first: one Next Best Action with evidence‑backed recommendations
+- States: localized Skeletons; standardized EmptyState and Alert
+
+Per‑tab purpose
+- Dashboard (aggregator): cross‑cut KPIs; Decision Center; Timeline progress; Spending Trend; Journal teaser
+- Plan (decision + scenarios): scenarios (Base/What‑if/Applied); readiness gauge; goal coverage + adjustments; pro‑forma preview
+- Balance Sheet (policy + structure): composition with Policy Bands; Net Worth trend; reconciliation status; journal
+- Cash Flow (variance): server P&L (12m); monthly waterfall; variance table; runway gauge
+- Timeline (lanes): lane‑based milestones (Financial Health/Debt/Goals); dependency markers; event log
+
+Tools/calculators are accessed contextually via “More” menus in Plan and Cash Flow (no standalone Tools tab).
 - **[COMPREHENSIVE_IMPLEMENTATION_PLAN.md](COMPREHENSIVE_IMPLEMENTATION_PLAN.md)** - Overall project roadmap
 
 ---
 
 ## **👤 Target Users & Sample Journeys**
-- **Sarah (32, Marketing Manager)**: 250K KES income → Onboarding → Goal planning  
-- **David (45, Business Owner)**: 530K KES income → Portfolio analysis → Scenario planning
-- **Grace (28, Software Engineer)**: 180K KES income → Daily expense tracking → Budget optimization
+- Client Journeys (covered by CR012):
+  - Sarah (32, Marketing Manager): 250K KES income → Onboarding → Goal planning  
+  - David (45, Business Owner): 530K KES income → Portfolio analysis → Scenario planning
+  - Grace (28, Software Engineer): 180K KES income → Daily expense tracking → Budget optimization
+
+- Advisor Journeys (separate track, CR013):
+  - Advisor views multiple clients, reviews portfolio snapshots, prepares IPS, records recommendations
+  - Advisor authentication and onboarding flows (separate from client)
 
 
 ## **⚠️ Critical Non-Negotiables for New Team**

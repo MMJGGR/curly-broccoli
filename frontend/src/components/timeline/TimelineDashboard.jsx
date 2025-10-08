@@ -3,28 +3,19 @@
  * 70% Timeline, 30% contextual information
  */
 import React, { useState, useEffect, useCallback } from 'react';
+import { STRUCTURED_UX } from '../../config';
+import TimelineStructured from '../structured/TimelineStructured';
 import { useNavigate } from 'react-router-dom';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import TimelineVisualization from './TimelineVisualization';
 import AlignmentDashboard from './AlignmentDashboard';
 import GoalAnalyticsDashboard from '../analytics/GoalAnalyticsDashboard';
-import predictiveAnalytics from '../../services/predictiveAnalytics';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const TimelineDashboard = () => {
   // Helper function for milestone icons
-  const getMilestoneIcon = (category) => {
-    switch (category?.toLowerCase()) {
-      case 'retirement': return '🏖️';
-      case 'education': return '🎓';
-      case 'housing': return '🏠';
-      case 'investment': return '📈';
-      case 'emergency': return '🛡️';
-      case 'healthcare': return '⚕️';
-      case 'travel': return '✈️';
-      default: return '🎯';
-    }
-  };
+  const getMilestoneIcon = () => '';
 
   const {
     loading,
@@ -44,13 +35,36 @@ const TimelineDashboard = () => {
   } = useTimeline();
 
   const {
-    budgetData,
-    actualSurplus,
-    budgetHealth,
-    formatAmount,
-    isBudgetReady,
-    loading: budgetLoading,
-  } = useBudget();
+    expenses,
+    incomes = [],
+    loading: budgetLoading
+  } = useUnifiedFinancialContext();
+
+  // Calculate derived values from unified context
+  const totalIncome = Array.isArray(incomes)
+    ? incomes.reduce((sum, inc) => sum + (inc.monthly_amount || inc.amount || 0), 0)
+    : (incomes?.total_monthly_income || 0);
+  const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.monthly_equivalent || 0), 0) || 0;
+  const actualSurplus = totalIncome - totalExpenses;
+  const formatAmount = (amount) => `KES ${Math.round(amount).toLocaleString()}`;
+  const budgetHealth = actualSurplus >= 0 ? 'healthy' : 'deficit';
+  const isBudgetReady = !budgetLoading?.global && Array.isArray(expenses) && (Array.isArray(incomes) ? incomes.length >= 0 : true);
+
+  // Mock budgetData structure for compatibility with existing code
+  const budgetData = {
+    monthlyIncome: totalIncome,
+    expenses: expenses?.reduce((acc, expense) => {
+      const category = expense.expense_category || 'miscellaneous';
+      acc[category] = (acc[category] || 0) + (expense.monthly_equivalent || 0);
+      return acc;
+    }, {}) || {},
+    goalAllocations: {
+      emergencyFund: 0, // This would come from goals in future
+      retirement: 0,
+      education: 0,
+      investments: 0
+    }
+  };
 
   const [activeView, setActiveView] = useState('overview');
   const [showMobilePanel, setShowMobilePanel] = useState(false);
@@ -60,12 +74,13 @@ const TimelineDashboard = () => {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [timelineCollapsed, setTimelineCollapsed] = useState(false);
   const navigate = useNavigate();
+  const analytics = useAnalytics();
 
   const loadDashboardAnalytics = useCallback(async () => {
     setLoadingAnalytics(true);
     try {
       // Load dashboard insights
-      const insights = await predictiveAnalytics.getDashboardInsights();
+      const insights = await analytics.getDashboardInsights();
       setDashboardInsights(insights);
 
       // Load analytics for each milestone/goal
@@ -75,7 +90,7 @@ const TimelineDashboard = () => {
           .slice(0, 5) // Limit to first 5 for performance
           .map(async (milestone) => {
             try {
-              const analysis = await predictiveAnalytics.analyzeGoalTrajectory(milestone.id);
+              const analysis = await analytics.analyzeGoalTrajectory(milestone.id);
               return { id: milestone.id, analysis };
             } catch (error) {
               console.warn(`Analytics failed for milestone ${milestone.id}:`, error);
@@ -117,10 +132,13 @@ const TimelineDashboard = () => {
 
   const refreshAnalytics = async () => {
     // Clear cache and reload analytics
-    predictiveAnalytics.clearCache();
+    analytics.clearCache();
     await loadDashboardAnalytics();
   };
 
+  if (STRUCTURED_UX) {
+    return <TimelineStructured />;
+  }
   // Loading state - Enterprise-grade design matching onboarding
   if (loading || budgetLoading) {
     return (
@@ -199,7 +217,7 @@ const TimelineDashboard = () => {
                   }}
                   data-cy="persona-badge"
                 >
-                  ✨ {persona} Profile
+                  {persona} Profile
                 </span>
               )}
             </div>
@@ -251,7 +269,7 @@ const TimelineDashboard = () => {
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
-                📊 Overview
+                Overview
               </button>
               <button
                 onClick={() => setActiveView('analytics')}
@@ -261,7 +279,7 @@ const TimelineDashboard = () => {
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
-                📈 Analytics
+                Analytics
               </button>
               <button
                 onClick={() => setActiveView('journey')}
@@ -271,7 +289,7 @@ const TimelineDashboard = () => {
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
-                🗺️ Journey
+                Journey
               </button>
               <button
                 onClick={() => setActiveView('alignment')}
@@ -281,7 +299,7 @@ const TimelineDashboard = () => {
                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                 }`}
               >
-                🎯 Alignment
+                Alignment
               </button>
             </div>
 
@@ -379,7 +397,7 @@ const TimelineDashboard = () => {
                       </div>
                       {nextMilestone.target_amount && (
                         <div className="text-lg font-semibold text-green-600 mt-2">
-                          {predictiveAnalytics.formatCurrency(nextMilestone.target_amount)}
+                          {analytics.formatCurrency(nextMilestone.target_amount)}
                         </div>
                       )}
                       
@@ -391,12 +409,12 @@ const TimelineDashboard = () => {
                             <span 
                               className="font-semibold"
                               style={{ 
-                                color: predictiveAnalytics.getRiskLevelColor(
+                                color: analytics.getRiskLevelColor(
                                   goalAnalytics[nextMilestone.id].success_probability
                                 )
                               }}
                             >
-                              {predictiveAnalytics.formatPercentage(
+                              {analytics.formatPercentage(
                                 goalAnalytics[nextMilestone.id].success_probability
                               )}
                             </span>
@@ -696,10 +714,10 @@ const TimelineDashboard = () => {
                                 <div 
                                   className="font-semibold"
                                   style={{ 
-                                    color: predictiveAnalytics.getRiskLevelColor(analytics.success_probability)
+                                    color: analytics.getRiskLevelColor(analytics.success_probability)
                                   }}
                                 >
-                                  {predictiveAnalytics.formatPercentage(analytics.success_probability)}
+                                  {analytics.formatPercentage(analytics.success_probability)}
                                 </div>
                               </div>
                               <div>
@@ -711,7 +729,7 @@ const TimelineDashboard = () => {
                               <div className="col-span-2">
                                 <span className="text-gray-500">Current:</span>
                                 <div className="font-semibold text-green-600">
-                                  {predictiveAnalytics.formatCurrency(analytics.current_progress?.actual_amount || 0)}
+                                  {analytics.formatCurrency(analytics.current_progress?.actual_amount || 0)}
                                 </div>
                               </div>
                               {analytics.recommendations && analytics.recommendations.length > 0 && (

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Plus, Edit, Trash2, TrendingDown } from '../ui/icons';
+import { EXPENSE_TYPE_DEFS } from '../expenses/expenseTypeDefs';
 import { formatCurrency } from '../../utils/formatters';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
@@ -20,7 +21,8 @@ const ExpenseManagement = () => {
     createExpense,
     updateExpense,
     deleteExpense,
-    fetchAllFinancialData
+    fetchAllFinancialData,
+    profile
   } = useUnifiedFinancialContext();
 
   // Local UI state only
@@ -32,29 +34,18 @@ const ExpenseManagement = () => {
     expense_type: '',
     frequency: 'monthly',
     is_recurring: true,
+    is_essential: false,
     related_asset_id: null,
     related_liability_id: null,
     relationship_type: '',
     is_finite_payment: false,
     total_payments_remaining: null,
     payment_end_date: null,
-    notes: ''
+    notes: '',
+    inflation_rate_override: ''
   });
 
-  const expenseTypes = [
-    { value: 'housing', label: 'Housing' },
-    { value: 'transportation', label: 'Transportation' },
-    { value: 'food_dining', label: 'Food & Dining' },
-    { value: 'utilities', label: 'Utilities' },
-    { value: 'healthcare', label: 'Healthcare' },
-    { value: 'insurance', label: 'Insurance' },
-    { value: 'debt_payments', label: 'Debt Payments' },
-    { value: 'entertainment', label: 'Entertainment' },
-    { value: 'personal_care', label: 'Personal Care' },
-    { value: 'business_operating', label: 'Business Operating' },
-    { value: 'taxes', label: 'Taxes' },
-    { value: 'other', label: 'Other' }
-  ];
+  const expenseTypes = EXPENSE_TYPE_DEFS;
 
   const frequencies = [
     { value: 'daily', label: 'Daily' },
@@ -90,15 +81,24 @@ const ExpenseManagement = () => {
       const payload = {
         ...formData,
         amount: parseFloat(formData.amount),
+        is_essential: !!formData.is_essential,
         related_asset_id: formData.related_asset_id || null,
         related_liability_id: formData.related_liability_id || null,
         total_payments_remaining: formData.total_payments_remaining ? parseInt(formData.total_payments_remaining) : null
       };
 
       if (editingExpense) {
-        await updateExpense(editingExpense.id, payload);
+        const updated = await updateExpense(editingExpense.id, payload);
+        if (formData.inflation_rate_override !== '') {
+          const { setExpenseInflationOverride } = await import('../../utils/overridesStore');
+          setExpenseInflationOverride(updated?.id || editingExpense.id, Number(formData.inflation_rate_override));
+        }
       } else {
-        await createExpense(payload);
+        const created = await createExpense(payload);
+        if (created?.id && formData.inflation_rate_override !== '') {
+          const { setExpenseInflationOverride } = await import('../../utils/overridesStore');
+          setExpenseInflationOverride(created.id, Number(formData.inflation_rate_override));
+        }
       }
 
       setIsFormOpen(false);
@@ -422,6 +422,26 @@ const ExpenseManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Label className="mr-2">Essential?</Label>
+                  <input
+                    type="checkbox"
+                    checked={!!formData.is_essential}
+                    onChange={(e) => setFormData({ ...formData, is_essential: e.target.checked })}
+                    data-testid="essential-checkbox"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="inflation_rate_override">Inflation Rate Override (%)</Label>
+                  <Input
+                    id="inflation_rate_override"
+                    type="number"
+                    step="0.01"
+                    value={formData.inflation_rate_override}
+                    onChange={(e) => setFormData({ ...formData, inflation_rate_override: e.target.value })}
+                    placeholder="e.g. 5.5"
+                  />
+                </div>
               </div>
 
               {/* KISS Asset/Liability Linking Section */}
@@ -497,7 +517,7 @@ const ExpenseManagement = () => {
                       <SelectTrigger>
                         <SelectValue placeholder="How is this expense related?" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent data-testid="relationship-options">
                         {relationshipTypes.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}
@@ -589,6 +609,57 @@ const ExpenseManagement = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Lifetime Expense Timeline */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lifetime Expense Timeline</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(() => {
+            const currentAge = profile?.age || 30;
+            const retirementAge = profile?.retirement_age || profile?.target_retirement_age || 65;
+            const yearsToRetirement = Math.max(1, retirementAge - currentAge);
+            const monthsUntil = (dateStr) => {
+              try {
+                const now = new Date();
+                const tgt = new Date(dateStr);
+                const diff = (tgt - now) / (1000 * 60 * 60 * 24 * 30);
+                return Math.max(0, Math.round(diff));
+              } catch { return 0; }
+            };
+            if ((expenses || []).length === 0) {
+              return <div className="text-gray-500">Add expenses to visualize timing.</div>;
+            }
+            return (
+              <div className="space-y-3">
+                {expenses.map((exp) => {
+                  let months = 0;
+                  if (exp.payment_end_date) {
+                    months = monthsUntil(exp.payment_end_date);
+                  } else if (exp.is_finite_payment && exp.total_payments_remaining && exp.frequency === 'monthly') {
+                    months = parseInt(exp.total_payments_remaining, 10) || 0;
+                  } else {
+                    months = yearsToRetirement * 12; // ongoing
+                  }
+                  const widthPct = Math.max(5, Math.min(100, (months / (yearsToRetirement * 12)) * 100));
+                  return (
+                    <div key={`exp-tl-${exp.id}`}>
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>{exp.description}</span>
+                        <span>{exp.payment_end_date || (exp.is_finite_payment ? `${months} months left` : 'ongoing')}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-red-500 h-2 rounded-full" style={{ width: `${widthPct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
     </div>
   );
 };

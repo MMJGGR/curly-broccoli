@@ -92,7 +92,11 @@
       "Bash(timeout 300 npx cypress run:*)",
       "Bash(pkill:*)",
       "Bash(/dev/null)",
-      "Bash(docker restart:*)"
+      "Bash(docker restart:*)",
+      "Bash(timeout 120 npx cypress run --spec \"cypress/e2e/budget-tab-only.cy.js\")",
+      "Bash(timeout 120 npx cypress run --spec \"cypress/e2e/budget-tab-only.cy.js\" --headed)",
+      "Bash(timeout 120 npx cypress run --spec \"cypress/e2e/wait-for-expense-data.cy.js\" --headed)",
+      "Bash(del \"C:\\Users\\Richard\\curly-broccoli\\api\\app\\api\\v1\\endpoints\\budget.py\")"
     ],
     "deny": [],
     "ask": []

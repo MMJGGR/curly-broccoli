@@ -4,7 +4,8 @@
  */
 import React from 'react';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
+import { formatCurrency } from '../../utils/formatters';
 
 // MOBILE PHASE BADGE - Ultra compact phase indicator for mobile navigation
 export const MobilePhaseIndicator = ({ className = '' }) => {
@@ -33,7 +34,8 @@ export const MobilePhaseIndicator = ({ className = '' }) => {
 // TIMELINE STATUS BADGE - Shows alignment status with color coding
 export const TimelineStatusBadge = ({ showPercentage = true, size = 'small', className = '' }) => {
   const { alignmentScore } = useTimeline();
-  const { actualSurplus } = useBudget();
+  const { selectNetCashFlow } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
   
   const getStatusConfig = () => {
     if (actualSurplus < 0) {
@@ -118,7 +120,8 @@ export const MobileMilestoneProgress = ({ className = '' }) => {
 
 // SURPLUS STATUS INDICATOR - Shows budget surplus/deficit status
 export const SurplusStatusIndicator = ({ compact = true, className = '' }) => {
-  const { actualSurplus, formatAmount } = useBudget();
+  const { selectNetCashFlow } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
   
   if (actualSurplus === undefined) return null;
   
@@ -131,7 +134,7 @@ export const SurplusStatusIndicator = ({ compact = true, className = '' }) => {
     return (
       <div className={`surplus-status-indicator inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${bgClass} ${colorClass} ${className}`}>
         <span className="mr-1">{icon}</span>
-        <span>{isPositive ? '+' : ''}{formatAmount(actualSurplus)}</span>
+        <span>{isPositive ? '+' : ''}{formatCurrency(actualSurplus)}</span>
       </div>
     );
   }
@@ -141,7 +144,7 @@ export const SurplusStatusIndicator = ({ compact = true, className = '' }) => {
       <span className="text-lg">{icon}</span>
       <div>
         <div className={`font-semibold ${colorClass}`}>
-          {isPositive ? '+' : ''}{formatAmount(actualSurplus)}
+          {isPositive ? '+' : ''}{formatCurrency(actualSurplus)}
         </div>
         <div className="text-xs text-gray-500">
           {isPositive ? 'Available' : 'Deficit'}
@@ -154,7 +157,8 @@ export const SurplusStatusIndicator = ({ compact = true, className = '' }) => {
 // CONTEXTUAL TIMELINE PILL - Small contextual guidance for any interface
 export const ContextualTimelinePill = ({ context, className = '' }) => {
   const { currentPhase, currentAge } = useTimeline();
-  const { actualSurplus } = useBudget();
+  const { selectNetCashFlow } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
   
   const getContextMessage = () => {
     if (context === 'budget') {
@@ -187,7 +191,8 @@ export const ContextualTimelinePill = ({ context, className = '' }) => {
 // MOBILE ALERT BANNER - Compact alert for mobile interfaces
 export const MobileTimelineAlert = ({ dismissible = true, className = '' }) => {
   const { alignmentScore, currentPhase } = useTimeline();
-  const { actualSurplus } = useBudget();
+  const { selectNetCashFlow } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
   
   // Only show critical alerts on mobile
   const getAlert = () => {
@@ -257,7 +262,8 @@ export const MobileTimelineAlert = ({ dismissible = true, className = '' }) => {
 // COMPACT DASHBOARD WIDGET - All-in-one mobile dashboard summary
 export const CompactTimelineDashboard = ({ className = '' }) => {
   const { currentPhase, currentAge, alignmentScore, nextMilestone } = useTimeline();
-  const { actualSurplus, formatAmount } = useBudget();
+  const { selectNetCashFlow } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
   
   return (
     <div className={`compact-timeline-dashboard bg-white rounded-xl border border-gray-200 p-4 ${className}`}>
@@ -279,7 +285,7 @@ export const CompactTimelineDashboard = ({ className = '' }) => {
         
         <div className="text-center">
           <div className={`text-lg font-bold ${actualSurplus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {formatAmount(actualSurplus || 0)}
+            {formatCurrency(actualSurplus || 0)}
           </div>
           <div className="text-xs text-gray-500">Surplus</div>
         </div>

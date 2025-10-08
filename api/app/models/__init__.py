@@ -98,6 +98,27 @@ class Profile(Base):
 
     owner = relationship("User", back_populates="profile")
 
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=True)
+    route = Column(String, index=True)
+    action = Column(String, index=True)
+    payload = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class TBAuditEntry(Base):
+    __tablename__ = "tb_audit_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    suggestions_json = Column(Text, nullable=False)  # JSON string of suggestions array
+    meta_json = Column(Text, nullable=True)          # optional metadata json
+
+    owner = relationship("User")
+
 class RiskProfile(Base):
     __tablename__ = "risk_profiles"
 
@@ -222,9 +243,25 @@ class IncomeSource(Base):
     name = Column(String, index=True)
     amount = Column(Float)
     frequency = Column(String)
+    start_date = Column(DateTime(timezone=True), nullable=True)
+    end_date = Column(DateTime(timezone=True), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="income_sources")
+
+
+class IncomeSourceHistory(Base):
+    __tablename__ = "income_source_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    income_source_id = Column(Integer, ForeignKey("income_sources.id"), index=True, nullable=False)
+    effective_date = Column(DateTime(timezone=True), nullable=False)
+    amount = Column(Float, nullable=False)
+    frequency = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+    owner = relationship("User")
 
 class ExpenseCategory(Base):
     __tablename__ = "expense_categories"
@@ -407,3 +444,37 @@ from .financial_modeling import (
     UserFinancialAssumptions,
     PortfolioOptimizationResult
 )
+
+# Backward-compatibility alias for legacy tests expecting `Income`
+# The canonical model name in this codebase is IncomeSource
+Income = IncomeSource
+
+
+# --- Domain reference data: Asset Categories / Types (server-canonical) ---
+class AssetCategory(Base):
+    __tablename__ = "asset_categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(50), unique=True, index=True, nullable=False)
+    name = Column(String(100), nullable=False)
+    kenya_specific = Column(Boolean, default=True)
+    cfa_compliant = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    types = relationship("AssetType", back_populates="category", cascade="all, delete-orphan")
+
+
+class AssetType(Base):
+    __tablename__ = "asset_types"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category_id = Column(Integer, ForeignKey("asset_categories.id"), nullable=False, index=True)
+    code = Column(String(50), unique=True, index=True, nullable=False)
+    name = Column(String(100), nullable=False)
+    is_liquid = Column(Boolean, default=False)
+    risk_level = Column(String(20), default="moderate")  # low | moderate | high
+    is_appreciating = Column(Boolean, default=True)
+    minimum_investment = Column(Numeric(precision=15, scale=2), nullable=True)
+    cfa_classification = Column(String(50), nullable=True)
+
+    category = relationship("AssetCategory", back_populates="types")

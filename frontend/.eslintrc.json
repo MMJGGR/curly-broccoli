@@ -1,4 +1,29 @@
 {
   "extends": ["react-app", "eslint:recommended"],
-  "rules": {}
+  "rules": {},
+  "overrides": [
+    {
+      "files": [
+        "src/components/**/*.js",
+        "src/components/**/*.jsx",
+        "src/components/**/*.ts",
+        "src/components/**/*.tsx"
+      ],
+      "excludedFiles": [
+        "src/components/AuthScreen.js",
+        "src/components/AdvisorOnboardingComplete.js",
+        "src/components/onboarding/OnboardingWizard.js",
+        "src/components/profile/ProfileActions.jsx"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "Use context/services, not fetch(), in components"
+          }
+        ]
+      }
+    }
+  ]
 }

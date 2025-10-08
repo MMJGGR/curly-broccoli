@@ -1,0 +1,57 @@
+[
+  {
+    "timestamp": "2020-06-05T09:00:00Z",
+    "description": "June Salary",
+    "lines": [
+      { "account_type": "asset", "debit": 120000, "credit": 0, "memo": "Cash" },
+      { "account_type": "income", "debit": 0, "credit": 120000, "memo": "Salary" }
+    ],
+    "meta": { "period": "2020-06", "source": "seed" }
+  },
+  {
+    "timestamp": "2020-06-06T12:00:00Z",
+    "description": "June Rent Payment",
+    "lines": [
+      { "account_type": "expense", "debit": 45000, "credit": 0, "memo": "Rent" },
+      { "account_type": "asset", "debit": 0, "credit": 45000, "memo": "Cash" }
+    ],
+    "meta": { "period": "2020-06", "category": "housing", "source": "seed" }
+  },
+  {
+    "timestamp": "2020-06-10T12:00:00Z",
+    "description": "Grocery Spend",
+    "lines": [
+      { "account_type": "expense", "debit": 15000, "credit": 0, "memo": "Groceries" },
+      { "account_type": "asset", "debit": 0, "credit": 15000, "memo": "Cash" }
+    ],
+    "meta": { "period": "2020-06", "category": "food", "source": "seed" }
+  },
+  {
+    "timestamp": "2020-07-05T09:00:00Z",
+    "description": "July Salary",
+    "lines": [
+      { "account_type": "asset", "debit": 120000, "credit": 0, "memo": "Cash" },
+      { "account_type": "income", "debit": 0, "credit": 120000, "memo": "Salary" }
+    ],
+    "meta": { "period": "2020-07", "source": "seed" }
+  },
+  {
+    "timestamp": "2020-07-06T12:00:00Z",
+    "description": "July Rent Payment",
+    "lines": [
+      { "account_type": "expense", "debit": 45000, "credit": 0, "memo": "Rent" },
+      { "account_type": "asset", "debit": 0, "credit": 45000, "memo": "Cash" }
+    ],
+    "meta": { "period": "2020-07", "category": "housing", "source": "seed" }
+  },
+  {
+    "timestamp": "2020-07-12T12:00:00Z",
+    "description": "Dividend Income",
+    "lines": [
+      { "account_type": "asset", "debit": 5000, "credit": 0, "memo": "Cash" },
+      { "account_type": "income", "debit": 0, "credit": 5000, "memo": "Dividends" }
+    ],
+    "meta": { "period": "2020-07", "source": "seed" }
+  }
+]
+

@@ -1,3 +1,92 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Design tokens (light theme) */
+:root {
+  /* Brand */
+  --brand-50: #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-800: #1e40af;
+  --brand-900: #1e3a8a;
+
+  /* Surfaces & text */
+  --color-bg: #f8fafc;         /* slate-50 */
+  --color-surface: #ffffff;    /* white */
+  --color-fg: #0f172a;         /* slate-900 */
+  --color-muted-fg: #475569;   /* slate-600 */
+
+  /* Semantic */
+  --success-600: #16a34a;
+  --warning-600: #d97706;
+  --danger-600: #dc2626;
+  --info-600: #2563eb;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* Elevation */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 1px rgba(16, 24, 40, 0.04);
+  --elev-2: 0 2px 8px rgba(16, 24, 40, 0.08), 0 4px 6px rgba(16, 24, 40, 0.06);
+  --elev-3: 0 6px 16px rgba(16, 24, 40, 0.10), 0 2px 8px rgba(16, 24, 40, 0.08);
+  --elev-4: 0 12px 24px rgba(16, 24, 40, 0.12), 0 4px 12px rgba(16, 24, 40, 0.10);
+}
+
+/* Dark theme tokens */
+[data-theme="dark"] {
+  --color-bg: #0b1220;
+  --color-surface: #0f172a;
+  --color-fg: #e2e8f0;
+  --color-muted-fg: #94a3b8;
+  --brand-500: #60a5fa;
+  --brand-600: #3b82f6;
+  --brand-700: #2563eb;
+}
+
+/* Global focus styles */
+* :focus-visible {
+  outline: 2px solid var(--brand-600);
+  outline-offset: 2px;
+}
+
+/* Base body styling using tokens */
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Utility helpers mapped to tokens */
+.surface {
+  background: var(--color-surface);
+}
+.elev-1 { box-shadow: var(--elev-1); }
+.elev-2 { box-shadow: var(--elev-2); }
+.elev-3 { box-shadow: var(--elev-3); }
+.elev-4 { box-shadow: var(--elev-4); }
+
+/* Responsive text scaling for card contents to avoid overflow/wrapping issues */
+.text-scale {
+  font-size: clamp(0.875rem, 0.85rem + 0.2vw, 1rem);
+  line-height: 1.5;
+}
+
+/* Ensure long labels/numbers break gracefully within cards */
+.break-words { word-break: break-word; overflow-wrap: anywhere; }
+.tabular-nums { font-variant-numeric: tabular-nums; }

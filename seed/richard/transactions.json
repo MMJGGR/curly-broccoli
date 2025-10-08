@@ -1,0 +1,7 @@
+[
+  { "date": "2020-06-06T12:00:00Z", "amount": -45000, "category": "Housing", "transaction_type": "debit", "description": "June rent" },
+  { "date": "2020-06-07T12:00:00Z", "amount": -12000, "category": "Utilities", "transaction_type": "debit", "description": "June utilities" },
+  { "date": "2020-06-10T12:00:00Z", "amount": -25000, "category": "Food & Groceries", "transaction_type": "debit", "description": "June groceries" },
+  { "date": "2020-06-05T09:00:00Z", "amount": 120000, "category": "Salary", "transaction_type": "credit", "description": "June salary" }
+]
+

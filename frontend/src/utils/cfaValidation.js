@@ -230,7 +230,7 @@ const generateImpactExplanation = (percentageChange, current, proposed) => {
   return `${magnitude} ${direction} in lifetime net worth projection (${percentageChange.toFixed(1)}%)`;
 };
 
-export default {
+const cfaValidationExports = {
   KENYA_CFA_PARAMETERS,
   calculateLifeExpectancy,
   calculateDiscountRates,
@@ -238,3 +238,5 @@ export default {
   validateCFAAssumptions,
   calculateAssumptionImpact
 };
+
+export default cfaValidationExports;

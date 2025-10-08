@@ -1,10 +1,13 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
+import { authFetch, getAuthToken } from '../utils/authFetch';
+import { generateAllSchedules } from '../utils/scheduleEngine';
+import { deriveExpenseCategory, monthlyEquivalent, normalizeExpenseType } from '../utils/expenseTaxonomy';
 
 // UnifiedFinancialContext for managing all financial data - Single Source of Truth
 const UnifiedFinancialContext = createContext();
 
 // Unified Financial Action Types - Complete CRUD Support
-const UNIFIED_FINANCIAL_ACTIONS = {
+  const UNIFIED_FINANCIAL_ACTIONS = {
   // Loading States
   SET_LOADING: 'SET_LOADING',
   SET_ERROR: 'SET_ERROR',
@@ -46,6 +49,12 @@ const UNIFIED_FINANCIAL_ACTIONS = {
   CREATE_TRANSACTION: 'CREATE_TRANSACTION',
   UPDATE_TRANSACTION: 'UPDATE_TRANSACTION',
   DELETE_TRANSACTION: 'DELETE_TRANSACTION',
+
+  // Accounts CRUD
+  SET_ACCOUNTS: 'SET_ACCOUNTS',
+  CREATE_ACCOUNT: 'CREATE_ACCOUNT',
+  UPDATE_ACCOUNT: 'UPDATE_ACCOUNT',
+  DELETE_ACCOUNT: 'DELETE_ACCOUNT',
   
   // Budget Categories CRUD
   SET_BUDGET_CATEGORIES: 'SET_BUDGET_CATEGORIES',
@@ -58,18 +67,23 @@ const UNIFIED_FINANCIAL_ACTIONS = {
   SET_CASH_FLOW: 'SET_CASH_FLOW',
   SET_GOAL_PROGRESS: 'SET_GOAL_PROGRESS',
   SET_BUDGET_OVERVIEW: 'SET_BUDGET_OVERVIEW',
+  SET_PROFILE: 'SET_PROFILE',
   
   // Cross-Component Synchronization
   REFRESH_ALL_DATA: 'REFRESH_ALL_DATA',
-  LINK_ASSET_INCOME: 'LINK_ASSET_INCOME'
-};
+    LINK_ASSET_INCOME: 'LINK_ASSET_INCOME',
+
+  // Planning settings
+  SET_PLANNING_START_DATE: 'SET_PLANNING_START_DATE'
+  };
 
 // Unified Financial State - Single Source of Truth with Complete CRUD Support
-const initialUnifiedState = {
+  const initialUnifiedState = {
   // Loading States
   loading: {
     assets: false,
     liabilities: false,
+    accounts: false,
     income: false,
     expenses: false,
     transactions: false,
@@ -83,6 +97,7 @@ const initialUnifiedState = {
   errors: {
     assets: null,
     liabilities: null,
+    accounts: null,
     income: null,
     expenses: null,
     transactions: null,
@@ -95,6 +110,7 @@ const initialUnifiedState = {
   // Core Financial Entities
   assets: [],
   liabilities: [],
+  accounts: [],
   incomeSource: [],
   expenses: [],
   expenseTypes: [],
@@ -127,12 +143,15 @@ const initialUnifiedState = {
   },
   
   // Real-time synchronization timestamp
-  lastUpdated: null
-};
+  lastUpdated: null,
+
+  // Planning settings
+  planningStartDate: null
+  };
 
 // Unified Financial Reducer with Complete CRUD Support
-const unifiedFinancialReducer = (state, action) => {
-  switch (action.type) {
+  const unifiedFinancialReducer = (state, action) => {
+    switch (action.type) {
     // Loading States
     case UNIFIED_FINANCIAL_ACTIONS.SET_LOADING:
       return {
@@ -194,7 +213,46 @@ const unifiedFinancialReducer = (state, action) => {
         assets: state.assets.filter(asset => asset.id !== action.payload),
         lastUpdated: new Date().toISOString()
       };
-    
+
+    // Accounts CRUD
+    case UNIFIED_FINANCIAL_ACTIONS.SET_ACCOUNTS: {
+      const accounts = Array.isArray(action.payload?.accounts) ? action.payload.accounts : [];
+      return {
+        ...state,
+        accounts,
+        accountSummary: action.payload?.summary || state.accountSummary,
+        loading: { ...state.loading, accounts: false },
+        errors: { ...state.errors, accounts: null },
+        lastUpdated: new Date().toISOString()
+      };
+    }
+    case UNIFIED_FINANCIAL_ACTIONS.CREATE_ACCOUNT:
+      return {
+        ...state,
+        accounts: [...state.accounts, action.payload],
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.UPDATE_ACCOUNT:
+      return {
+        ...state,
+        accounts: state.accounts.map(acc => acc.id === action.payload.id ? { ...acc, ...action.payload } : acc),
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.DELETE_ACCOUNT:
+      return {
+        ...state,
+        accounts: state.accounts.filter(acc => acc.id !== action.payload),
+        lastUpdated: new Date().toISOString()
+      };
+
+    // Profile state
+    case UNIFIED_FINANCIAL_ACTIONS.SET_PROFILE:
+      return {
+        ...state,
+        userProfile: action.payload,
+        lastUpdated: new Date().toISOString()
+      };
+
     // Liabilities CRUD
     case UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES:
       return {
@@ -262,30 +320,59 @@ const unifiedFinancialReducer = (state, action) => {
       };
     
     // Expenses CRUD
-    case UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES:
+    case UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES: {
+      const normalized = Array.isArray(action.payload)
+        ? action.payload.map(exp => ({
+            ...exp,
+            expense_type: normalizeExpenseType(exp.expense_type || exp.type),
+            expense_category: exp.expense_category || deriveExpenseCategory(exp.expense_type || exp.type),
+            monthly_equivalent: typeof exp.monthly_equivalent === 'number' ? exp.monthly_equivalent : monthlyEquivalent(exp),
+            // Normalize temporal fields for compatibility
+            end_date: exp.end_date || exp.payment_end_date || null
+          }))
+        : [];
       return {
         ...state,
-        expenses: action.payload,
+        expenses: normalized,
         loading: { ...state.loading, expenses: false },
         errors: { ...state.errors, expenses: null },
         lastUpdated: new Date().toISOString()
       };
+    }
       
-    case UNIFIED_FINANCIAL_ACTIONS.CREATE_EXPENSE:
+    case UNIFIED_FINANCIAL_ACTIONS.CREATE_EXPENSE: {
+      const exp = action.payload;
+      const normalized = {
+        ...exp,
+        expense_type: normalizeExpenseType(exp.expense_type || exp.type),
+        expense_category: exp.expense_category || deriveExpenseCategory(exp.expense_type || exp.type),
+        monthly_equivalent: typeof exp.monthly_equivalent === 'number' ? exp.monthly_equivalent : monthlyEquivalent(exp),
+        end_date: exp.end_date || exp.payment_end_date || null
+      };
       return {
         ...state,
-        expenses: [...state.expenses, action.payload],
+        expenses: [...state.expenses, normalized],
         lastUpdated: new Date().toISOString()
       };
+    }
       
-    case UNIFIED_FINANCIAL_ACTIONS.UPDATE_EXPENSE:
+    case UNIFIED_FINANCIAL_ACTIONS.UPDATE_EXPENSE: {
+      const upd = action.payload;
+      const normalizedUpd = {
+        ...upd,
+        expense_type: normalizeExpenseType(upd.expense_type || upd.type),
+        expense_category: upd.expense_category || deriveExpenseCategory(upd.expense_type || upd.type),
+        monthly_equivalent: typeof upd.monthly_equivalent === 'number' ? upd.monthly_equivalent : monthlyEquivalent(upd),
+        end_date: upd.end_date || upd.payment_end_date || null
+      };
       return {
         ...state,
         expenses: state.expenses.map(expense => 
-          expense.id === action.payload.id ? { ...expense, ...action.payload } : expense
+          expense.id === normalizedUpd.id ? { ...expense, ...normalizedUpd } : expense
         ),
         lastUpdated: new Date().toISOString()
       };
+    }
       
     case UNIFIED_FINANCIAL_ACTIONS.DELETE_EXPENSE:
       return {
@@ -300,6 +387,62 @@ const unifiedFinancialReducer = (state, action) => {
         expenseTypes: action.payload,
         loading: { ...state.loading, expenses: false },
         errors: { ...state.errors, expenses: null }
+      };
+
+    // Transactions CRUD
+    case UNIFIED_FINANCIAL_ACTIONS.SET_TRANSACTIONS:
+      return {
+        ...state,
+        transactions: Array.isArray(action.payload) ? action.payload : [],
+        loading: { ...state.loading, transactions: false },
+        errors: { ...state.errors, transactions: null },
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.CREATE_TRANSACTION:
+      return {
+        ...state,
+        transactions: [...state.transactions, action.payload],
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.UPDATE_TRANSACTION:
+      return {
+        ...state,
+        transactions: state.transactions.map(tx => tx.id === action.payload.id ? { ...tx, ...action.payload } : tx),
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.DELETE_TRANSACTION:
+      return {
+        ...state,
+        transactions: state.transactions.filter(tx => tx.id !== action.payload),
+        lastUpdated: new Date().toISOString()
+      };
+
+    // Budget Categories (local CRUD; endpoints may not exist yet)
+    case UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES:
+      return {
+        ...state,
+        budgetCategories: Array.isArray(action.payload) ? action.payload : [],
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.CREATE_BUDGET_CATEGORY:
+      return {
+        ...state,
+        budgetCategories: [...state.budgetCategories, action.payload],
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.UPDATE_BUDGET_CATEGORY:
+      return {
+        ...state,
+        budgetCategories: state.budgetCategories.map(cat =>
+          cat.id === action.payload.id ? { ...cat, ...action.payload } : cat
+        ),
+        lastUpdated: new Date().toISOString()
+      };
+    case UNIFIED_FINANCIAL_ACTIONS.DELETE_BUDGET_CATEGORY:
+      return {
+        ...state,
+        budgetCategories: state.budgetCategories.filter(cat => cat.id !== action.payload),
+        lastUpdated: new Date().toISOString()
       };
     
     // Goals CRUD
@@ -364,6 +507,13 @@ const unifiedFinancialReducer = (state, action) => {
         budgetOverview: action.payload
       };
     
+    // Planning settings
+    case UNIFIED_FINANCIAL_ACTIONS.SET_PLANNING_START_DATE:
+      return {
+        ...state,
+        planningStartDate: action.payload || null
+      };
+    
     default:
       return state;
   }
@@ -373,7 +523,206 @@ const unifiedFinancialReducer = (state, action) => {
 export const UnifiedFinancialProvider = ({ children }) => {
   const [state, dispatch] = useReducer(unifiedFinancialReducer, initialUnifiedState);
 
+  // Local refs
+
+  // --- Utility: API Base ---
+  const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
+  // --- Auth/me coalescing to prevent request stampedes ---
+  const meInFlightRef = React.useRef(null);
+  const meLastTsRef = React.useRef(0);
+  const ME_MIN_INTERVAL_MS = 2000; // coalesce calls within 2s
+
+  // Initialize planning start date from localStorage or default to next month
+  React.useEffect(() => {
+    try {
+      let iso = localStorage.getItem('planning_start_date');
+      if (!iso) {
+        const now = new Date();
+        const firstNext = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+        const ym = firstNext.toISOString().slice(0, 10); // YYYY-MM-01
+        iso = `${ym.slice(0,10)}`;
+        localStorage.setItem('planning_start_date', iso);
+      }
+      if (state.planningStartDate !== iso) {
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PLANNING_START_DATE, payload: iso });
+      }
+    } catch {
+      // ignore
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // API Service Methods
+  // Accounts CRUD
+  const fetchAccounts = useCallback(async () => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/accounts-v2/`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed to load accounts');
+      const data = await res.json();
+      const accounts = Array.isArray(data) ? data : (data.accounts || []);
+      const summary = Array.isArray(data) ? null : (data.summary || null);
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ACCOUNTS, payload: { accounts, summary } });
+      return accounts;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { accounts: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: false } });
+    }
+  }, [API_BASE]);
+
+  const createAccount = useCallback(async (accountData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/accounts-v2/`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(accountData)
+      });
+      if (!res.ok) throw new Error('Failed to create account');
+      const body = await res.json();
+      const acc = body?.account || body;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_ACCOUNT, payload: acc });
+      return acc;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { accounts: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: false } });
+    }
+  }, [API_BASE]);
+
+  const updateAccount = useCallback(async (accountId, accountData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/accounts-v2/${accountId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(accountData)
+      });
+      if (!res.ok) throw new Error('Failed to update account');
+      const body = await res.json();
+      const acc = body?.account || body;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_ACCOUNT, payload: acc });
+      return acc;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { accounts: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: false } });
+    }
+  }, [API_BASE]);
+
+  const deleteAccount = useCallback(async (accountId, force = false) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: true } });
+      const token = localStorage.getItem('jwt');
+      const url = `${API_BASE}/api/v1/accounts-v2/${accountId}${force ? '?force=true' : ''}`;
+      const res = await fetch(url, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed to delete account');
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_ACCOUNT, payload: accountId });
+      return accountId;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { accounts: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { accounts: false } });
+    }
+  }, [API_BASE]);
+
+  // --- Transactions CRUD ---
+  const fetchTransactions = useCallback(async (filters = {}) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: true } });
+      const token = localStorage.getItem('jwt');
+      const params = new URLSearchParams();
+      if (filters.accountId) params.set('account_id', filters.accountId);
+      if (filters.category) params.set('category', filters.category);
+      if (filters.startDate) params.set('start_date', filters.startDate);
+      if (filters.endDate) params.set('end_date', filters.endDate);
+      params.set('limit', String(filters.limit || 100));
+      params.set('offset', String(filters.offset || 0));
+      const res = await fetch(`${API_BASE}/api/v1/transactions-v2/?${params.toString()}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (!res.ok) throw new Error('Failed to load transactions');
+      const data = await res.json();
+      const txs = Array.isArray(data) ? data : (data.transactions || []);
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_TRANSACTIONS, payload: txs });
+      return txs;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { transactions: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: false } });
+    }
+  }, [API_BASE]);
+
+  const createTransaction = useCallback(async (transactionData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/transactions-v2/`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(transactionData)
+      });
+      if (!res.ok) throw new Error('Failed to create transaction');
+      const body = await res.json();
+      const created = body?.transaction || body;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_TRANSACTION, payload: created });
+      return created;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { transactions: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: false } });
+    }
+  }, [API_BASE]);
+
+  const updateTransaction = useCallback(async (transactionId, transactionData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/transactions-v2/${transactionId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(transactionData)
+      });
+      if (!res.ok) throw new Error('Failed to update transaction');
+      const body = await res.json();
+      const updated = body?.transaction || body;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_TRANSACTION, payload: updated });
+      return updated;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { transactions: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: false } });
+    }
+  }, [API_BASE]);
+
+  const deleteTransaction = useCallback(async (transactionId) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: true } });
+      const token = localStorage.getItem('jwt');
+      const res = await fetch(`${API_BASE}/api/v1/transactions-v2/${transactionId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to delete transaction');
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_TRANSACTION, payload: transactionId });
+      return transactionId;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { transactions: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { transactions: false } });
+    }
+  }, [API_BASE]);
   const createAsset = useCallback(async (assetData) => {
     try {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: true } });
@@ -390,9 +739,63 @@ export const UnifiedFinancialProvider = ({ children }) => {
 
       if (!response.ok) throw new Error('Failed to create asset');
       
-      const newAsset = await response.json();
+      const apiResponse = await response.json();
+      // Assets API wraps created asset under `asset`
+      const newAsset = apiResponse?.asset || apiResponse;
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_ASSET, payload: newAsset });
       return newAsset;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { assets: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: false } });
+    }
+  }, []);
+
+  const updateAsset = useCallback(async (assetId, assetData) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: true } });
+
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/${assetId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(assetData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update asset');
+
+      const apiResponse = await response.json();
+      const updatedAsset = apiResponse?.asset || apiResponse;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_ASSET, payload: updatedAsset });
+      return updatedAsset;
+    } catch (error) {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { assets: error.message } });
+      throw error;
+    } finally {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: false } });
+    }
+  }, []);
+
+  const deleteAsset = useCallback(async (assetId) => {
+    try {
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { assets: true } });
+
+      const token = localStorage.getItem('jwt');
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/${assetId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to delete asset');
+
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_ASSET, payload: assetId });
+      return assetId;
     } catch (error) {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { assets: error.message } });
       throw error;
@@ -676,6 +1079,32 @@ export const UnifiedFinancialProvider = ({ children }) => {
       
       const newIncome = await response.json();
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_INCOME_SOURCE, payload: newIncome });
+
+      // Optional: create asset→income relationship if requested
+      if (incomeData.linked_asset_id) {
+        try {
+          const relBody = {
+            relationship_type: 'asset_income',
+            source_type: 'asset',
+            source_id: incomeData.linked_asset_id,
+            target_type: 'income',
+            target_id: newIncome.id,
+            amount: incomeData.monthly_amount,
+            frequency: incomeData.frequency || 'monthly',
+            description: incomeData.asset_relationship_type || 'Linked via IncomeManagement'
+          };
+          await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/relationships-v2/`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(relBody)
+          });
+        } catch (e) {
+          console.warn('Failed to create asset→income relationship:', e.message);
+        }
+      }
       return newIncome;
     } catch (error) {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { income: error.message } });
@@ -703,6 +1132,31 @@ export const UnifiedFinancialProvider = ({ children }) => {
       
       const updatedIncome = await response.json();
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_INCOME_SOURCE, payload: updatedIncome });
+      // Update relationship if linked_asset_id provided
+      if (incomeData.linked_asset_id) {
+        try {
+          const relBody = {
+            relationship_type: 'asset_income',
+            source_type: 'asset',
+            source_id: incomeData.linked_asset_id,
+            target_type: 'income',
+            target_id: incomeId,
+            amount: incomeData.monthly_amount,
+            frequency: incomeData.frequency || 'monthly',
+            description: incomeData.asset_relationship_type || 'Linked via IncomeManagement'
+          };
+          await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/relationships-v2/`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(relBody)
+          });
+        } catch (e) {
+          console.warn('Failed to update asset→income relationship:', e.message);
+        }
+      }
       return updatedIncome;
     } catch (error) {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ERROR, payload: { income: error.message } });
@@ -742,7 +1196,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
     try {
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         ...options,
         signal: controller.signal
       });
@@ -775,25 +1229,39 @@ export const UnifiedFinancialProvider = ({ children }) => {
     try {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: true } });
       
-      const token = localStorage.getItem('jwt');
+      const token = getAuthToken();
+      if (!token) {
+        // Not authenticated yet; skip background fetch to avoid 401 noise
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: false } });
+        return;
+      }
       
       // Fetch all financial data in parallel - using onboarding-integrated endpoints with timeout
-      const [assetsRes, liabilitiesRes, incomesRes, expensesRes, goalsRes] = await Promise.all([
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/assets-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/liabilities-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetchWithTimeout(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/goals-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } })
+      const [assetsRes, liabilitiesRes, incomesRes, expensesRes, goalsRes, accountsRes] = await Promise.all([
+        fetchWithTimeout(`${API_BASE}/api/v1/assets-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/liabilities-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/income-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/expenses-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/goals-v2/overview`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetchWithTimeout(`${API_BASE}/api/v1/accounts-v2/`, { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       if (assetsRes.ok) {
-        const assets = await assetsRes.json();
-        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ASSETS, payload: assets });
+        const assetsResponse = await assetsRes.json();
+        // API returns an object with `assets` array and summary; extract array
+        const assetArray = Array.isArray(assetsResponse)
+          ? assetsResponse
+          : (assetsResponse?.assets || []);
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ASSETS, payload: assetArray });
       }
 
       if (liabilitiesRes.ok) {
-        const liabilities = await liabilitiesRes.json();
-        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES, payload: liabilities });
+        const liabilitiesResponse = await liabilitiesRes.json();
+        // API returns an object with `liabilities` array and summary; extract array
+        const liabilityArray = Array.isArray(liabilitiesResponse)
+          ? liabilitiesResponse
+          : (liabilitiesResponse?.liabilities || []);
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES, payload: liabilityArray });
       }
 
       if (incomesRes.ok) {
@@ -803,14 +1271,8 @@ export const UnifiedFinancialProvider = ({ children }) => {
         dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: incomes });
       } else {
         console.warn('Income API failed or timed out, using empty fallback data');
-        // Set empty income data to prevent infinite loading
-        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: {
-          user_id: null,
-          total_monthly_income: 0,
-          income_sources: [],
-          source_count: 0,
-          data_sources: { onboarding_sources: 0, dedicated_sources: 0 }
-        }});
+        // Set empty income array to prevent downstream shape errors
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: [] });
       }
 
       if (expensesRes.ok) {
@@ -821,8 +1283,20 @@ export const UnifiedFinancialProvider = ({ children }) => {
       }
 
       if (goalsRes.ok) {
-        const goals = await goalsRes.json();
-        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: goals });
+        const goalsResponse = await goalsRes.json();
+        const goalsArray = Array.isArray(goalsResponse)
+          ? goalsResponse
+          : (goalsResponse?.goals || []);
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: goalsArray });
+      } else {
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: [] });
+      }
+
+      if (accountsRes.ok) {
+        const accountsResponse = await accountsRes.json();
+        const accountsArr = Array.isArray(accountsResponse) ? accountsResponse : (accountsResponse?.accounts || []);
+        const summary = Array.isArray(accountsResponse) ? null : (accountsResponse?.summary || null);
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ACCOUNTS, payload: { accounts: accountsArr, summary } });
       }
 
     } catch (error) {
@@ -830,10 +1304,237 @@ export const UnifiedFinancialProvider = ({ children }) => {
     } finally {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { global: false } });
     }
-  }, [fetchWithTimeout, state.loading.global]);
+  }, [API_BASE, fetchWithTimeout, state.loading.global]);
+
+  // Stable fetchProfile with in-flight coalescing and fallback
+  const fetchProfile = useCallback(async () => {
+    const token = localStorage.getItem('jwt');
+    if (!token) return null;
+
+    const now = Date.now();
+    if (meInFlightRef.current && (now - meLastTsRef.current) < ME_MIN_INTERVAL_MS) {
+      // Reuse in-flight promise within window
+      return meInFlightRef.current;
+    }
+
+    const runner = (async () => {
+      try {
+        // Clean-arch profile insights (profile-v2)
+        let insights = null;
+        try {
+          const v2 = await fetchWithTimeout(`${API_BASE}/api/v1/profile-v2/`, { headers: { 'Authorization': `Bearer ${token}` } }, 8000);
+          if (v2.ok) {
+            const data = await v2.json();
+            insights = {
+              age_category: data?.financial_planning?.age_category,
+              emergency_fund_target: data?.financial_planning?.emergency_fund_target,
+              expected_return_rate: data?.risk_profile?.expected_return_rate ?? data?.financial_planning?.expected_return_rate,
+              recommended_asset_allocation: data?.risk_profile?.recommended_asset_allocation || null,
+            };
+          }
+        } catch (e) {
+          // Insights endpoint optional; ignore failures
+          console.debug('profile-v2 insights unavailable');
+        }
+
+        // Use auth/me for comprehensive profile fields
+        let res = await fetchWithTimeout(`${API_BASE}/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } }, 10000);
+        let profilePayload = null;
+        let hasProfile = false;
+        if (res.ok) {
+          const me = await res.json();
+          const p = me?.profile;
+          if (p && (p.first_name || p.annual_income || p.monthly_income || p.dependents !== null)) {
+            profilePayload = {
+              // normalized profile model for consumers
+              id: p.id,
+              first_name: p.first_name,
+              last_name: p.last_name,
+              email: me?.email,
+              date_of_birth: p.date_of_birth || p.dob,
+              age: p.age || (p.date_of_birth ? Math.floor((Date.now() - new Date(p.date_of_birth)) / (365.25 * 24 * 3600 * 1000)) : null),
+              employment_status: p.employment_status,
+              dependents: p.dependents ?? null,
+              monthly_income: p.monthly_income || (p.annual_income ? p.annual_income / 12 : null),
+              monthly_expenses: p.monthly_expenses ?? null,
+              monthly_debt_payments: p.monthly_debt_payments ?? null,
+              current_savings: p.current_savings ?? null,
+              retirement_age: p.retirement_age || p.target_retirement_age || 65,
+              questionnaire: p.questionnaire || null,
+              risk_tolerance: p.risk_tolerance || null,
+              // Preferences mapping
+              preferences: p.preferences || p.investment_preferences || null,
+              investment_preferences: p.investment_preferences || null,
+              // Planning insights from clean-arch
+              age_category: insights?.age_category,
+              emergency_fund_target: insights?.emergency_fund_target,
+              expected_return_rate: insights?.expected_return_rate,
+              recommended_asset_allocation: insights?.recommended_asset_allocation
+            };
+            hasProfile = true;
+          }
+        }
+
+        // Fallback to onboarding state
+        if (!hasProfile) {
+          res = await fetchWithTimeout(`${API_BASE}/api/v1/onboarding-v2-clean/state`, { headers: { 'Authorization': `Bearer ${token}` } }, 10000);
+          if (res.ok) {
+            const onboarding = await res.json();
+            const personal = onboarding?.personal_data || {};
+            const financial = onboarding?.financial_data || {};
+            const risk = onboarding?.risk_data || {};
+            profilePayload = {
+              first_name: personal.firstName || '',
+              last_name: personal.lastName || '',
+              email: onboarding?.email || null,
+              date_of_birth: personal.dateOfBirth || null,
+              age: personal.dateOfBirth ? Math.floor((Date.now() - new Date(personal.dateOfBirth)) / (365.25 * 24 * 3600 * 1000)) : null,
+              employment_status: personal.employmentStatus || null,
+              dependents: personal.dependents ?? null,
+              monthly_income: financial.monthlyIncome ?? null,
+              monthly_expenses: [
+                financial.rent,
+                financial.utilities,
+                financial.groceries,
+                financial.transport,
+                financial.loanRepayments
+              ].map(v => parseFloat(v) || 0).reduce((a, b) => a + b, 0),
+              current_savings: financial.currentSavings ?? null,
+              retirement_age: onboarding?.goals_data?.retirement || 65,
+              questionnaire: Array.isArray(risk.questionnaire) ? risk.questionnaire : null,
+              risk_tolerance: null,
+              age_category: insights?.age_category,
+              emergency_fund_target: insights?.emergency_fund_target,
+              expected_return_rate: insights?.expected_return_rate,
+              recommended_asset_allocation: insights?.recommended_asset_allocation
+            };
+          }
+        }
+
+        if (profilePayload) {
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PROFILE, payload: profilePayload });
+          return profilePayload;
+        }
+        return null;
+      } catch (e) {
+        // Non-fatal for UI
+        return null;
+      }
+    })();
+
+    meLastTsRef.current = now;
+    meInFlightRef.current = runner.finally(() => {
+      // clear after completion so next call can proceed
+      meInFlightRef.current = null;
+    });
+    return meInFlightRef.current;
+  }, [API_BASE, fetchWithTimeout]);
+
+  // Stable updateProfile using useCallback
+  const updateProfile = useCallback(async (updates) => {
+    const token = localStorage.getItem('jwt');
+    if (!token) throw new Error('Not authenticated');
+    // Feature-flagged PII encryption
+    try {
+      const { encryptPIIFields, PII_ENCRYPTION_ENABLED } = require('../utils/piiEncryption');
+      if (PII_ENCRYPTION_ENABLED) {
+        updates = encryptPIIFields(updates);
+      }
+    } catch {}
+    // Try clean-arch endpoint first
+    let ok = false;
+    try {
+      const v2 = await fetch(`${API_BASE}/api/v1/profile-v2/`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      ok = v2.ok;
+    } catch (_) {
+      ok = false;
+    }
+    if (!ok) {
+      // Fallback to legacy auth endpoint
+      const res = await fetch(`${API_BASE}/auth/profile`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (!res.ok) throw new Error('Failed to update profile');
+    }
+    // refresh
+    await fetchProfile();
+    return true;
+  }, [API_BASE, fetchProfile]);
+
+  // --- Budget categories fetcher (stable, inside provider scope) ---
+  const fetchBudgetCategories = useCallback(async () => {
+    const token = localStorage.getItem('jwt');
+    // If we already have categories in state, avoid re-fetching
+    if (Array.isArray(state.budgetCategories) && state.budgetCategories.length > 0) {
+      return state.budgetCategories;
+    }
+    // Try dedicated Budget V2 endpoint first
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/budget-v2/categories`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const mapped = (data.categories || []).map((c, idx) => ({
+          id: `bc_${idx}_${c.name}`,
+          name: c.name,
+          budgeted_amount: typeof c.allocated_amount === 'number' ? c.allocated_amount : (typeof c.budgeted_amount === 'number' ? c.budgeted_amount : 0),
+          actual_amount: typeof c.actual_amount === 'number' ? c.actual_amount : 0,
+          category_type: c.category_type || 'expense',
+          is_active: !!c.is_active
+        }));
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES, payload: mapped });
+        return mapped;
+      }
+    } catch (e) {
+      // fall through to comparison
+    }
+    console.warn('Budget categories API unavailable; using local state only.');
+    return state.budgetCategories;
+  }, [API_BASE]);
 
   // Load data on mount only once
   React.useEffect(() => {
+    // Hydrate from local seed if present and state is empty
+    try {
+      const raw = localStorage.getItem('ufc_seed_data_v1');
+      if (raw) {
+        const seed = JSON.parse(raw);
+        if (seed) {
+          if (Array.isArray(seed.assets) && (state.assets || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ASSETS, payload: seed.assets });
+          }
+          if (Array.isArray(seed.liabilities) && (state.liabilities || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES, payload: seed.liabilities });
+          }
+          if (Array.isArray(seed.income) && (state.incomeSource || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: seed.income });
+          }
+          if (Array.isArray(seed.expenses) && (state.expenses || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES, payload: seed.expenses });
+          }
+          if (Array.isArray(seed.transactions) && (state.transactions || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_TRANSACTIONS, payload: seed.transactions });
+          }
+          if (Array.isArray(seed.goals) && (state.goals || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: seed.goals });
+          }
+          if (Array.isArray(seed.budgetCategories) && (state.budgetCategories || []).length === 0) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES, payload: seed.budgetCategories });
+          }
+          if (seed.profile && !state.userProfile) {
+            dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PROFILE, payload: seed.profile });
+          }
+        }
+      }
+    } catch {}
+
     fetchAllFinancialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array to run only once on mount
@@ -841,9 +1542,409 @@ export const UnifiedFinancialProvider = ({ children }) => {
   const value = {
     // State
     ...state,
-    
+    // Submitting flag (placeholder for compatibility with forms)
+    isSubmitting: false,
+    // Planning base date (start of the schedule/calendar)
+    planningStartDate: state.planningStartDate,
+    // Backward-compatibility aliases for legacy consumers
+    incomes: state.incomeSource || [],
+    profile: state.userProfile || null,
+
     // Actions
+    // fetchProfile injected from useCallback (stable identity)
+    fetchProfile,
+
+    // updateProfile injected from useCallback (stable identity)
+    updateProfile,
+    
+    // Accounts
+    accounts: state.accounts,
+    accountSummary: state.accountSummary,
+    fetchAccounts,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+
+    // Transactions
+    transactions: state.transactions,
+    fetchTransactions,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+    
+    // Error helpers
+    isLoading: state.loading.global,
+    error: state.errors.global || null,
+    clearError: (key = 'global') => dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CLEAR_ERROR, payload: key }),
+    updatePreferences: async (prefs) => {
+      return await value.updateProfile({ investment_preferences: prefs });
+    },
+
+    // Selectors (memoized)
+    selectHumanCapital: () => computeHumanCapital(state.userProfile),
+    selectNetCashFlow: () => computeNetCashFlow(state.incomeSource, state.expenses),
+    selectGoalAllocationsTotal: () => {
+      try {
+        const cats = state.budgetCategories || [];
+        return cats
+          .filter(c => typeof c.name === 'string' && c.name.toLowerCase().startsWith('goal:'))
+          .reduce((s, c) => s + (parseFloat(c.budgeted_amount || 0) || 0), 0);
+      } catch { return 0; }
+    },
+    selectSurplusAfterGoals: () => {
+      const base = computeNetCashFlow(state.incomeSource, state.expenses);
+      const ga = (state.budgetCategories || []).filter(c => typeof c.name === 'string' && c.name.toLowerCase().startsWith('goal:'))
+        .reduce((s, c) => s + (parseFloat(c.budgeted_amount || 0) || 0), 0);
+      return base - ga;
+    },
+    selectBudgetSummary: () => {
+      const base = computeBudgetSummary(state.incomeSource, state.expenses);
+      const goalAlloc = (state.budgetCategories || [])
+        .filter(c => typeof c.name === 'string' && c.name.toLowerCase().startsWith('goal:'))
+        .reduce((s, c) => s + (parseFloat(c.budgeted_amount || 0) || 0), 0);
+      return {
+        ...base,
+        goal_allocations_total: goalAlloc,
+        surplus_after_goals: base.remaining_budget - goalAlloc
+      };
+    },
+    // Budget variance from transactions (month-to-date)
+    selectBudgetVariance: (opts = { thresholdPct: 0.0 }) => {
+      try {
+        const thresholdPct = typeof opts.thresholdPct === 'number' ? opts.thresholdPct : 0.0;
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const txns = Array.isArray(state.transactions) ? state.transactions : [];
+        const cats = Array.isArray(state.budgetCategories) ? state.budgetCategories : [];
+        const actualByCat = txns.reduce((map, t) => {
+          try {
+            const d = t.date ? new Date(t.date) : null;
+            if (!d || d < monthStart) return map;
+            // Treat debits as expenses; else ignore
+            const isDebit = (String(t.transaction_type || '').toLowerCase() === 'debit') || (parseFloat(t.amount) > 0 && (t.category || ''));
+            if (!isDebit) return map;
+            const cat = (t.category || 'uncategorized').toLowerCase();
+            const amt = Math.abs(parseFloat(t.amount || 0) || 0);
+            map.set(cat, (map.get(cat) || 0) + amt);
+            return map;
+          } catch { return map; }
+        }, new Map());
+        const rows = cats.map(c => {
+          const key = String(c.name || '').toLowerCase();
+          const budgeted = parseFloat(c.budgeted_amount || 0) || 0;
+          const actual = actualByCat.get(key) || 0;
+          const variance = budgeted - actual; // positive = under budget
+          const variance_pct = budgeted > 0 ? (variance / budgeted) : 0;
+          const over = actual > budgeted * (1 + thresholdPct);
+          return { id: c.id, category: c.name, budgeted, actual, variance, variance_pct, over_budget: over };
+        });
+        // Include uncategorized actuals not present in budget categories
+        for (const [k, v] of actualByCat.entries()) {
+          if (!rows.find(r => String(r.category || '').toLowerCase() === k)) {
+            rows.push({ id: `uncat_${k}`, category: k, budgeted: 0, actual: v, variance: 0 - v, variance_pct: 0, over_budget: v > 0 });
+          }
+        }
+        return rows.sort((a, b) => (b.actual - b.budgeted) - (a.actual - a.budgeted));
+      } catch {
+        return [];
+      }
+    },
+    selectBudgetAlerts: (opts = { thresholdPct: 0.0 }) => {
+      const rows = value.selectBudgetVariance ? value.selectBudgetVariance(opts) : [];
+      return rows.filter(r => r.over_budget && r.actual > 0).slice(0, 5);
+    },
+    // Seed importer for cross-app data
+    importSeedData: async (seedData) => {
+      try {
+        const incoming = seedData || {};
+        // Normalize alias keys
+        const profile = incoming.profile || incoming.user || null;
+        const assets = incoming.assets || [];
+        const liabilities = incoming.liabilities || [];
+        const income = incoming.income || incoming.incomes || incoming.incomeSource || [];
+        const expenses = incoming.expenses || [];
+        const transactions = incoming.transactions || incoming.tx || [];
+        const goals = incoming.goals || [];
+        const budgetCategories = incoming.budgetCategories || incoming['budget.categories'] || incoming.budget_categories || [];
+
+        if (profile) {
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PROFILE, payload: profile });
+        }
+        if (Array.isArray(assets)) {
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_ASSETS, payload: assets });
+        }
+        if (Array.isArray(liabilities)) {
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LIABILITIES, payload: liabilities });
+        }
+        let normIncome = null;
+        if (Array.isArray(income)) {
+          // Accept CSV rows shape: name, amount, monthly_amount
+          const norm = income.map((i, idx) => ({
+            id: i.id || `inc_${idx}_${Date.now()}`,
+            name: i.name || i.description || 'Income',
+            monthly_amount: typeof i.monthly_amount === 'number' ? i.monthly_amount : (parseFloat(i.amount) || 0),
+            frequency: i.frequency || 'monthly',
+            source_type: i.source_type || 'salary',
+          }));
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_INCOME_SOURCES, payload: norm });
+          normIncome = norm;
+        }
+        if (Array.isArray(expenses)) {
+          const normE = expenses.map((e, idx) => ({
+            id: e.id || `exp_${idx}_${Date.now()}`,
+            description: e.description || e.name || 'Expense',
+            expense_type: e.expense_type || e.type || e.category || 'other',
+            amount: typeof e.amount === 'number' ? e.amount : (parseFloat(e.monthly_amount) || parseFloat(e.monthly_equivalent) || 0),
+            frequency: e.frequency || 'monthly',
+            is_recurring: e.is_recurring !== undefined ? !!e.is_recurring : true,
+            payment_end_date: e.payment_end_date || e.end_date || null
+          }));
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_EXPENSES, payload: normE });
+        }
+        if (Array.isArray(transactions)) {
+          const normT = transactions.map((t, idx) => ({
+            id: t.id || `tx_${idx}_${Date.now()}`,
+            date: t.date || t.timestamp || new Date().toISOString().slice(0,10),
+            description: t.description || t.memo || 'Transaction',
+            amount: typeof t.amount === 'number' ? t.amount : (parseFloat(t.debit) || (0 - (parseFloat(t.credit) || 0)) || 0),
+            category: t.category || t.expense_type || t.type || 'uncategorized',
+            transaction_type: t.transaction_type || (parseFloat(t.amount || t.debit || 0) >= 0 ? 'debit' : 'credit')
+          }));
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_TRANSACTIONS, payload: normT });
+        }
+        if (Array.isArray(goals)) {
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_GOALS, payload: goals });
+        }
+        if (Array.isArray(budgetCategories)) {
+          const cats = budgetCategories.map((c, idx) => ({
+            id: c.id || `bc_${idx}_${c.name || 'cat'}`,
+            name: c.name || c.category || 'Category',
+            budgeted_amount: typeof c.budgeted_amount === 'number' ? c.budgeted_amount : (parseFloat(c.allocated_amount) || 0),
+            actual_amount: typeof c.actual_amount === 'number' ? c.actual_amount : 0,
+            category_type: c.category_type || 'expense',
+            is_active: c.is_active !== undefined ? !!c.is_active : true,
+          }));
+          dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_CATEGORIES, payload: cats });
+        }
+
+        // Persist locally for rehydration
+        try {
+          localStorage.setItem('ufc_seed_data_v1', JSON.stringify({ profile, assets, liabilities, income: Array.isArray(income)? (normIncome || income) : [], expenses, transactions, goals, budgetCategories }));
+        } catch {}
+
+        // Recalc derived
+        recalc();
+        return {
+          profile: !!profile,
+          assets: (assets || []).length,
+          liabilities: (liabilities || []).length,
+          income: (income || []).length,
+          expenses: (expenses || []).length,
+          transactions: (transactions || []).length,
+          goals: (goals || []).length,
+          budgetCategories: (budgetCategories || []).length
+        };
+      } catch (e) {
+        throw e;
+      }
+    },
+    selectRiskProfile: () => computeRiskProfile(state.userProfile),
+    selectBudgetCategories: () => state.budgetCategories,
+    // Debt payoff optimizer (v1) — snowball by default; returns summary
+    selectDebtPaydownPlan: (opts = { strategy: 'snowball' }) => {
+      try {
+        const strategy = opts.strategy === 'avalanche' ? 'avalanche' : 'snowball';
+        const monthlyExtra = Math.max(0, value.selectSurplusAfterGoals ? value.selectSurplusAfterGoals() : 0);
+        const plan = computeDebtPaydownPlan(state.liabilities || [], monthlyExtra, strategy);
+        return plan;
+      } catch { return null; }
+    },
+    // Retirement readiness (v1) — simple heuristic
+    selectRetirementReadiness: () => {
+      try {
+        const prof = state.userProfile || {};
+        const age = parseInt(prof.age || 30);
+        const retirementAge = parseInt(prof.retirement_age || prof.target_retirement_age || 65);
+        const years = Math.max(0, retirementAge - age);
+        // Monthly expenses from expenses list
+        const monthlyExpenses = sumMonthlyExpenses(state.expenses);
+        const monthlySurplus = computeNetCashFlow(state.incomeSource, state.expenses);
+        const accumulation = monthlySurplus > 0 ? monthlySurplus * 12 * years : 0; // simplistic accumulation
+        const need = monthlyExpenses * 12 * years; // simplistic need
+        const score = need > 0 ? Math.min(1, accumulation / need) : 0;
+        const monthlyGap = years > 0 ? Math.max(0, (need - accumulation) / (years * 12)) : (need > accumulation ? (need - accumulation) : 0);
+        return { score, monthly_gap: monthlyGap, years_to_retirement: years, monthly_expenses: monthlyExpenses, monthly_surplus: monthlySurplus };
+      } catch { return { score: null, monthly_gap: null, years_to_retirement: null }; }
+    },
+    // Mutators
+    setPlanningStartDate: async (isoOrMonth) => {
+      try {
+        // Accept YYYY-MM (from input type="month") or ISO YYYY-MM-DD
+        let iso = isoOrMonth;
+        if (/^\d{4}-\d{2}$/.test(isoOrMonth)) iso = `${isoOrMonth}-01`;
+        // Persist locally for stability even if backend ignores
+        localStorage.setItem('planning_start_date', iso);
+        // Attempt to update profile (non-breaking if backend ignores extra field)
+        try { await updateProfile({ planning_start_date: iso }); } catch {}
+        // Update state via reducer
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PLANNING_START_DATE, payload: iso });
+        return iso;
+      } catch { return null; }
+    },
+    // Budget overview and analytics helpers
+    budgetOverview: state.budgetOverview,
+    fetchBudgetOverview: async () => {
+      const overview = computeBudgetSummary(state.incomeSource, state.expenses);
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_OVERVIEW, payload: overview });
+      return overview;
+    },
+    spendingAnalytics: {
+      categoryBreakdown: Array.from(
+        (state.expenses || []).reduce((map, exp) => {
+          const cat = exp.expense_category || 'miscellaneous';
+          const amt = Math.abs(parseFloat(exp.monthly_equivalent || exp.amount || 0) || 0);
+          map.set(cat, (map.get(cat) || 0) + amt);
+          return map;
+        }, new Map())
+      ).map(([category, amount]) => ({ category, amount }))
+    },
+    fetchSpendingAnalytics: async () => {
+      // Use local computation for now
+      const breakdown = Array.from(
+        (state.expenses || []).reduce((map, exp) => {
+          const cat = exp.expense_category || 'miscellaneous';
+          const amt = Math.abs(parseFloat(exp.monthly_equivalent || exp.amount || 0) || 0);
+          map.set(cat, (map.get(cat) || 0) + amt);
+          return map;
+        }, new Map())
+      ).map(([category, amount]) => ({ category, amount }));
+      return { categoryBreakdown: breakdown };
+    },
+    getBudgetComparison: async (_period = 'month') => {
+      // Deprecated endpoint removed — compute locally from state
+      const breakdown = Array.from(
+        (state.expenses || []).reduce((map, exp) => {
+          const cat = exp.expense_category || 'miscellaneous';
+          const amt = Math.abs(parseFloat(exp.monthly_equivalent || exp.amount || 0) || 0);
+          map.set(cat, (map.get(cat) || 0) + amt);
+          return map;
+        }, new Map())
+      ).map(([category, amount]) => ({ category, amount }));
+      return { budget_comparison: breakdown };
+    },
+
+    // Budget categories (API-backed where available with fallback)
+    fetchBudgetCategories: fetchBudgetCategories,
+    createBudgetCategory: async ({ name, budgeted_amount }) => {
+      const token = localStorage.getItem('jwt');
+      try {
+        const url = `${API_BASE}/api/v1/budget-v2/categories?category_name=${encodeURIComponent(name)}&allocated_amount=${encodeURIComponent(budgeted_amount)}`;
+        const res = await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+        if (!res.ok) throw new Error('Failed to create budget category');
+        // Update local state
+        const payload = { id: `bc_${Date.now()}`, name, budgeted_amount: Number(budgeted_amount) || 0, actual_amount: 0 };
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_BUDGET_CATEGORY, payload });
+        return payload;
+      } catch (e) {
+        // Fallback to local if API not available
+        const payload = { id: `bc_${Date.now()}`, name, budgeted_amount: Number(budgeted_amount) || 0, actual_amount: 0 };
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_BUDGET_CATEGORY, payload });
+        return payload;
+      }
+    },
+    updateBudgetCategory: async (id, updates) => {
+      const token = localStorage.getItem('jwt');
+      const cat = state.budgetCategories.find(c => c.id === id);
+      if (!cat) {
+        // Just update local if not found
+        const payload = { id, ...updates };
+        dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_BUDGET_CATEGORY, payload });
+        return payload;
+      }
+      // If name provided in updates, prefer that for API path
+      const name = (updates && updates.name) || cat.name;
+      const newAmount = updates && updates.budgeted_amount;
+      try {
+        if (typeof newAmount === 'number') {
+          const url = `${API_BASE}/api/v1/budget-v2/categories/${encodeURIComponent(name)}/allocation?new_amount=${encodeURIComponent(newAmount)}`;
+          const res = await fetch(url, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}` } });
+          if (!res.ok) throw new Error('Failed to update category allocation');
+        }
+      } catch (e) {
+        console.warn('Budget category update via API failed, applying local update:', e.message);
+      }
+      const payload = { id, ...updates };
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_BUDGET_CATEGORY, payload });
+      return payload;
+    },
+    deleteBudgetCategory: async (idOrName, { hard = false } = {}) => {
+      const token = localStorage.getItem('jwt');
+      // Resolve category name
+      let name = idOrName;
+      const cat = state.budgetCategories.find(c => c.id === idOrName);
+      if (cat) name = cat.name;
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/budget-v2/categories/${encodeURIComponent(name)}?hard=${hard ? 'true' : 'false'}` , {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Failed to delete budget category');
+      } catch (e) {
+        console.warn('Budget category delete via API failed, applying local delete:', e.message);
+      }
+      const id = cat ? cat.id : idOrName;
+      dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.DELETE_BUDGET_CATEGORY, payload: id });
+      return id;
+    },
+
+    // Apply baseline onboarding financials into Budget (idempotent upsert by description)
+    applyBaselineToBudget: async () => {
+      const token = localStorage.getItem('jwt');
+      if (!token) throw new Error('Not authenticated');
+      try {
+        const res = await fetchWithTimeout(`${API_BASE}/api/v1/onboarding-v2-clean/state`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }, 10000);
+        if (!res.ok) throw new Error('Failed to fetch onboarding state');
+
+        const onboardingState = await res.json();
+        const fin = onboardingState?.financial_data || {};
+
+        const baselineItems = [];
+        const pushItem = (description, amount, expense_type) => {
+          const amt = parseFloat(amount) || 0;
+          if (amt > 0) baselineItems.push({ description, amount: amt, expense_type, frequency: 'monthly', is_recurring: true });
+        };
+
+        pushItem('Rent', fin.rent, 'housing');
+        pushItem('Utilities', fin.utilities, 'utilities');
+        pushItem('Groceries', fin.groceries, 'food_dining');
+        pushItem('Transport', fin.transport, 'transportation');
+        pushItem('Loan Repayments', fin.loanRepayments, 'debt_payments');
+        if (Array.isArray(fin.customExpenses)) {
+          fin.customExpenses.forEach((ce) => pushItem(ce?.name || 'Custom Expense', ce?.amount, 'other'));
+        }
+
+        // Idempotent upsert by description if exists
+        for (const item of baselineItems) {
+          const existing = (state.expenses || []).find(e => e.description === item.description);
+          if (existing && existing.id) {
+            await updateExpense(existing.id, { ...existing, amount: item.amount, expense_type: item.expense_type, frequency: 'monthly', is_recurring: true });
+          } else {
+            await createExpense(item);
+          }
+        }
+        await fetchAllFinancialData();
+        return { created: baselineItems.length };
+      } catch (e) {
+        console.warn('applyBaselineToBudget failed:', e.message);
+        throw e;
+      }
+    },
+
     createAsset,
+    updateAsset,
+    deleteAsset,
     createLiability,
     updateLiability,
     deleteLiability,
@@ -857,8 +1958,327 @@ export const UnifiedFinancialProvider = ({ children }) => {
     createIncome,
     updateIncome,
     deleteIncome,
-    fetchAllFinancialData
+    fetchAllFinancialData,
+
+    // Schedules & Trial Balance selectors (derived/suggestive)
+    selectSchedules: (horizonMonths = null, rates = {}) => {
+      const profile = state.userProfile || {};
+      const age = profile.age || 30;
+      const retirementAge = profile.retirement_age || profile.target_retirement_age || 65;
+      const defaultHorizon = Math.max(12, Math.min(480, (retirementAge - age) * 12));
+      const horizon = horizonMonths || defaultHorizon;
+      return generateAllSchedules(state, horizon, rates);
+    },
+    selectTrialBalance: (periodIndex = 0, rates = {}) => {
+      const profile = state.userProfile || {};
+      const age = profile.age || 30;
+      const retirementAge = profile.retirement_age || profile.target_retirement_age || 65;
+      const horizon = Math.max(12, Math.min(480, (retirementAge - age) * 12));
+      const schedules = generateAllSchedules(state, horizon, rates);
+      const monthFlows = schedules.filter(s => s.t === periodIndex);
+      const income = monthFlows.filter(f => f.type === 'income').reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+      const totalExpenses = monthFlows.filter(f => f.type === 'expense' || f.type === 'goal_contribution').reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
+      const netCashFlow = income + totalExpenses; // expenses are negative
+      const totalAssets = (state.assets || []).reduce((s, a) => s + (parseFloat(a.current_value || 0) || 0), 0);
+      const totalLiabilities = (state.liabilities || []).reduce((s, l) => s + (parseFloat(l.current_balance || 0) || 0), 0);
+      const netWorth = totalAssets - totalLiabilities;
+
+      const suggestions = [];
+      const ownsHome = (state.assets || []).some(a => (a.asset_type || '').toLowerCase() === 'real_estate');
+      const rentExpense = (state.expenses || []).find(e => {
+        const et = (e.expense_type || '').toLowerCase();
+        const desc = (e.description || '').toLowerCase();
+        return et === 'rent' || (et === 'housing' && desc.includes('rent'));
+      });
+      if (ownsHome && rentExpense && !rentExpense.payment_end_date) {
+        suggestions.push({ type: 'end_expense', id: rentExpense.id, reason: 'Home ownership replaces rent' });
+      }
+      const goals = state.goals || [];
+      const underfunded = goals.filter(g => (parseFloat(g.current_amount || g.current || 0) || 0) < (parseFloat(g.target_amount || g.target || 0) || 0));
+      if (netCashFlow > 0 && underfunded.length > 0) {
+        const per = netCashFlow / underfunded.length;
+        underfunded.forEach(g => {
+          suggestions.push({ type: 'set_goal_contribution', goalId: g.id, name: g.name, monthly_amount: Math.round(per) });
+        });
+      }
+
+      // Asset-linked maintenance/insurance suggestions
+      const expenses = state.expenses || [];
+      (state.assets || []).forEach(asset => {
+        const at = (asset.asset_type || '').toLowerCase();
+        const hasMaint = expenses.some(e => e.related_asset_id === asset.id && (e.relationship_type || '') === 'asset_maintenance');
+        const hasIns = expenses.some(e => e.related_asset_id === asset.id && (e.relationship_type || '') === 'insurance_premium');
+        if (at === 'vehicle') {
+          if (!hasMaint) suggestions.push({ type: 'create_expense_asset_maintenance', assetId: asset.id, name: asset.name, estimate: Math.round((parseFloat(asset.current_value||0) || 0) * 0.01 / 12) || 0 });
+          if (!hasIns) suggestions.push({ type: 'create_expense_insurance_premium', assetId: asset.id, name: asset.name, estimate: 5000 });
+        }
+        if (at === 'real_estate') {
+          const hasTax = expenses.some(e => e.related_asset_id === asset.id && (e.relationship_type || '') === 'property_tax');
+          if (!hasMaint) suggestions.push({ type: 'create_expense_asset_maintenance', assetId: asset.id, name: asset.name, estimate: Math.round((parseFloat(asset.current_value||0) || 0) * 0.005 / 12) || 0 });
+          if (!hasIns) suggestions.push({ type: 'create_expense_insurance_premium', assetId: asset.id, name: asset.name, estimate: 3000 });
+          if (!hasTax) suggestions.push({ type: 'create_expense_property_tax', assetId: asset.id, name: asset.name, estimate: 2000 });
+        }
+      });
+
+      // Liability loan payment check
+      (state.liabilities || []).forEach(l => {
+        const mp = parseFloat(l.monthly_payment || 0) || 0;
+        const exists = expenses.find(e => e.related_liability_id === l.id && (e.relationship_type || '') === 'loan_payment');
+        if (mp > 0 && !exists) {
+          suggestions.push({ type: 'create_expense_loan_payment', liabilityId: l.id, name: l.name, amount: Math.round(mp), is_finite_payment: true, due_date: l.due_date || null });
+        } else if (mp > 0 && exists && Math.abs((parseFloat(exists.amount||0) || 0) - mp) > 1) {
+          suggestions.push({ type: 'update_expense_amount', id: exists.id, amount: Math.round(mp), reason: 'Align loan payment with liability' });
+        }
+      });
+
+      return {
+        periodIndex,
+        totals: {
+          income,
+          expenses,
+          netCashFlow,
+          assets: totalAssets,
+          liabilities: totalLiabilities,
+          netWorth
+        },
+        suggestions,
+        flows: monthFlows
+      };
+    },
+    applySuggestions: async (suggestions = []) => {
+      const token = localStorage.getItem('jwt');
+      const API = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      for (const s of suggestions) {
+        try {
+          if (s.type === 'end_expense' && s.id) {
+            await fetch(`${API}/api/v1/expenses-v2/${s.id}`, {
+              method: 'PUT',
+              headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ payment_end_date: s.payment_end_date || new Date().toISOString().slice(0,10) })
+            });
+          }
+          if (s.type === 'set_goal_contribution' && s.monthly_amount) {
+            const name = `Goal: ${s.name || s.goalId}`;
+            await value.createBudgetCategory({ name, budgeted_amount: s.monthly_amount });
+          }
+          if (s.type === 'create_expense_asset_maintenance') {
+            await value.createExpense({ description: `Maintenance: ${s.name}`, amount: s.estimate || 0, expense_type: 'maintenance', frequency: 'monthly', is_recurring: true, related_asset_id: s.assetId, relationship_type: 'asset_maintenance' });
+          }
+          if (s.type === 'create_expense_insurance_premium') {
+            await value.createExpense({ description: `Insurance: ${s.name}`, amount: s.estimate || 0, expense_type: 'insurance', frequency: 'monthly', is_recurring: true, related_asset_id: s.assetId, relationship_type: 'insurance_premium' });
+          }
+          if (s.type === 'create_expense_property_tax') {
+            await value.createExpense({ description: `Property Tax: ${s.name}`, amount: s.estimate || 0, expense_type: 'property_tax', frequency: 'monthly', is_recurring: true, related_asset_id: s.assetId, relationship_type: 'property_tax' });
+          }
+          if (s.type === 'create_expense_loan_payment') {
+            await value.createExpense({ description: `Loan Payment: ${s.name}`, amount: s.amount || 0, expense_type: 'debt_payments', frequency: 'monthly', is_recurring: true, related_liability_id: s.liabilityId, relationship_type: 'loan_payment', is_finite_payment: !!s.is_finite_payment, payment_end_date: s.due_date || null });
+          }
+          if (s.type === 'update_expense_amount' && s.id) {
+            await value.updateExpense(s.id, { amount: s.amount });
+          }
+        } catch (e) {
+          console.warn('applySuggestions failed for', s, e.message);
+        }
+      }
+      // Audit log entry
+      try {
+        const { addAuditEntry, postAuditToServer } = await import('../utils/tbAuditLog');
+        const entry = { timestamp: new Date().toISOString(), suggestions };
+        await addAuditEntry(entry);
+        await postAuditToServer(entry);
+      } catch {}
+      // Post journal entries representing these changes (COA-friendly simple mappings)
+      try {
+        const base = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        const token = localStorage.getItem('jwt');
+        const entries = suggestions.map(s => {
+          const amt = Math.round(s.monthly_amount || s.amount || 0);
+          if (!amt) return null;
+          let lines;
+          if (s.type === 'set_goal_contribution') {
+            // Transfer: Dr Goal Fund (asset), Cr Cash (asset)
+            lines = [
+              { account_type: 'asset', debit: amt, credit: 0, entity_type: 'goal_fund', entity_id: s.goalId || null, memo: s.name || '' },
+              { account_type: 'asset', debit: 0, credit: amt, entity_type: 'cash', entity_id: null, memo: 'Goal contribution' }
+            ];
+          } else if (s.type?.startsWith('create_expense_') || s.type === 'update_expense_amount') {
+            // Expense payment: Dr Expense, Cr Cash
+            lines = [
+              { account_type: 'expense', debit: amt, credit: 0, entity_type: s.type, entity_id: s.id || s.liabilityId || s.assetId || null, memo: s.reason || '' },
+              { account_type: 'asset', debit: 0, credit: amt, entity_type: 'cash', entity_id: null, memo: 'Expense created/updated' }
+            ];
+          } else {
+            // Default: Dr Expense, Cr Equity (fallback)
+            lines = [
+              { account_type: 'expense', debit: amt, credit: 0, entity_type: s.type, entity_id: s.id || s.goalId, memo: s.reason || '' },
+              { account_type: 'equity', debit: 0, credit: amt, entity_type: 'system', entity_id: null, memo: 'Suggestion applied' }
+            ];
+          }
+          return {
+            timestamp: new Date().toISOString(),
+            description: `${s.type}${s.name ? ': ' + s.name : ''}`,
+            lines,
+            meta: s
+          };
+        }).filter(Boolean);
+        for (const entry of entries) {
+          await fetch(`${base}/api/v1/ledger/journal`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
+        }
+      } catch {}
+      await fetchAllFinancialData();
+      return true;
+    }
   };
+
+  // Expose selectors to window for test/dev introspection (no-op in production)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+    try {
+      window.__UFC__ = {
+        get state() { return stateRef.current; },
+        selectors: {
+          budgetSummary: () => value.selectBudgetSummary ? value.selectBudgetSummary() : null,
+          debtPlan: (opts) => value.selectDebtPaydownPlan ? value.selectDebtPaydownPlan(opts) : null,
+          trialBalance: (periodIndex = 0, rates = {}) => value.selectTrialBalance ? value.selectTrialBalance(periodIndex, rates) : null,
+        }
+      };
+    } catch {}
+  }
+
+  // --- Recalc pipeline and helpers ---
+  function computeHumanCapital(profile) {
+    if (!profile) return 0;
+    const age = profile.age || 25;
+    const retirementAge = profile.retirement_age || 65;
+    const years = Math.max(0, retirementAge - age);
+    const annualIncome = (profile.monthly_income || 0) * 12;
+    const g = 0.03; // income growth 3%
+    const r = 0.125; // discount 12.5%
+    // Growing annuity PV: PV = P1 * (1 - ((1+g)/(1+r))^n) / (r - g)
+    if (r <= g || years === 0) return 0;
+    const P1 = annualIncome * (1 + g);
+    const factor = 1 - Math.pow((1 + g) / (1 + r), years);
+    return Math.max(0, P1 * factor / (r - g));
+  }
+
+  function sumMonthlyIncome(incomeSource) {
+    if (!Array.isArray(incomeSource)) return 0;
+    return incomeSource.reduce((sum, inc) => sum + (parseFloat(inc.monthly_amount || inc.amount || 0) || 0), 0);
+  }
+
+  function sumMonthlyExpenses(expenses) {
+    if (!Array.isArray(expenses)) return 0;
+    return expenses.reduce((sum, exp) => sum + (parseFloat(exp.monthly_equivalent) || parseFloat(exp.amount) || 0), 0);
+  }
+
+  function computeNetCashFlow(incomeSource, expenses) {
+    const inc = sumMonthlyIncome(incomeSource);
+    const exp = sumMonthlyExpenses(expenses);
+    return inc - exp;
+  }
+
+  function computeBudgetSummary(incomeSource, expenses) {
+    const monthlyIncome = sumMonthlyIncome(incomeSource);
+    const monthlyExpenses = sumMonthlyExpenses(expenses);
+    const remaining = monthlyIncome - monthlyExpenses;
+    const utilization = monthlyIncome > 0 ? (monthlyExpenses / monthlyIncome) * 100 : 0;
+    return {
+      total_budgeted: monthlyIncome,
+      total_spent: monthlyExpenses,
+      remaining_budget: remaining,
+      budget_utilization: utilization
+    };
+  }
+
+  function computeRiskProfile(profile) {
+    if (!profile) return { score: null, level: 'Not assessed' };
+    const q = profile.questionnaire;
+    if (!Array.isArray(q) || q.length === 0) return { score: null, level: 'Not assessed' };
+    const score = Math.round((q.reduce((s, a) => s + a, 0) / (q.length * 4)) * 100);
+    let level = 'Balanced';
+    if (score <= 25) level = 'Conservative';
+    else if (score <= 50) level = 'Moderate';
+    else if (score <= 75) level = 'Balanced';
+    else level = 'Aggressive';
+    return { score, level };
+  }
+
+  // --- Debt payoff optimizer (v1) ---
+  function computeDebtPaydownPlan(liabilities, monthlyExtra = 0, strategy = 'snowball') {
+    try {
+      const debts = (Array.isArray(liabilities) ? liabilities : []).map(l => ({
+        id: l.id,
+        name: l.name || 'Debt',
+        balance: Math.max(0, parseFloat(l.current_balance || 0) || 0),
+        rate: Math.max(0, parseFloat(l.interest_rate || 0) || 0) / 12, // monthly
+        min: Math.max(0, parseFloat(l.minimum_payment || l.monthly_payment || 0) || 0)
+      })).filter(d => d.balance > 0);
+      if (debts.length === 0) return { months: 0, interest_saved: 0, strategy, schedule: [] };
+      const orderFn = strategy === 'avalanche'
+        ? (a, b) => b.rate - a.rate
+        : (a, b) => a.balance - b.balance;
+      let totalInterestWithExtra = 0;
+      let totalInterestMinOnly = 0;
+      // Simulate min-only for baseline
+      {
+        const sim = debts.map(d => ({ ...d }));
+        for (let m = 0; m < 600 && sim.some(d => d.balance > 0.01); m++) {
+          for (const d of sim) {
+            const interest = d.balance * d.rate;
+            totalInterestMinOnly += interest;
+            const principalPay = Math.max(0, d.min - interest);
+            d.balance = Math.max(0, d.balance - principalPay);
+          }
+        }
+      }
+      // Simulate with extra
+      let months = 0;
+      {
+        const sim = debts.map(d => ({ ...d }));
+        while (months < 600 && sim.some(d => d.balance > 0.01)) {
+          months += 1;
+          // choose target debt per strategy
+          sim.sort(orderFn);
+          let extra = monthlyExtra;
+          for (const d of sim) {
+            if (d.balance <= 0.01) continue;
+            const interest = d.balance * d.rate;
+            totalInterestWithExtra += interest;
+            let payment = d.min;
+            if (extra > 0 && d === sim[0]) {
+              payment += extra;
+              extra = 0;
+            }
+            const principalPay = Math.max(0, payment - interest);
+            d.balance = Math.max(0, d.balance - principalPay);
+          }
+        }
+      }
+      const interest_saved = Math.max(0, totalInterestMinOnly - totalInterestWithExtra);
+      return { months, interest_saved, strategy };
+    } catch {
+      return { months: null, interest_saved: null, strategy };
+    }
+  }
+
+  const recalc = useCallback(() => {
+    // cash flow
+    const cashFlow = computeNetCashFlow(state.incomeSource, state.expenses);
+    dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_CASH_FLOW, payload: cashFlow });
+    // budget
+    const budget = computeBudgetSummary(state.incomeSource, state.expenses);
+    dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_BUDGET_OVERVIEW, payload: budget });
+    // Net worth is already handled elsewhere; human capital selector available
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.incomeSource, state.expenses]);
+
+  // Keep a ref snapshot for idempotent operations
+  const stateRef = React.useRef(state);
+  React.useEffect(() => { stateRef.current = state; }, [state]);
+
+  // Trigger recalc when incomes or expenses change
+  React.useEffect(() => {
+    recalc();
+  }, [state.incomeSource, state.expenses, recalc]);
 
   return (
     <UnifiedFinancialContext.Provider value={value}>
@@ -876,3 +2296,5 @@ export const useUnifiedFinancialContext = () => {
   return context;
 };
 
+// Backward-compatibility alias for components importing useTransactions
+export const useTransactions = useUnifiedFinancialContext;

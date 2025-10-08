@@ -14,7 +14,6 @@ import { UnifiedFinancialProvider } from './contexts/TransactionContext';
 // Timeline-first application layout
 import TimelineMainAppLayout from './components/TimelineMainAppLayout';
 // Legacy layout for fallback
-import MainAppLayout from './components/MainAppLayout';
 import PrivateRoute from './components/PrivateRoute';
 
 // Advisor components (will be nested under a separate layout or route)
@@ -79,12 +78,7 @@ function App() {
           </PrivateRoute>
         } />
         
-        {/* Legacy app layout for fallback testing */}
-        <Route path="/app-legacy/*" element={
-          <PrivateRoute>
-            <MainAppLayout />
-          </PrivateRoute>
-        } />
+        {/* Legacy app layout removed (deprecated). Use timeline-first layout. */}
 
         {/* Advisor Portal */}
         <Route path="/advisor/login" element={<AdvisorLogin />} />

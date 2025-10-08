@@ -1,12 +1,12 @@
 // TODO: Use listMilestones() for timeline events (Epic 2 Story 1, ~75% once connected)
 import React, { useEffect, useState } from 'react';
 import MessageBox from './MessageBox';
-import { listMilestones, createMilestone, updateMilestone, deleteMilestone } from '../api';
+import { useTimeline } from '../contexts/TimelineContext';
 
 const LifetimeJourneyTimeline = ({ onNextScreen }) => {
     const [message, setMessage] = useState('');
     const [showMessageBox, setShowMessageBox] = useState(false);
-    const [milestones, setMilestones] = useState([]);
+    const { milestones, loadTimelineJourney, addMilestone } = useTimeline();
 
     const showActionMessage = (actionName) => {
         setMessage('Viewing details for: ' + actionName + ' (This is a wireframe action)');
@@ -18,57 +18,32 @@ const LifetimeJourneyTimeline = ({ onNextScreen }) => {
         setMessage('');
     };
 
-    const fetchMilestones = async () => {
-        try {
-            const data = await listMilestones();
-            if (Array.isArray(data)) setMilestones(data);
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
     useEffect(() => {
         if (process.env.NODE_ENV === 'test') return;
-        fetchMilestones();
-    }, []);
+        loadTimelineJourney();
+    }, [loadTimelineJourney]);
 
     const addOne = async () => {
         showActionMessage('Add Custom Milestone');
-        const newItem = { age: 0, phase: 'Custom', event: 'New Milestone', assets: '', liabs: '', netWorth: '', advice: '' };
-        setMilestones(m => [...m, newItem]);
+        const localItem = { title: 'New Milestone', target_amount: 0, target_age: 0, category: 'general', priority: 'medium' };
+        // optimistic UI not necessary; load after create
         try {
-            const created = await createMilestone(undefined, newItem);
-            if (created && created.id) {
-                setMilestones(m => m.map(item => item === newItem ? created : item));
-            }
+            await addMilestone(localItem);
+            await loadTimelineJourney();
         } catch (err) {
             console.error(err);
-            fetchMilestones();
+            loadTimelineJourney();
         }
     };
 
     const updateOne = async (index) => {
-        const item = milestones[index];
-        const updated = { ...item, age: item.age + 1 };
-        setMilestones(m => m.map((it, i) => i === index ? updated : it));
-        try {
-            await updateMilestone(undefined, item.id || index, updated);
-        } catch (err) {
-            console.error(err);
-            fetchMilestones();
-        }
+        // Editing milestones is not yet supported via clean endpoints
+        showActionMessage('Milestone editing coming soon');
     };
 
     const removeOne = async (index) => {
-        const item = milestones[index];
-        const prev = [...milestones];
-        setMilestones(m => m.filter((_, i) => i !== index));
-        try {
-            await deleteMilestone(undefined, item.id || index);
-        } catch (err) {
-            console.error(err);
-            setMilestones(prev);
-        }
+        // Deleting milestones is not yet supported via clean endpoints
+        showActionMessage('Milestone deletion not available in this phase');
     };
 
 

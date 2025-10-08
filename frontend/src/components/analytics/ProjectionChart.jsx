@@ -4,7 +4,7 @@
  */
 
 import React, { useRef, useEffect } from 'react';
-import predictiveAnalytics from '../../services/predictiveAnalytics';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const ProjectionChart = ({ 
   projections, 
@@ -15,6 +15,7 @@ const ProjectionChart = ({
   className = '' 
 }) => {
   const canvasRef = useRef(null);
+  const analytics = useAnalytics();
 
   const drawChart = React.useCallback((ctx) => {
     const margin = { top: 30, right: 30, bottom: 60, left: 80 };
@@ -134,7 +135,7 @@ const ProjectionChart = ({
       ctx.fillStyle = '#10B981';
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`Target: ${predictiveAnalytics.formatCurrency(targetAmount)}`, margin.left + 10, targetY - 5);
+      ctx.fillText(`Target: ${analytics.formatCurrency(targetAmount)}`, margin.left + 10, targetY - 5);
     }
 
     // Draw median projection line
@@ -200,7 +201,7 @@ const ProjectionChart = ({
       
       ctx.textAlign = 'right';
       ctx.fillText(
-        predictiveAnalytics.formatCurrency(value).replace('KES ', ''),
+        analytics.formatCurrency(value).replace('KES ', ''),
         margin.left - 10,
         y + 4
       );

@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { STRUCTURED_UX } from '../../config';
+import BalanceSheetStructured from '../structured/BalanceSheetStructured';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import { PageHeader } from '../ui';
+import Layout from '../layout/Layout';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { 
@@ -10,14 +14,19 @@ import {
   Calculator,
   TrendingUp
 } from '../ui/icons';
+import { EXPENSE_TYPE_DEFS } from '../expenses/expenseTypeDefs';
 import { AssetDashboard } from '../assets';
 import { formatCurrency } from '../../utils/formatters';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
+import { pvHumanCapital, pvOfExpenses } from '../../utils/valuation';
 import DiscountRateOverrideModal from './DiscountRateOverrideModal';
 import AdvancedAssumptionPanel from './AdvancedAssumptionPanel';
 import TemporalLiabilityAnalyzer from './TemporalLiabilityAnalyzer';
 import { KENYA_ASSET_CLASSES, KENYA_MARKET_DATA } from '../../utils/kenyaReturnRiskModels';
 import { KENYA_LIABILITY_TYPES } from '../../utils/kenyaLiabilityModels';
+import { markStart, markEnd, report } from '../../utils/metrics';
+import ScenarioControls from '../analytics/ScenarioControls';
+import { loadScenario } from '../../utils/scenarioStore';
 
 const BalanceSheetDashboard = () => {
   const {
@@ -27,11 +36,16 @@ const BalanceSheetDashboard = () => {
     profile,
     loading: contextLoading,
     error: contextError,
-    fetchAllFinancialData
+    fetchAllFinancialData,
+    selectSchedules
   } = useUnifiedFinancialContext();
 
   const [activeView, setActiveView] = useState('overview');
-  const [balanceSheetMode, setBalanceSheetMode] = useState('traditional'); // 'traditional' or 'lifetime'
+  if (STRUCTURED_UX) {
+    return <BalanceSheetStructured />;
+  }
+  // Simplify to lifetime-only (CFA methodology)
+  const [balanceSheetMode, setBalanceSheetMode] = useState('lifetime');
   const [balanceSheetData, setBalanceSheetData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,6 +85,56 @@ const BalanceSheetDashboard = () => {
   const [riskReturnAnalysis, setRiskReturnAnalysis] = useState(null);
   const [confidenceIntervals, setConfidenceIntervals] = useState(null);
   const [financialRatios, setFinancialRatios] = useState(null);
+  const [proFormaEnabled, setProFormaEnabled] = useState(false);
+  const [proFormaMonths, setProFormaMonths] = useState(12);
+  const [proFormaDate, setProFormaDate] = useState('');
+  const [scenarioSummary, setScenarioSummary] = useState(null);
+
+  // Helpers for lightweight charts
+  const buildAssetAllocationSegments = () => {
+    const segs = (riskReturnAnalysis?.assetAllocation || [])
+      .filter(s => Number.isFinite(s.percentage) && s.percentage > 0)
+      .map(s => ({ label: s.category, pct: s.percentage }));
+    const total = segs.reduce((s, v) => s + v.pct, 0) || 0;
+    return segs.map(s => ({ ...s, pct: total ? (s.pct / total) * 100 : 0 }));
+  };
+
+  const buildLiabilityComposition = () => {
+    const items = (riskReturnAnalysis?.liabilities?.analysis || [])
+      .map(a => ({ label: a.category, value: parseFloat(a.balance) || 0 }))
+      .filter(a => a.value > 0);
+    const total = items.reduce((s, v) => s + v.value, 0) || 0;
+    return items.map(a => ({ ...a, pct: total ? (a.value / total) * 100 : 0 }));
+  };
+
+  const computeNetWorthTrend = (months = 24) => {
+    try {
+      const start = (balanceSheetData?.traditional?.netWorth || 0);
+      const flows = selectSchedules ? selectSchedules(months) : [];
+      const net = Array.from({ length: months }, () => 0);
+      for (const f of (flows || [])) {
+        const t = Math.min(months - 1, Math.max(0, f.t || 0));
+        if (f.type === 'income' || f.type === 'expense' || f.type === 'goal_contribution') {
+          net[t] += (parseFloat(f.amount) || 0);
+        }
+      }
+      let acc = start;
+      return net.map(v => (acc += v));
+    } catch { return []; }
+  };
+
+  const onScenarioLoad = (s) => {
+    try {
+      const months = 24;
+      const current = selectSchedules ? selectSchedules(months) : [];
+      const scn = (s?.schedules || []);
+      const sum = (flows, type) => flows.filter(f => type==='net' ? ['income','expense','goal_contribution'].includes(f.type) : f.type===type)
+        .reduce((acc, f) => acc + (parseFloat(f.amount)||0), 0);
+      const cur = { income: sum(current,'income'), expenses: sum(current,'expense') + sum(current,'goal_contribution'), net: sum(current,'net') };
+      const oth = { income: sum(scn,'income'), expenses: sum(scn,'expense') + sum(scn,'goal_contribution'), net: sum(scn,'net') };
+      setScenarioSummary({ current: cur, scenario: oth, delta: { income: oth.income - cur.income, expenses: oth.expenses - cur.expenses, net: oth.net - cur.net } });
+    } catch { setScenarioSummary(null); }
+  };
 
   useEffect(() => {
     calculateBalanceSheetData();
@@ -121,6 +185,23 @@ const BalanceSheetDashboard = () => {
     }));
   };
 
+  // Initialize pro forma from query/localStorage
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const pfm = parseInt(params.get('proFormaMonths') || '', 10);
+      if (!Number.isNaN(pfm) && pfm >= 0) {
+        setProFormaEnabled(true);
+        setProFormaMonths(pfm);
+      }
+      const stored = localStorage.getItem('pro_forma_target_date');
+      if (stored) {
+        setProFormaEnabled(true);
+        setProFormaDate(stored);
+      }
+    } catch {}
+  }, []);
+
   const handleRateChange = (newRates) => {
     setCustomRates(newRates);
   };
@@ -147,11 +228,12 @@ const BalanceSheetDashboard = () => {
       setError(null);
       
       // Ensure all data is loaded through unified context
-      if (contextLoading) {
+      if (contextLoading?.global) {
         await fetchAllFinancialData();
       }
 
-      if (!assets || !liabilities || !expenses || !profile) {
+      // Proceed if core datasets are available; profile is optional
+      if (!assets || !liabilities || !expenses) {
         setError('Required financial data not available');
         setLoading(false);
         return;
@@ -160,16 +242,23 @@ const BalanceSheetDashboard = () => {
       // Prepare data structures to match legacy format
       const assetsData = {
         summary: {
-          total_current_value: assets.reduce((sum, asset) => sum + (asset.current_value || 0), 0)
-        }
+          total_current_value: assets.reduce((sum, asset) => sum + (parseFloat(asset.current_value) || 0), 0)
+        },
+        // Provide full list for downstream analytics
+        assets: assets
       };
 
       const liabilitiesData = {
-        total_liabilities: liabilities.reduce((sum, liability) => sum + (liability.balance || 0), 0)
+        total_liabilities: liabilities.reduce((sum, liability) => sum + (parseFloat(liability.current_balance) || 0), 0),
+        liabilities: liabilities
       };
 
+      const monthlyRecurringTotal = (expenses || []).reduce((sum, exp) => sum + (parseFloat(exp.monthly_equivalent) || 0), 0);
       const expensesData = {
-        expenses: expenses
+        expenses: expenses,
+        summary: {
+          monthly_recurring_total: { amount: monthlyRecurringTotal }
+        }
       };
 
       const profileData = {
@@ -180,9 +269,27 @@ const BalanceSheetDashboard = () => {
       const traditionalAssets = assetsData.summary?.total_current_value || 0;
       const traditionalLiabilities = liabilitiesData.total_liabilities || 0;
       const traditionalNetWorth = traditionalAssets - traditionalLiabilities;
-      
-      const lifetimeAssets = traditionalAssets + calculateHumanCapital(profileData, expensesData, customRates, advancedAssumptions);
-      const lifetimeExpenseLiabilities = calculateLifetimeExpenseLiabilities(profileData, expensesData, customRates, advancedAssumptions);
+
+      // Use valuation utilities + schedule engine via selector for PV consistency
+      const age = profile?.age || 30;
+      const retireAge = advancedAssumptions?.demographics?.retirementAge || 65;
+      const lifeExp = advancedAssumptions?.demographics?.lifeExpectancy || 71;
+      const horizonYears = Math.max(1, (Math.max(lifeExp, retireAge) - age));
+      const horizonMonths = Math.min(480, Math.round(horizonYears * 12));
+
+      // Build expense flows from schedules (negative amounts)
+      const schedules = selectSchedules(horizonMonths, {
+        incomeGrowthRate: customRates.incomeGrowthRate,
+        expenseInflationRate: customRates.expenseInflationRate
+      });
+      const expenseFlows = schedules
+        .filter(f => f.type === 'expense' || f.type === 'goal_contribution')
+        .map(f => ({ t: f.t, amount: f.amount }));
+
+      const mode = customRates.valuationMode || 'nominal';
+      const lifetimeHumanCapital = pvHumanCapital({ monthlyIncome: profile?.monthly_income || 0, age, retirementAge: retireAge }, customRates.incomeGrowthRate / 100, customRates.incomeDiscountRate / 100);
+      const lifetimeExpenseLiabilities = pvOfExpenses(expenseFlows, customRates.expenseDiscountRate / 100, customRates.expenseInflationRate / 100, mode);
+      const lifetimeAssets = traditionalAssets + lifetimeHumanCapital;
       const totalLifetimeLiabilities = traditionalLiabilities + lifetimeExpenseLiabilities;
       
       // Calculate comprehensive risk/return analysis
@@ -210,7 +317,7 @@ const BalanceSheetDashboard = () => {
           netWorth: lifetimeAssets - totalLifetimeLiabilities,
           totalAssets: lifetimeAssets,
           totalLiabilities: totalLifetimeLiabilities,
-          humanCapital: calculateHumanCapital(profileData, expensesData, customRates, advancedAssumptions)
+          humanCapital: lifetimeHumanCapital
         },
         riskReturn: riskReturn
       });
@@ -221,6 +328,34 @@ const BalanceSheetDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Export snapshot (JSON) helper
+  const exportSnapshot = () => {
+    try {
+      const data = {
+        asOf: new Date().toISOString(),
+        traditional: balanceSheetData?.traditional,
+        lifetime: balanceSheetData?.lifetime,
+        proForma: proFormaEnabled ? { monthsAhead: proFormaMonths, deltaCashFlows: cumulativeNetCashFlow(proFormaMonths) } : null
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'balance_sheet_snapshot.json'; a.click();
+      URL.revokeObjectURL(url);
+    } catch {}
+  };
+
+  // Compute cumulative net cash flow for first N months using schedules
+  const cumulativeNetCashFlow = (months) => {
+    try {
+      if (!selectSchedules || !Number.isFinite(months) || months <= 0) return 0;
+      const flows = selectSchedules(months);
+      return flows
+        .filter(f => f.t < months && (f.type === 'income' || f.type === 'expense' || f.type === 'goal_contribution'))
+        .reduce((sum, f) => sum + (parseFloat(f.amount) || 0), 0);
+    } catch { return 0; }
   };
 
   // Calculate human capital using real profile data and CFA-compliant methodology
@@ -369,20 +504,21 @@ const BalanceSheetDashboard = () => {
     if (expensesData?.expenses) {
       for (const expense of expensesData.expenses) {
         // Check for loan payments or expenses with end dates
-        if (expense.expense_type === 'DEBT_PAYMENT' || 
+        const type = String(expense.expense_type || '').toLowerCase();
+        if (type === 'debt_payments' ||
             expense.category === 'debt_payment' ||
-            expense.end_date ||
+            expense.end_date || expense.payment_end_date ||
             expense.is_temporal) {
           
           temporalExpenses.items.push({
             id: expense.id,
             name: expense.description || expense.name,
-            monthly_amount: expense.monthly_equivalent?.amount || expense.amount?.amount || 0,
-            end_date: expense.end_date,
+            monthly_amount: (typeof expense.monthly_equivalent === 'number' ? expense.monthly_equivalent : (parseFloat(expense.amount) || 0)),
+            end_date: expense.end_date || expense.payment_end_date || null,
             expense_type: expense.expense_type
           });
           
-          temporalExpenses.monthlyTotal += expense.monthly_equivalent?.amount || expense.amount?.amount || 0;
+          temporalExpenses.monthlyTotal += (typeof expense.monthly_equivalent === 'number' ? expense.monthly_equivalent : (parseFloat(expense.amount) || 0));
         }
       }
     }
@@ -399,7 +535,7 @@ const BalanceSheetDashboard = () => {
           name: 'Personal Loan Payment (Detected)',
           monthly_amount: 33253,
           end_date: '2028-12-31',  // ~4 years from 2025
-          expense_type: 'DEBT_PAYMENT'
+          expense_type: 'debt_payments'
         });
         
         temporalExpenses.monthlyTotal = 33253;
@@ -806,7 +942,8 @@ const BalanceSheetDashboard = () => {
     return recommendations;
   };
 
-  if (loading || contextLoading) {
+  // Only treat context as loading when global flag is true
+  if (loading || (contextLoading && contextLoading.global)) {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="text-lg">Loading balance sheet...</div>
@@ -837,48 +974,23 @@ const BalanceSheetDashboard = () => {
   }
 
   const renderOverview = () => (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header with Mode Toggle */}
+    <>
+      <PageHeader
+        title="Balance Sheet"
+        description="Lifetime view of assets and liabilities"
+        secondaryAction={{ label: 'Adjust Assumptions', onClick: () => setShowRateOverride(true), variant: 'outline' }}
+      />
+      <Layout className="p-6 space-y-6 text-scale break-words">
+      {/* view metric handled by useEffect to avoid repeated posts */}
+      {/* Header - Lifetime-only */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Balance Sheet Overview</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Lifetime Balance Sheet (CFA)</h1>
         <p className="text-gray-600 mt-2">
-          Comprehensive view of your financial position with CFA-compliant analysis
-        </p>
-        
-        {/* Clean Toggle */}
-        <div className="mt-6 inline-flex bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setBalanceSheetMode('traditional')}
-            className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-              balanceSheetMode === 'traditional'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            📊 Current Position
-          </button>
-          <button
-            onClick={() => setBalanceSheetMode('lifetime')}
-            className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-              balanceSheetMode === 'lifetime'
-                ? 'bg-white text-purple-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            🎯 Lifetime View
-          </button>
-        </div>
-        
-        {/* Mode Description */}
-        <p className="text-sm text-gray-500 mt-3">
-          {balanceSheetMode === 'traditional' 
-            ? 'Your current assets and liabilities today'
-            : 'Lifetime earning capacity vs. expenses (CFA-compliant with Kenya adjustments)'
-          }
+          Lifetime earning capacity vs. expenses with Kenya-specific assumptions
         </p>
 
-        {/* Discount Rate Override Button (Lifetime View Only) */}
-        {balanceSheetMode === 'lifetime' && (
+        {/* Discounting Mode and Assumptions */}
+        {true && (
           <div className="mt-4 flex flex-col items-center space-y-4">
             <div className="flex items-center justify-center space-x-4">
               <Badge variant="outline" className="bg-blue-50 text-blue-700">
@@ -887,6 +999,14 @@ const BalanceSheetDashboard = () => {
               <Badge variant="outline" className="bg-purple-50 text-purple-700">
                 Expense Rate: {customRates.expenseDiscountRate}%
               </Badge>
+              <div className="text-xs text-gray-600 bg-white border px-2 py-1 rounded">
+                Mode:
+                <select className="ml-1 text-xs" onChange={(e) => setCustomRates({ ...customRates, valuationMode: e.target.value })} defaultValue={customRates.valuationMode || 'nominal'}>
+                  <option value="nominal">Nominal</option>
+                  <option value="real">Real</option>
+                  <option value="risk_adj">Risk-Adjusted</option>
+                </select>
+              </div>
               <Button
                 onClick={() => setShowRateOverride(true)}
                 variant="outline"
@@ -919,9 +1039,45 @@ const BalanceSheetDashboard = () => {
             )}
           </div>
         )}
-        
+
+        {/* Pro Forma Controls */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+          <label className="inline-flex items-center space-x-2 text-sm">
+            <input type="checkbox" checked={proFormaEnabled} onChange={(e) => setProFormaEnabled(e.target.checked)} />
+            <span className="text-gray-700">Enable Pro Forma</span>
+          </label>
+          <div className="flex items-center space-x-2 text-sm">
+            <span className="text-gray-700">Target Month</span>
+            <input
+              type="month"
+              value={proFormaDate.slice(0,7)}
+              onChange={(e) => {
+                setProFormaDate(e.target.value);
+                try {
+                  const base = new Date();
+                  const tgt = new Date(e.target.value + '-01');
+                  const months = Math.max(0, Math.round(((tgt - base) / (1000*60*60*24)) / 30));
+                  setProFormaMonths(months);
+                } catch {}
+              }}
+              className="border rounded px-2 py-1"
+            />
+            <span className="text-gray-500">or</span>
+            <div className="flex items-center space-x-1">
+              <input
+                type="number"
+                min={0}
+                value={proFormaMonths}
+                onChange={(e) => setProFormaMonths(Math.max(0, parseInt(e.target.value||'0',10) || 0))}
+                className="w-24 border rounded px-2 py-1"
+              />
+              <span className="text-xs text-gray-600">months ahead</span>
+            </div>
+          </div>
+        </div>
+
         {/* CFA Methodology Note */}
-        {balanceSheetMode === 'lifetime' && (
+        {true && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-xs text-blue-700">
               <strong>CFA Methodology Applied:</strong> Life expectancy: {profileData?.profile?.age ? Math.min(78, 66 + (profileData.profile.monthly_income >= 150000 ? 3 : 0)) : 71} years | 
@@ -931,58 +1087,181 @@ const BalanceSheetDashboard = () => {
         )}
       </div>
 
-      {/* Key Metrics - Dynamic based on mode */}
+      {/* Current vs Pro Forma KPIs */}
+      {proFormaEnabled && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Current Net Worth</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${ (balanceSheetData?.traditional?.netWorth||0) >= 0 ? 'text-green-600':'text-red-600' }`}>
+                {formatCurrency(balanceSheetData?.traditional?.netWorth || 0)}
+              </div>
+              <p className="text-xs text-blue-700">Today</p>
+            </CardContent>
+          </Card>
+          <Card className="border-indigo-200 bg-indigo-50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pro Forma Net Worth</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const base = balanceSheetData?.traditional?.netWorth || 0;
+                const delta = cumulativeNetCashFlow(proFormaMonths);
+                const pf = base + delta;
+                return (
+                  <>
+                    <div className={`text-2xl font-bold ${ pf >= 0 ? 'text-green-600':'text-red-600' }`}>
+                      {formatCurrency(pf)}
+                    </div>
+                    <p className="text-xs text-indigo-700">Δ cash flows {proFormaMonths} mo: {formatCurrency(delta)}</p>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 bg-slate-50">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pro Forma Date</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-700">
+                {proFormaDate ? new Date(proFormaDate + '-01').toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+                  : (() => { const d = new Date(); d.setMonth(d.getMonth()+proFormaMonths); return d.toLocaleDateString(undefined,{month:'short',year:'numeric'}); })()}
+              </div>
+              <p className="text-xs text-slate-600">Projected snapshot</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Charts: Asset Allocation, Liability Composition, Net Worth Trend */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Asset Allocation Donut */}
+        <Card className="border-gray-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Asset Allocation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const r = 44; const cx = 56; const cy = 56; const circ = 2 * Math.PI * r;
+              const segs = buildAssetAllocationSegments();
+              let offset = 0;
+              const colors = ['#2563eb','#16a34a','#f59e0b','#ef4444','#8b5cf6','#0ea5e9','#ea580c'];
+              return (
+                <div className="flex items-center">
+                  <svg width="112" height="112" viewBox="0 0 112 112" className="mr-4">
+                    <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e5e7eb" strokeWidth="18" />
+                    {segs.map((s, i) => {
+                      const len = (s.pct / 100) * circ;
+                      const el = (
+                        <circle key={i}
+                          cx={cx} cy={cy} r={r} fill="none"
+                          stroke={colors[i % colors.length]}
+                          strokeWidth="18" strokeDasharray={`${len} ${circ - len}`}
+                          strokeDashoffset={-offset}
+                          transform={`rotate(-90 ${cx} ${cy})`}
+                        />
+                      );
+                      offset += len;
+                      return el;
+                    })}
+                  </svg>
+                  <div className="space-y-1 text-sm">
+                    {segs.length === 0 ? <div className="text-gray-500">No data</div> :
+                      segs.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 rounded" style={{ background: colors[i % colors.length] }} />
+                          <span className="text-gray-700">{s.label}</span>
+                          <span className="ml-auto font-medium">{s.pct.toFixed(1)}%</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        {/* Liability Composition Stack */}
+        <Card className="border-gray-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Liability Composition</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const items = buildLiabilityComposition();
+              const colors = ['#ef4444','#f59e0b','#fb7185','#f97316','#eab308','#dc2626'];
+              const totalPct = items.reduce((s,v)=>s+v.pct,0);
+              return (
+                <div>
+                  <div className="h-6 bg-gray-100 rounded overflow-hidden flex">
+                    {items.length === 0 ? (
+                      <div className="w-full h-full bg-gray-200" />
+                    ) : items.map((it, i) => (
+                      <div key={i} style={{ width: `${(it.pct/Math.max(1,totalPct))*100}%`, background: colors[i%colors.length] }} title={`${it.label}: ${it.pct.toFixed(1)}%`} />
+                    ))}
+                  </div>
+                  <div className="mt-2 space-y-1 text-sm">
+                    {items.length === 0 ? <div className="text-gray-500">No liabilities</div> :
+                      items.map((it, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <span className="inline-block w-3 h-3 rounded" style={{ background: colors[i % colors.length] }} />
+                          <span className="text-gray-700">{it.label}</span>
+                          <span className="ml-auto font-medium">{it.pct.toFixed(1)}%</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
+        {/* Net Worth Trend */}
+        <Card className="border-gray-200">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Net Worth Trend (24 mo)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const series = computeNetWorthTrend(24);
+              if (!series || series.length === 0) return <div className="text-gray-500 text-sm">No data</div>;
+              const w = 240, h = 80, pad = 6;
+              const minV = Math.min(...series);
+              const maxV = Math.max(...series);
+              const span = Math.max(1, maxV - minV);
+              const xStep = (w - pad * 2) / Math.max(1, series.length - 1);
+              const yOf = v => pad + (h - pad * 2) - ((v - minV) / span) * (h - pad * 2);
+              const path = series.map((v, i) => `${i === 0 ? 'M' : 'L'} ${Math.round(pad + i * xStep)},${Math.round(yOf(v))}`).join(' ');
+              return (
+                <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+                  <rect x="0" y="0" width={w} height={h} fill="#f8fafc" />
+                  <path d={path} fill="none" stroke="#2563eb" strokeWidth="2" />
+                </svg>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Goals Impact (stub v1) */}
+      <div className="mb-6">
+        <Card className="border-emerald-200 bg-emerald-50">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Goals Impact</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-emerald-800">
+              Preview how goal contributions affect net worth over time. Detailed breakdown to follow in v2.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Key Metrics - Lifetime only */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {balanceSheetMode === 'traditional' ? (
-          <>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Current Assets</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(balanceSheetData?.traditional?.totalAssets || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Physical assets you own today
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Current Liabilities</CardTitle>
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {formatCurrency(balanceSheetData?.traditional?.totalLiabilities || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Debts you owe today
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Current Net Worth</CardTitle>
-                <Calculator className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${
-                  (balanceSheetData?.traditional?.netWorth || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {formatCurrency(balanceSheetData?.traditional?.netWorth || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Assets minus liabilities
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        ) : (
           <>
             <Card className="border-purple-200 bg-purple-50">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -990,7 +1269,7 @@ const BalanceSheetDashboard = () => {
                 <Building2 className="h-4 w-4 text-purple-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-green-600" data-testid="lifetime-total-assets">
                   {formatCurrency(balanceSheetData?.lifetime?.totalAssets || 0)}
                 </div>
                 <p className="text-xs text-purple-600">
@@ -1031,8 +1310,56 @@ const BalanceSheetDashboard = () => {
               </CardContent>
             </Card>
           </>
-        )}
       </div>
+
+      {/* Snapshot export + Scenarios */}
+      <div className="flex justify-end mb-6">
+        <div className="flex items-center gap-3">
+          <ScenarioControls onLoadDiff={onScenarioLoad} />
+          <Button variant="outline" onClick={exportSnapshot}>Export Snapshot (JSON)</Button>
+        </div>
+      </div>
+
+      {/* Lifecycle Visualization (Decreasing human capital vs. growing actual capital) */}
+      {balanceSheetData?.lifetime && (
+        <div className="mb-8">
+          <Card className="border-indigo-200 bg-indigo-50">
+            <CardHeader>
+              <CardTitle>Lifecycle Visualization</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const age = profile?.age || profileData?.profile?.age || 30;
+                const retire = profile?.retirement_age || profileData?.profile?.retirement_age || 65;
+                const total = Math.max(1, retire - 18);
+                const remaining = Math.max(0, retire - age);
+                const humanPct = Math.max(0, Math.min(100, Math.round((remaining / total) * 100)));
+                const currentAssets = balanceSheetData?.assets?.summary?.total_current_value || 0;
+                const lifetimeAssets = balanceSheetData?.lifetime?.totalAssets || 1;
+                const actualShare = Math.max(0, Math.min(100, Math.round((currentAssets / lifetimeAssets) * 100)));
+                return (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex justify-between text-sm text-gray-700 mb-1"><span>Human Capital Remaining</span><span>{humanPct}%</span></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${humanPct}%` }} />
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Declines to 0% by retirement age {retire}</p>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm text-gray-700 mb-1"><span>Actual Capital Share</span><span>{actualShare}%</span></div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-emerald-600 h-2 rounded-full" style={{ width: `${actualShare}%` }} />
+                      </div>
+                      <p className="text-xs text-gray-600 mt-1">Current assets as % of lifetime assets (assets + human capital)</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* CFA-Compliant Portfolio Risk/Return Analysis */}
       {riskReturnAnalysis && (
@@ -1663,12 +1990,13 @@ const BalanceSheetDashboard = () => {
           <span>Manage Liabilities</span>
         </Button>
       </div>
-    </div>
+      </Layout>
+    </>
   );
 
   // CFA-Compliant Liabilities Dashboard
   const renderLiabilitiesDashboard = () => (
-    <div className="container mx-auto p-6 space-y-6">
+    <Layout className="p-6 space-y-6">
       {/* Temporal Liability Analysis */}
       <TemporalLiabilityAnalyzer
         expensesData={balanceSheetData?.expenses}
@@ -1720,12 +2048,12 @@ const BalanceSheetDashboard = () => {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </Layout>
   );
 
   // CFA-Compliant Income Statement (P&L)
   const renderIncomeStatement = () => (
-    <div className="container mx-auto p-6 space-y-6">
+    <Layout className="p-6 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -1772,28 +2100,47 @@ const BalanceSheetDashboard = () => {
               <h3 className="text-lg font-semibold text-red-700 border-b border-red-200 pb-2">
                 Expense Categories
               </h3>
-              <div className="p-4 bg-red-50 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Monthly Recurring</span>
-                  <span className="font-bold text-red-600">
-                    {formatCurrency(balanceSheetData?.expenses?.summary?.monthly_recurring_total?.amount || 0)}
-                  </span>
-                </div>
-              </div>
-              <div className="p-4 bg-red-50 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Variable Expenses</span>
-                  <span className="font-bold text-red-600">KES 0.00</span>
-                </div>
-              </div>
-              <div className="p-4 bg-red-100 rounded-lg border-2 border-red-300">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold">Total Monthly Expenses</span>
-                  <span className="font-bold text-red-700 text-lg">
-                    {formatCurrency(balanceSheetData?.expenses?.summary?.monthly_recurring_total?.amount || 0)}
-                  </span>
-                </div>
-              </div>
+              {/* Totals by expense type, aligned with Tools/Budget */}
+              {(() => {
+                const items = balanceSheetData?.expenses?.expenses || [];
+                const totalsByType = items.reduce((acc, exp) => {
+                  const type = (exp.expense_type || 'other').toLowerCase();
+                  const amount = parseFloat(exp.monthly_equivalent) || 0;
+                  acc[type] = (acc[type] || 0) + amount;
+                  return acc;
+                }, {});
+                const totalMonthly = balanceSheetData?.expenses?.summary?.monthly_recurring_total?.amount || 0;
+                return (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {EXPENSE_TYPE_DEFS.map(({ value, label, Icon }) => {
+                        const amount = totalsByType[value] || 0;
+                        return (
+                          <div key={value} className="p-4 bg-red-50 rounded-lg border border-red-100">
+                            <div className="flex items-center justify-between">
+                              <span className="flex items-center gap-2 text-sm font-medium text-red-700">
+                                {Icon ? <Icon className="h-4 w-4 text-red-500" /> : null}
+                                {label}
+                              </span>
+                              <span className="text-base font-semibold text-red-900">
+                                {formatCurrency(amount)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="p-4 bg-red-100 rounded-lg border-2 border-red-300">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold">Total Monthly Expenses</span>
+                        <span className="font-bold text-red-700 text-lg">
+                          {formatCurrency(totalMonthly)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
 
@@ -1846,7 +2193,7 @@ const BalanceSheetDashboard = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </Layout>
   );
 
   return (

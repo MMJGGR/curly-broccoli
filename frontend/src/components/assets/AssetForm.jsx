@@ -6,7 +6,7 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 // Removed unused Select imports - using native HTML select instead
 import { X, Save, AlertCircle } from '../ui/icons';
-import { getKenyaAssetCategories } from '../../utils/kenyaReturnRiskModels';
+// import { getKenyaAssetCategories } from '../../utils/kenyaReturnRiskModels';
 import HybridSaveManager from '../balance-sheet/HybridSaveManager';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
@@ -48,28 +48,43 @@ const AssetForm = ({ asset, onAssetCreated, onAssetUpdated, onCancel }) => {
 
   const fetchAvailableTypes = async () => {
     try {
-      // Use Kenya-specific asset categories with enhanced CFA-compliant data
-      const kenyaCategories = getKenyaAssetCategories();
-      setAvailableTypes(kenyaCategories);
-      
-      // Fallback to API if Kenya categories fail
-      if (Object.keys(kenyaCategories).length === 0) {
-        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/api/v1/assets-v2/types/available`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch asset types');
-        }
-
-        const data = await response.json();
-        setAvailableTypes(data.asset_categories || {});
+      // Prefer server-canonical categories/types
+      const base = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('jwt');
+      const catsRes = await fetch(`${base}/api/v1/asset-reference/asset-categories`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!catsRes.ok) throw new Error('Failed to fetch asset categories');
+      const cats = await catsRes.json();
+      const categories = Array.isArray(cats.categories) ? cats.categories : [];
+      const out = {};
+      for (const c of categories) {
+        try {
+          const typesRes = await fetch(`${base}/api/v1/asset-reference/asset-types/${c.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!typesRes.ok) continue;
+          const tjson = await typesRes.json();
+          const types = Array.isArray(tjson.types) ? tjson.types : [];
+          out[c.code] = types.map(t => ({
+            value: t.code,
+            label: t.label,
+            is_liquid: !!t.is_liquid,
+            risk_level: t.risk_level || 'moderate',
+            is_appreciating: t.is_appreciating !== false,
+            minimum_investment: t.minimum_investment || 0
+          }));
+        } catch (_) { /* ignore per-category failure */ }
+      }
+      // If server returned nothing, keep last known state
+      if (Object.keys(out).length > 0) {
+        setAvailableTypes(out);
+      } else {
+        throw new Error('No categories available');
       }
     } catch (err) {
       console.error('Error fetching asset types:', err);
-      setError('Failed to load asset types. Using default Kenya asset types.');
-      
-      // Use Kenya categories as final fallback
-      const kenyaCategories = getKenyaAssetCategories();
-      setAvailableTypes(kenyaCategories);
+      setError('Failed to load asset types from server. Please try again.');
     }
   };
 

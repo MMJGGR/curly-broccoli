@@ -3,6 +3,7 @@
  * Following the successful OnboardingContext pattern
  */
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { authFetch, getAuthToken } from '../utils/authFetch';
 
 const TimelineContext = createContext();
 
@@ -24,11 +25,21 @@ const timelineReducer = (state, action) => {
         loading: false,
         error: action.payload
       };
-    case 'UPDATE_ALIGNMENT':
+    case 'UPDATE_ALIGNMENT': {
+      const payload = action.payload;
+      // Accept either a numeric score or an object with details
+      const score = typeof payload === 'number' ? payload : (payload?.score ?? state.alignmentScore);
+      const trend = typeof payload === 'object' && payload !== null ? (payload.trend ?? state.alignmentTrend) : state.alignmentTrend;
+      const status = typeof payload === 'object' && payload !== null ? (payload.status ?? state.alignmentStatus) : state.alignmentStatus;
+      const recommendations = typeof payload === 'object' && payload !== null ? (payload.recommendations ?? state.alignmentRecommendations) : state.alignmentRecommendations;
       return {
         ...state,
-        alignmentScore: action.payload
+        alignmentScore: score,
+        alignmentTrend: trend,
+        alignmentStatus: status,
+        alignmentRecommendations: recommendations
       };
+    }
     case 'ADD_MILESTONE':
       return {
         ...state,
@@ -67,6 +78,7 @@ const initialState = {
   alignmentScore: null,
   alignmentTrend: null,
   alignmentStatus: null,
+  alignmentRecommendations: null,
   // Dashboard data
   nextMilestone: null,
   quickActions: [],
@@ -78,25 +90,27 @@ const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 export const TimelineProvider = ({ children }) => {
   const [state, dispatch] = useReducer(timelineReducer, initialState);
 
-  // Get auth token from localStorage
-  const getAuthToken = useCallback(() => {
-    return localStorage.getItem('authToken');
-  }, []);
+  // Token helper comes from utils/authFetch
 
   // Load Timeline journey data
   const loadTimelineJourney = useCallback(async () => {
     const token = getAuthToken();
     if (!token) return;
-
     dispatch({ type: 'LOADING' });
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/timeline/journey`, {
+      // Add a timeout to prevent indefinite spinners if the API hangs
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 10000);
+
+      const response = await authFetch(`${API_BASE}/api/v1/timeline/journey`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        signal: controller.signal
       });
+      clearTimeout(t);
 
       if (!response.ok) {
         throw new Error(`Failed to load Timeline: ${response.status}`);
@@ -122,10 +136,10 @@ export const TimelineProvider = ({ children }) => {
       console.error('Timeline journey loading failed:', error);
       dispatch({
         type: 'LOAD_ERROR',
-        payload: error.message
+        payload: error.name === 'AbortError' ? 'Request timed out' : (error.message || 'Failed to load')
       });
     }
-  }, [getAuthToken]);
+  }, []);
 
   // Load alignment details
   const loadAlignmentDetails = useCallback(async () => {
@@ -133,7 +147,7 @@ export const TimelineProvider = ({ children }) => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/timeline/alignment`, {
+      const response = await authFetch(`${API_BASE}/api/v1/timeline/alignment`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -159,7 +173,7 @@ export const TimelineProvider = ({ children }) => {
     } catch (error) {
       console.error('Alignment loading failed:', error);
     }
-  }, [getAuthToken]);
+  }, []);
 
   // Load dashboard overview
   const loadDashboardOverview = useCallback(async () => {
@@ -167,7 +181,7 @@ export const TimelineProvider = ({ children }) => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/timeline/dashboard-overview`, {
+      const response = await authFetch(`${API_BASE}/api/v1/timeline/dashboard-overview`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -196,7 +210,7 @@ export const TimelineProvider = ({ children }) => {
     } catch (error) {
       console.error('Dashboard overview loading failed:', error);
     }
-  }, [getAuthToken]);
+  }, []);
 
   // Add new milestone
   const addMilestone = useCallback(async (milestoneData) => {
@@ -204,7 +218,7 @@ export const TimelineProvider = ({ children }) => {
     if (!token) return;
 
     try {
-      const response = await fetch(`${API_BASE}/api/v1/timeline/milestone`, {
+      const response = await authFetch(`${API_BASE}/api/v1/timeline/milestone`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -238,18 +252,32 @@ export const TimelineProvider = ({ children }) => {
 
     } catch (error) {
       console.error('Milestone creation failed:', error);
+      // Local-first fallback
+      try {
+        const loc = { ...(milestoneData || {}), id: `local_ms_${Date.now()}` };
+        const raw = localStorage.getItem('milestones_local') || '[]';
+        const arr = JSON.parse(raw);
+        localStorage.setItem('milestones_local', JSON.stringify([...arr, loc]));
+        dispatch({ type: 'ADD_MILESTONE', payload: loc });
+        return { success: true, milestone: loc, fallback: true };
+      } catch (_) {}
       throw error;
     }
-  }, [getAuthToken]);
+  }, []);
 
   // Initialize Timeline on mount
   useEffect(() => {
     const token = getAuthToken();
-    if (token) {
-      loadTimelineJourney();
-      loadDashboardOverview();
-    }
-  }, [getAuthToken, loadTimelineJourney, loadDashboardOverview]);
+    if (!token) return;
+    // In dev (React StrictMode), effects may run twice; guard with sessionStorage for this session
+    try {
+      const guardKey = 'timeline_init_guard';
+      if (sessionStorage.getItem(guardKey) === '1') return;
+      sessionStorage.setItem(guardKey, '1');
+    } catch {}
+    loadTimelineJourney();
+    loadDashboardOverview();
+  }, [loadTimelineJourney, loadDashboardOverview]);
 
   // Context value
   const value = {

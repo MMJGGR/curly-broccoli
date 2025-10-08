@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List
 
 from ....auth import get_current_user
-from ....models import User, IncomeSource as IncomeSourceModel, OnboardingState
+from ....models import User, IncomeSource as IncomeSourceModel, OnboardingState, IncomeSourceHistory
+from datetime import datetime
 from ....database import get_db
 
 router = APIRouter(prefix="/income-v2", tags=["income-v2-clean"])
@@ -259,6 +260,41 @@ async def get_income_sources_v2(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving income sources: {str(e)}"
         )
+
+
+@router.post('/sources/{source_id}/history')
+async def add_income_history(
+    source_id: int,
+    effective_date: str,
+    amount: float,
+    frequency: str = 'monthly',
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    src = db.query(IncomeSourceModel).filter(IncomeSourceModel.id == source_id, IncomeSourceModel.user_id == current_user.id).first()
+    if not src:
+        raise HTTPException(status_code=404, detail='Income source not found')
+    try:
+        eff = datetime.fromisoformat(effective_date.replace('Z','+00:00'))
+    except Exception:
+        raise HTTPException(status_code=400, detail='Invalid effective_date (ISO)')
+    row = IncomeSourceHistory(user_id=current_user.id, income_source_id=source_id, effective_date=eff, amount=amount, frequency=frequency)
+    db.add(row)
+    db.commit()
+    return { 'status': 'ok' }
+
+
+@router.get('/sources/{source_id}/history')
+async def list_income_history(
+    source_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    src = db.query(IncomeSourceModel).filter(IncomeSourceModel.id == source_id, IncomeSourceModel.user_id == current_user.id).first()
+    if not src:
+        raise HTTPException(status_code=404, detail='Income source not found')
+    rows = db.query(IncomeSourceHistory).filter(IncomeSourceHistory.user_id == current_user.id, IncomeSourceHistory.income_source_id == source_id).order_by(IncomeSourceHistory.effective_date.desc()).all()
+    return { 'history': [ { 'effective_date': r.effective_date.isoformat(), 'amount': r.amount, 'frequency': r.frequency } for r in rows ] }
 
 
 @router.put("/sources/{source_id}")

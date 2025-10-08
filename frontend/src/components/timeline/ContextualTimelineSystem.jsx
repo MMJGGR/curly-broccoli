@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 // 1. CFA LIFECYCLE PHASE INDICATOR
 // Universal component showing current financial phase with contextual styling
@@ -78,7 +78,8 @@ export const LifecyclePhaseIndicator = ({
 // Small, contextual elements that appear throughout the app with relevant guidance
 export const ContextualGuidance = ({ context, className = '' }) => {
   const { currentPhase, currentAge } = useTimeline();
-  const { actualSurplus } = useBudget();
+  const { selectNetCashFlow } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
   
   const getContextualMessage = () => {
     const messages = {
@@ -144,7 +145,8 @@ export const TimelineProgressWidget = ({
   className = '' 
 }) => {
   const { alignmentScore, nextMilestone, nextMilestoneDistance, milestones } = useTimeline();
-  const { actualSurplus } = useBudget();
+  const { selectNetCashFlow } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
   
   const completedMilestones = milestones?.filter(m => m.progress >= 100).length || 0;
   const totalMilestones = milestones?.length || 0;
@@ -237,7 +239,8 @@ export const TimelineProgressWidget = ({
 // Smart notifications that appear contextually based on timeline and budget status
 export const TimelineAlert = ({ type = 'info', dismissible = true, className = '' }) => {
   const { currentPhase, alignmentScore, nextMilestone } = useTimeline();
-  const { actualSurplus } = useBudget();
+  const { selectNetCashFlow } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
   // const budgetHealth = actualSurplus >= 0 ? 'healthy' : 'deficit';
   
   const getAlert = () => {

@@ -262,10 +262,10 @@ Cypress.Commands.add('navigateToBudgetTab', () => {
  */
 Cypress.Commands.add('registerTestUser', (email, password) => {
   cy.log(`👤 Registering test user: ${email}`);
-  
+  const API_BASE = Cypress.env('API_BASE_URL') || 'http://localhost:8000';
   return cy.request({
     method: 'POST',
-    url: 'http://localhost:8000/auth/register',
+    url: `${API_BASE}/auth/register`,
     body: {
       email: email,
       password: password,
@@ -300,7 +300,7 @@ Cypress.Commands.add('completeOnboardingWithExpenses', (data) => {
   cy.log(`📋 Completing onboarding with expenses`);
   
   // Visit the application
-  cy.visit('http://localhost:3000');
+  cy.visit('/');
   
   // Navigate to onboarding if not already there
   cy.get('body').then(($body) => {

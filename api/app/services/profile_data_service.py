@@ -250,6 +250,15 @@ class ProfileDataService:
                 profile.emergency_fund_target = None
         
         logger.info(f"Transferred goals data: Retirement={profile.retirement_age}, Emergency Fund={profile.emergency_fund_target}")
+
+        # Preferences (if captured during onboarding step 5)
+        try:
+            if onboarding.preferences_data:
+                # Reuse investment_preferences as generalized preferences container (no schema change)
+                profile.investment_preferences = onboarding.preferences_data
+        except Exception:
+            # Non-fatal if preferences not present; continue
+            pass
     
     def _is_profile_complete(self, profile: Profile) -> bool:
         """Check if profile has complete meaningful data"""

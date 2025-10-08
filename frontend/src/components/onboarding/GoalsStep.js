@@ -18,7 +18,7 @@ const GoalsStep = ({ onboardingContext }) => {
     education: goalsData.education || '',
     retirement: goalsData.retirement || '',
     investment: goalsData.investment || '',
-    debtPayoff: goalsData.debtPayoff || '', // New field for debt-focused goals
+    debtPayoff: goalsData.debtPayoff || '',
     other: goalsData.other || ''
   });
   
@@ -30,10 +30,35 @@ const GoalsStep = ({ onboardingContext }) => {
     investment: '5-years',
     debtPayoff: '3-years'
   });
+  // Per-goal metadata (current_amount, target_date, priority, planned_monthly)
+  const [goalsMeta, setGoalsMeta] = useState(() => goalsData.goals_meta || {
+    emergencyFund: { current_amount: '', target_date: '', priority: 'high', planned_monthly: '' },
+    homeDownPayment: { current_amount: '', target_date: '', priority: 'medium', planned_monthly: '' },
+    education: { current_amount: '', target_date: '', priority: 'medium', planned_monthly: '' },
+    retirement: { current_amount: '', target_date: '', priority: 'high', planned_monthly: '' },
+    investment: { current_amount: '', target_date: '', priority: 'medium', planned_monthly: '' },
+    debtPayoff: { current_amount: '', target_date: '', priority: 'high', planned_monthly: '' },
+  });
+  const [otherGoal, setOtherGoal] = useState(() => goalsData.other_goal || {
+    name: goalsData.other_name || '',
+    target_amount: goalsData.other || '',
+    current_amount: '',
+    target_date: '',
+    priority: 'low',
+    planned_monthly: ''
+  });
+  // Plan preference
+  const [planPref, setPlanPref] = useState(() => goalsData.planPreference || { strategy: 'B', applyOnComplete: false });
   
   useEffect(() => {
-    updateGoalsData({ ...formData, timeframes: selectedTimeframes });
-  }, [formData, selectedTimeframes, updateGoalsData]);
+    updateGoalsData({
+      ...formData,
+      timeframes: selectedTimeframes,
+      goals_meta: goalsMeta,
+      other_goal: otherGoal,
+      planPreference: planPref
+    });
+  }, [formData, selectedTimeframes, goalsMeta, otherGoal, planPref, updateGoalsData]);
   
   // Persona detection based on financial data
   const detectPersona = () => {
@@ -106,6 +131,10 @@ const GoalsStep = ({ onboardingContext }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const handleMetaChange = (key, field, value) => {
+    setGoalsMeta(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+  };
   
   const handleTimeframeChange = (field, timeframe) => {
     setSelectedTimeframes(prev => ({ ...prev, [field]: timeframe }));
@@ -120,6 +149,43 @@ const GoalsStep = ({ onboardingContext }) => {
   
   const suggestions = getPersonaGoalSuggestions();
   const persona = detectPersona();
+  // Planner preview calculations
+  const monthlyIncome = parseFloat(financialData?.monthlyIncome) || 0;
+  const baselineExpenses = ['rent','utilities','groceries','transport','loanRepayments']
+    .map(k => parseFloat(financialData?.[k]) || 0).reduce((a,b)=>a+b,0);
+  const surplus = monthlyIncome - baselineExpenses;
+  const monthsFromTf = (tf) => {
+    if (!tf) return 12;
+    try {
+      if (tf.includes('month')) return parseInt(tf);
+      if (tf.includes('year')) return parseInt(tf) * 12;
+    } catch (e) { return 12; }
+    return 12;
+  };
+  const requiredMonthly = (target, current, months) => {
+    const t = parseFloat(target)||0, c = parseFloat(current)||0, m = Math.max(1, months||0);
+    return Math.max(0, (t - c)/m);
+  };
+  const goalList = [
+    { key: 'emergencyFund', name: 'Emergency Fund', target: formData.emergencyFund, meta: goalsMeta.emergencyFund, tf: selectedTimeframes.emergencyFund },
+    { key: 'homeDownPayment', name: 'Home Down Payment', target: formData.homeDownPayment, meta: goalsMeta.homeDownPayment, tf: selectedTimeframes.homeDownPayment },
+    { key: 'education', name: 'Education', target: formData.education, meta: goalsMeta.education, tf: selectedTimeframes.education },
+    { key: 'retirement', name: 'Retirement', target: formData.retirement, meta: goalsMeta.retirement, tf: selectedTimeframes.retirement },
+    { key: 'investment', name: 'Investment', target: formData.investment, meta: goalsMeta.investment, tf: selectedTimeframes.investment },
+    { key: 'debtPayoff', name: 'Debt Payoff', target: formData.debtPayoff, meta: goalsMeta.debtPayoff, tf: selectedTimeframes.debtPayoff },
+  ].filter(g => parseFloat(g.target) > 0);
+  const other = otherGoal && otherGoal.name && parseFloat(otherGoal.target_amount) > 0 ? { ...otherGoal, tf: selectedTimeframes.other || '3-years' } : null;
+  const previewItems = goalList.map(g => {
+    const months = g.meta.target_date ? Math.max(1, Math.round((new Date(g.meta.target_date)- new Date())/(1000*60*60*24*30))) : monthsFromTf(g.tf);
+    return {
+      name: g.name, required: requiredMonthly(g.target, g.meta.current_amount, months)
+    };
+  });
+  if (other) {
+    const months = other.target_date ? Math.max(1, Math.round((new Date(other.target_date)- new Date())/(1000*60*60*24*30))) : monthsFromTf('3-years');
+    previewItems.push({ name: other.name, required: requiredMonthly(other.target_amount, other.current_amount, months) });
+  }
+  const totalRequired = previewItems.reduce((s,i)=>s+i.required,0);
   
   return (
     <div className="space-y-8">
@@ -176,7 +242,7 @@ const GoalsStep = ({ onboardingContext }) => {
         </div>
       )}
       
-      {/* Goal Input Fields with Timeframes */}
+      {/* Goal Input Fields with Timeframes and Details */}
       <div className="space-y-6">
         {/* Emergency Fund */}
         <div className="bg-red-50 p-6 rounded-lg border border-red-200">
@@ -204,6 +270,36 @@ const GoalsStep = ({ onboardingContext }) => {
                 className="block w-full px-3 py-2 border border-gray-300 rounded-md"
                 placeholder={`Suggested: ${suggestions.emergencyFund?.toLocaleString() || '100,000'}`}
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Current Amount (KES)</label>
+              <input type="number" value={goalsMeta.emergencyFund.current_amount}
+                onChange={(e)=>handleMetaChange('emergencyFund','current_amount', e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+              <input type="date" value={goalsMeta.emergencyFund.target_date}
+                onChange={(e)=>handleMetaChange('emergencyFund','target_date', e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                <select value={goalsMeta.emergencyFund.priority}
+                  onChange={(e)=>handleMetaChange('emergencyFund','priority', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Planned Monthly (KES)</label>
+                <input type="number" value={goalsMeta.emergencyFund.planned_monthly}
+                  onChange={(e)=>handleMetaChange('emergencyFund','planned_monthly', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+              </div>
             </div>
             <div className="text-sm text-gray-600 flex items-center">
               <div>
@@ -241,6 +337,36 @@ const GoalsStep = ({ onboardingContext }) => {
                   className="block w-full px-3 py-2 border border-gray-300 rounded-md"
                   placeholder={`Suggested: ${suggestions.debtPayoff?.toLocaleString() || '200,000'}`}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Amount (KES)</label>
+                <input type="number" value={goalsMeta.debtPayoff.current_amount}
+                  onChange={(e)=>handleMetaChange('debtPayoff','current_amount', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+                <input type="date" value={goalsMeta.debtPayoff.target_date}
+                  onChange={(e)=>handleMetaChange('debtPayoff','target_date', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                  <select value={goalsMeta.debtPayoff.priority}
+                    onChange={(e)=>handleMetaChange('debtPayoff','priority', e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Planned Monthly (KES)</label>
+                  <input type="number" value={goalsMeta.debtPayoff.planned_monthly}
+                    onChange={(e)=>handleMetaChange('debtPayoff','planned_monthly', e.target.value)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+                </div>
               </div>
               <div className="text-sm text-gray-600 flex items-center">
                 <div>
@@ -319,6 +445,36 @@ const GoalsStep = ({ onboardingContext }) => {
                 placeholder={`Suggested: ${suggestions.retirement?.toLocaleString() || '5,000,000'}`}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Current Amount (KES)</label>
+              <input type="number" value={goalsMeta.retirement.current_amount}
+                onChange={(e)=>handleMetaChange('retirement','current_amount', e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+              <input type="date" value={goalsMeta.retirement.target_date}
+                onChange={(e)=>handleMetaChange('retirement','target_date', e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                <select value={goalsMeta.retirement.priority}
+                  onChange={(e)=>handleMetaChange('retirement','priority', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Planned Monthly (KES)</label>
+                <input type="number" value={goalsMeta.retirement.planned_monthly}
+                  onChange={(e)=>handleMetaChange('retirement','planned_monthly', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+              </div>
+            </div>
             <div className="text-sm text-gray-600 flex items-center">
               <div>
                 <p className="font-medium">Rule of thumb:</p>
@@ -355,6 +511,36 @@ const GoalsStep = ({ onboardingContext }) => {
                 placeholder={`Suggested: ${suggestions.investment?.toLocaleString() || '1,000,000'}`}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Current Amount (KES)</label>
+              <input type="number" value={goalsMeta.investment.current_amount}
+                onChange={(e)=>handleMetaChange('investment','current_amount', e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+              <input type="date" value={goalsMeta.investment.target_date}
+                onChange={(e)=>handleMetaChange('investment','target_date', e.target.value)}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                <select value={goalsMeta.investment.priority}
+                  onChange={(e)=>handleMetaChange('investment','priority', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Planned Monthly (KES)</label>
+                <input type="number" value={goalsMeta.investment.planned_monthly}
+                  onChange={(e)=>handleMetaChange('investment','planned_monthly', e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+              </div>
+            </div>
             <div className="text-sm text-gray-600 flex items-center">
               <div>
                 <p className="font-medium">Investment approach:</p>
@@ -362,6 +548,72 @@ const GoalsStep = ({ onboardingContext }) => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+      {/* Other Goal */}
+      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-lg font-medium text-gray-800">➕ Other Goal</h4>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+            <input value={otherGoal.name} onChange={(e)=>setOtherGoal({...otherGoal, name: e.target.value})} className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Target Amount (KES)</label>
+            <input type="number" value={otherGoal.target_amount} onChange={(e)=>setOtherGoal({...otherGoal, target_amount: e.target.value})} className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Current Amount (KES)</label>
+            <input type="number" value={otherGoal.current_amount} onChange={(e)=>setOtherGoal({...otherGoal, current_amount: e.target.value})} className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Target Date</label>
+            <input type="date" value={otherGoal.target_date} onChange={(e)=>setOtherGoal({...otherGoal, target_date: e.target.value})} className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+            <select value={otherGoal.priority} onChange={(e)=>setOtherGoal({...otherGoal, priority: e.target.value})} className="block w-full px-3 py-2 border border-gray-300 rounded-md">
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Planned Monthly (KES)</label>
+            <input type="number" value={otherGoal.planned_monthly} onChange={(e)=>setOtherGoal({...otherGoal, planned_monthly: e.target.value})} className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
+          </div>
+        </div>
+      </div>
+
+      {/* Plan Preview & Apply Option */}
+      <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+        <h4 className="text-lg font-medium text-gray-800 mb-2">Plan Preview</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="p-3 bg-white rounded border">
+            <p className="text-sm text-gray-600">Monthly Income</p>
+            <p className="text-xl font-bold text-gray-800">KES {Math.round(monthlyIncome).toLocaleString()}</p>
+          </div>
+          <div className="p-3 bg-white rounded border">
+            <p className="text-sm text-gray-600">Baseline Expenses</p>
+            <p className="text-xl font-bold text-gray-800">KES {Math.round(baselineExpenses).toLocaleString()}</p>
+          </div>
+          <div className="p-3 bg-white rounded border">
+            <p className="text-sm text-gray-600">Surplus</p>
+            <p className={`text-xl font-bold ${surplus>=0?'text-blue-700':'text-orange-700'}`}>KES {Math.round(surplus).toLocaleString()}</p>
+          </div>
+        </div>
+        <div className="p-3 bg-white rounded border mb-3">
+          <p className="text-sm text-gray-600">Required Monthly for Entered Goals</p>
+          <p className={`text-xl font-bold ${totalRequired<=surplus?'text-green-700':'text-orange-700'}`}>KES {Math.round(totalRequired).toLocaleString()} ({totalRequired<=surplus?'Feasible':'Shortfall'})</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <label className="text-sm text-gray-700">Strategy for Post‑Onboarding Apply:</label>
+          <select value={planPref.strategy} onChange={(e)=>setPlanPref({...planPref, strategy: e.target.value})} className="border rounded px-2 py-1">
+            <option value="B">Allocate surplus equally across goals</option>
+          </select>
+          <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={!!planPref.applyOnComplete} onChange={(e)=>setPlanPref({...planPref, applyOnComplete: e.target.checked})} /> Apply after completion</label>
         </div>
       </div>
       

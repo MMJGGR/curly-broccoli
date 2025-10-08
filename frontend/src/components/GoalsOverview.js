@@ -1,25 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import MessageBox from './MessageBox';
-import { createGoal, updateGoal, deleteGoal, listGoals } from '../api';
+import { useUnifiedFinancialContext } from '../contexts/TransactionContext';
 
 const GoalsOverview = ({ onNextScreen }) => {
   const [message, setMessage] = useState('');
   const [showMessageBox, setShowMessageBox] = useState(false);
-  const [goals, setGoals] = useState([]);
+  const { goals, createGoal, updateGoal, deleteGoal, fetchAllFinancialData } = useUnifiedFinancialContext();
+  const [localGoals, setLocalGoals] = useState([]);
 
-  const fetchGoals = async () => {
+  const refreshGoals = useCallback(async () => {
     try {
-      const data = await listGoals();
-      if (Array.isArray(data)) setGoals(data);
+      await fetchAllFinancialData();
+      setLocalGoals(goals);
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [fetchAllFinancialData, goals]);
 
   useEffect(() => {
     if (process.env.NODE_ENV === 'test') return;
-    fetchGoals();
-  }, []);
+    refreshGoals();
+  }, [refreshGoals]);
 
   const showActionMessage = (actionName) => {
     setMessage('Action: ' + actionName + ' (This is a wireframe action)');
@@ -34,39 +35,43 @@ const GoalsOverview = ({ onNextScreen }) => {
   const addGoal = async () => {
     showActionMessage('Add New Goal');
     const newGoal = { name: 'New Goal', progress: 0, target: 'KES 0', current: 'KES 0' };
-    setGoals((g) => [...g, newGoal]);
+    setLocalGoals((g) => [...g, newGoal]);
     try {
-      const created = await createGoal(undefined, newGoal);
-      if (created && created.id) {
-        setGoals((g) => g.map((goal) => (goal === newGoal ? created : goal)));
-      }
+      await createGoal({
+        name: 'New Goal',
+        target_amount: 0,
+        target_date: new Date().toISOString().slice(0,10),
+        current_amount: 0
+      });
+      await refreshGoals();
     } catch (err) {
       console.error(err);
-      fetchGoals();
+      refreshGoals();
     }
   };
 
   const adjustGoal = async (index) => {
-    const goal = goals[index];
+    const goal = localGoals[index];
     const updated = { ...goal, progress: Math.min(100, (goal.progress || 0) + 5) };
-    setGoals((g) => g.map((goal, i) => (i === index ? updated : goal)));
+    setLocalGoals((g) => g.map((goal, i) => (i === index ? updated : goal)));
     try {
-      await updateGoal(undefined, goal.id || index, updated);
+      await updateGoal(goal.id, { current_amount: (goal.current_amount || 0) + 1000 });
+      await refreshGoals();
     } catch (err) {
       console.error(err);
-      fetchGoals();
+      refreshGoals();
     }
   };
 
   const removeGoal = async (index) => {
-    const goal = goals[index];
-    const prev = [...goals];
-    setGoals((g) => g.filter((_, i) => i !== index));
+    const goal = localGoals[index];
+    const prev = [...localGoals];
+    setLocalGoals((g) => g.filter((_, i) => i !== index));
     try {
-      await deleteGoal(undefined, goal.id || index);
+      await deleteGoal(goal.id);
     } catch (err) {
       console.error(err);
-      setGoals(prev);
+      setLocalGoals(prev);
     }
   };
 
@@ -76,7 +81,7 @@ const GoalsOverview = ({ onNextScreen }) => {
         <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Financial Goals</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {goals.map((goal, index) => (
+          {localGoals.map((goal, index) => (
             <div key={index} className="bg-white rounded-xl shadow-lg p-6 flex flex-col justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-3">{goal.name}</h2>

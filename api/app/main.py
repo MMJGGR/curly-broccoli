@@ -43,6 +43,21 @@ async def add_trace_id(request: Request, call_next):
     response.headers["X-Trace-ID"] = trace_id
     return response
 
+# Deprecation header for legacy routes mounted under /deprecated
+@app.middleware("http")
+async def mark_deprecated_routes(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/deprecated") or request.url.path.startswith("/api/v1/deprecated"):
+        response.headers["Deprecation"] = "true"
+        response.headers["Sunset"] = "Mon, 01 Dec 2025 00:00:00 GMT"
+        # Simple deprecation log for observability
+        try:
+            import logging
+            logging.getLogger(__name__).warning(f"Deprecated route used: {request.method} {request.url.path}")
+        except Exception:
+            pass
+    return response
+
 
 
 
@@ -141,13 +156,14 @@ def add_numbers(nums: Numbers):
 
 # mount your routers
 app.include_router(auth_router)
-app.include_router(profile_router)
-app.include_router(accounts_router)
-app.include_router(transactions_router)
-app.include_router(milestones_router)
-app.include_router(goals_router)
-app.include_router(income_sources_router)
-app.include_router(expense_categories_router)
+# Mount legacy routers under /deprecated to avoid data silos; use /api/v1 clean routers instead
+app.include_router(profile_router,           prefix="/deprecated")
+app.include_router(accounts_router,          prefix="/deprecated")
+app.include_router(transactions_router,      prefix="/deprecated")
+app.include_router(milestones_router,        prefix="/deprecated")
+app.include_router(goals_router,             prefix="/deprecated")
+app.include_router(income_sources_router,    prefix="/deprecated")
+app.include_router(expense_categories_router,prefix="/deprecated")
 app.include_router(dev_router)
 # app.include_router(onboarding_router)  # REMOVED - conflicting with v1 API
 app.include_router(api_router, prefix="/api/v1")

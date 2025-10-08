@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import useLifecyclePhase from '../../hooks/useLifecyclePhase';
 import cfaGuidanceService from '../../services/cfaGuidance';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const ContextualGuidanceWidget = ({ 
   context = 'general', // budget_planning, investment_allocation, goal_setting, etc.
@@ -25,7 +25,11 @@ const ContextualGuidanceWidget = ({
   const [expandedRecommendation, setExpandedRecommendation] = useState(null);
 
   const { currentAge, persona, personaTheme } = useTimeline();
-  const { budgetData, actualSurplus } = useBudget();
+  const { incomes = [], expenses = [], selectNetCashFlow } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
+  const monthlyIncome = Array.isArray(incomes) ? incomes.reduce((s, i) => s + (i.monthly_amount || i.amount || 0), 0) : (incomes?.total_monthly_income || 0);
+  const monthlyExpenses = Array.isArray(expenses) ? expenses.reduce((s, e) => s + (e.monthly_equivalent || e.amount || 0), 0) : 0;
+  const budgetData = { monthlyIncome, monthlyExpenses, netWorth: 0, dependents: 0, goals: [], currentAssets: {} };
 
   // Mock user profile - in real app this would come from context/props
   const userProfile = {

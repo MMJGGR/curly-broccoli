@@ -6,7 +6,7 @@
 import React, { useState, useMemo } from 'react';
 import useLifecyclePhase, { LIFECYCLE_PHASES } from '../../hooks/useLifecyclePhase';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const LifecyclePhaseIndicator = ({ 
   size = 'default', 
@@ -16,32 +16,27 @@ const LifecyclePhaseIndicator = ({
   onPhaseClick = null 
 }) => {
   const { currentAge, persona, personaTheme } = useTimeline();
-  const { budgetData } = useBudget();
+  const { incomes = [], expenses = [] } = useUnifiedFinancialContext();
   const [showPhaseDetails, setShowPhaseDetails] = useState(false);
 
   // Memoize user profile to prevent infinite re-renders
   const userProfile = useMemo(() => {
-    const goals = budgetData?.goals || [];
-    const currentAssets = budgetData?.currentAssets || {};
-    
+    const monthlyIncome = Array.isArray(incomes)
+      ? incomes.reduce((s, i) => s + (i.monthly_amount || i.amount || 0), 0)
+      : (incomes?.total_monthly_income || 0);
+    const monthlyExpenses = Array.isArray(expenses)
+      ? expenses.reduce((s, e) => s + (e.monthly_equivalent || e.amount || 0), 0)
+      : 0;
     return {
       age: currentAge || 30,
-      income: budgetData?.monthlyIncome || 0,
-      expenses: budgetData?.monthlyExpenses || 0,
-      netWorth: budgetData?.netWorth || 0,
-      dependents: budgetData?.dependents || 0,
-      goals: goals,
-      currentAssets: currentAssets
+      income: monthlyIncome,
+      expenses: monthlyExpenses,
+      netWorth: 0,
+      dependents: 0,
+      goals: [],
+      currentAssets: {}
     };
-  }, [
-    currentAge, 
-    budgetData?.monthlyIncome, 
-    budgetData?.monthlyExpenses, 
-    budgetData?.netWorth, 
-    budgetData?.dependents, 
-    budgetData?.goals,
-    budgetData?.currentAssets
-  ]);
+  }, [currentAge, incomes, expenses]);
 
   const {
     phase,

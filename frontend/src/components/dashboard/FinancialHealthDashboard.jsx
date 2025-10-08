@@ -13,7 +13,7 @@ const FinancialHealthDashboard = () => {
   const {
     assets,
     liabilities,
-    incomes,
+    incomes = [],
     expenses,
     goals,
     relationships,
@@ -35,12 +35,14 @@ const FinancialHealthDashboard = () => {
       setLoading(true);
       
       // Ensure all data is loaded through unified context
-      if (contextLoading) {
+      if (contextLoading?.global) {
         await fetchAllFinancialData();
       }
 
-      // Calculate total monthly income from incomes array
-      const totalMonthlyIncome = incomes.reduce((sum, income) => sum + (income.monthly_amount || 0), 0);
+      // Calculate total monthly income from incomes (array or object)
+      const totalMonthlyIncome = Array.isArray(incomes)
+        ? incomes.reduce((sum, income) => sum + (income.monthly_amount || income.amount || 0), 0)
+        : (incomes?.total_monthly_income || 0);
       const incomeData = { total_monthly_income: totalMonthlyIncome };
 
       // Calculate comprehensive dashboard metrics using unified context data

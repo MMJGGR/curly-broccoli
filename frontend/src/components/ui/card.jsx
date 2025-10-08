@@ -22,7 +22,7 @@ export const CardTitle = ({ children, className = '', ...props }) => (
 );
 
 export const CardContent = ({ children, className = '', ...props }) => (
-  <div className={`p-6 pt-0 ${className}`} {...props}>
+  <div className={`p-6 pt-0 text-scale break-words ${className}`} {...props}>
     {children}
   </div>
 );

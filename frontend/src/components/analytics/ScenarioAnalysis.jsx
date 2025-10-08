@@ -4,9 +4,10 @@
  */
 
 import React from 'react';
-import predictiveAnalytics from '../../services/predictiveAnalytics';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const ScenarioAnalysis = ({ scenarios, baseSuccessProbability }) => {
+  const analytics = useAnalytics();
   if (!scenarios || Object.keys(scenarios).length === 0) {
     return (
       <div className="text-center text-gray-500 py-8">
@@ -60,7 +61,7 @@ const ScenarioAnalysis = ({ scenarios, baseSuccessProbability }) => {
           </div>
           <div className="text-right">
             <div className="text-lg font-bold text-blue-600">
-              {predictiveAnalytics.formatPercentage(baseSuccessProbability)}
+              {analytics.formatPercentage(baseSuccessProbability)}
             </div>
             <div className="text-xs text-blue-500">Success Rate</div>
           </div>
@@ -95,7 +96,7 @@ const ScenarioAnalysis = ({ scenarios, baseSuccessProbability }) => {
               </div>
               <div className="text-right">
                 <div className={`text-lg font-bold ${getScenarioColor(probability)}`}>
-                  {predictiveAnalytics.formatPercentage(probability)}
+                  {analytics.formatPercentage(probability)}
                 </div>
                 <div className="text-xs text-gray-500">Success Rate</div>
               </div>
@@ -107,7 +108,7 @@ const ScenarioAnalysis = ({ scenarios, baseSuccessProbability }) => {
                 <div className="bg-white rounded p-2">
                   <div className="text-xs text-gray-500">Expected Value</div>
                   <div className="font-semibold text-gray-800">
-                    {predictiveAnalytics.formatCurrency(expectedValue)}
+                    {analytics.formatCurrency(expectedValue)}
                   </div>
                 </div>
               )}
@@ -116,7 +117,7 @@ const ScenarioAnalysis = ({ scenarios, baseSuccessProbability }) => {
                 <div className="bg-white rounded p-2">
                   <div className="text-xs text-gray-500">Inflation-Adjusted Target</div>
                   <div className="font-semibold text-gray-800">
-                    {predictiveAnalytics.formatCurrency(adjustedTarget)}
+                    {analytics.formatCurrency(adjustedTarget)}
                   </div>
                 </div>
               )}
@@ -125,7 +126,7 @@ const ScenarioAnalysis = ({ scenarios, baseSuccessProbability }) => {
                 <div className="bg-white rounded p-2">
                   <div className="text-xs text-gray-500">Adjusted Success Rate</div>
                   <div className={`font-semibold ${getScenarioColor(successProbabilityAdjusted)}`}>
-                    {predictiveAnalytics.formatPercentage(successProbabilityAdjusted)}
+                    {analytics.formatPercentage(successProbabilityAdjusted)}
                   </div>
                 </div>
               )}
@@ -139,14 +140,14 @@ const ScenarioAnalysis = ({ scenarios, baseSuccessProbability }) => {
                   <>
                     <span className="text-red-500 mr-2">↓</span>
                     <span className="text-red-600 font-medium">
-                      {predictiveAnalytics.formatPercentage(baseSuccessProbability - probability)} lower
+                      {analytics.formatPercentage(baseSuccessProbability - probability)} lower
                     </span>
                   </>
                 ) : probability > baseSuccessProbability ? (
                   <>
                     <span className="text-green-500 mr-2">↑</span>
                     <span className="text-green-600 font-medium">
-                      {predictiveAnalytics.formatPercentage(probability - baseSuccessProbability)} higher
+                      {analytics.formatPercentage(probability - baseSuccessProbability)} higher
                     </span>
                   </>
                 ) : (

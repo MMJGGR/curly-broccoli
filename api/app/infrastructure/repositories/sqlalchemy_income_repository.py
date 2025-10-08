@@ -9,7 +9,9 @@ from decimal import Decimal
 from ...application.interfaces.income_repository import IncomeRepository
 from ...domain.entities.income import Income, IncomeType, IncomeFrequency, TemporalPattern
 from ...domain.entities.money import Money
-from ..models.income_model import IncomeModel
+# Use existing app models to avoid missing infrastructure model imports
+# Map IncomeModel to the existing SQLAlchemy model `IncomeSource`
+from ...models import IncomeSource as IncomeModel
 
 
 class SQLAlchemyIncomeRepository(IncomeRepository):
@@ -23,26 +25,12 @@ class SQLAlchemyIncomeRepository(IncomeRepository):
         try:
             if income.id == 0:
                 # Create new
+                # IncomeSource has a minimal schema: name, amount, frequency, user_id
                 model = IncomeModel(
                     user_id=income.user_id,
-                    description=income.description,
+                    name=income.description or "Income",
                     amount=float(income.amount.amount),
-                    currency=income.amount.currency,
-                    income_type=income.income_type.value,
                     frequency=income.frequency.value,
-                    is_recurring=income.is_recurring,
-                    start_date=income.start_date,
-                    end_date=income.end_date,
-                    temporal_pattern=income.temporal_pattern.value,
-                    linked_asset_id=income.linked_asset_id,
-                    asset_relationship_type=income.asset_relationship_type,
-                    is_taxable=income.is_taxable,
-                    tax_category=income.get_tax_treatment_category(),
-                    growth_rate=float(income.growth_rate) if income.growth_rate else None,
-                    is_active=income.is_active,
-                    notes=income.notes,
-                    created_at=income.created_at,
-                    updated_at=income.updated_at
                 )
                 self._session.add(model)
                 self._session.flush()
@@ -52,24 +40,11 @@ class SQLAlchemyIncomeRepository(IncomeRepository):
                 model = self._session.query(IncomeModel).filter_by(id=income.id).first()
                 if not model:
                     raise ValueError(f"Income {income.id} not found")
-                
-                model.description = income.description
+
+                # Update minimal fields present in IncomeSource
+                model.name = income.description or model.name
                 model.amount = float(income.amount.amount)
-                model.currency = income.amount.currency
-                model.income_type = income.income_type.value
                 model.frequency = income.frequency.value
-                model.is_recurring = income.is_recurring
-                model.start_date = income.start_date
-                model.end_date = income.end_date
-                model.temporal_pattern = income.temporal_pattern.value
-                model.linked_asset_id = income.linked_asset_id
-                model.asset_relationship_type = income.asset_relationship_type
-                model.is_taxable = income.is_taxable
-                model.tax_category = income.get_tax_treatment_category()
-                model.growth_rate = float(income.growth_rate) if income.growth_rate else None
-                model.is_active = income.is_active
-                model.notes = income.notes
-                model.updated_at = income.updated_at
             
             self._session.commit()
             return income
@@ -117,24 +92,30 @@ class SQLAlchemyIncomeRepository(IncomeRepository):
     
     def _model_to_entity(self, model: IncomeModel) -> Income:
         """Convert database model to domain entity"""
+        # Map minimal IncomeSource fields to the richer domain entity
+        # Fields not present in IncomeSource are defaulted
+        try:
+            freq = IncomeFrequency(model.frequency)
+        except Exception:
+            freq = IncomeFrequency.MONTHLY
         return Income(
             id=model.id,
             user_id=model.user_id,
-            description=model.description,
-            amount=Money(Decimal(str(model.amount)), model.currency),
-            income_type=IncomeType(model.income_type),
-            frequency=IncomeFrequency(model.frequency),
-            is_recurring=model.is_recurring,
-            start_date=model.start_date,
-            end_date=model.end_date,
-            temporal_pattern=TemporalPattern(model.temporal_pattern),
-            linked_asset_id=model.linked_asset_id,
-            asset_relationship_type=model.asset_relationship_type,
-            is_taxable=model.is_taxable,
-            tax_category=model.tax_category,
-            growth_rate=Decimal(str(model.growth_rate)) if model.growth_rate else None,
-            is_active=model.is_active,
-            notes=model.notes,
-            created_at=model.created_at,
-            updated_at=model.updated_at
+            description=getattr(model, "name", None) or getattr(model, "description", "Income"),
+            amount=Money(Decimal(str(model.amount)), "KES"),
+            income_type=IncomeType.OTHER,
+            frequency=freq,
+            is_recurring=freq != IncomeFrequency.IRREGULAR,
+            start_date=None,
+            end_date=None,
+            temporal_pattern=TemporalPattern.PERMANENT,
+            linked_asset_id=None,
+            asset_relationship_type=None,
+            is_taxable=True,
+            tax_category="other",
+            growth_rate=None,
+            is_active=True,
+            notes=None,
+            created_at=None,
+            updated_at=None,
         )

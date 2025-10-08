@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1080" viewBox="0 0 1440 1080" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style><![CDATA[
+    .bg { fill: #f8fafc; }
+    .muted-surface { fill: #fbfdff; }
+    .surface { fill: #ffffff; }
+    .border { stroke: #e2e8f0; }
+    .muted { fill: #64748b; }
+    .fg { fill: #0f172a; }
+    .brand-weak { fill: #eff6ff; }
+    .title { font: 700 24px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .subtitle { font: 400 14px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; }
+    .sectionTitle { font: 600 13px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; letter-spacing: 0.3px; }
+    .h2 { font: 600 16px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .label { font: 600 11px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; letter-spacing: 0.25px; }
+    .metric { font: 700 22px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .small { font: 400 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; }
+    .btn { rx: 8; }
+    .btnLabel { font: 600 13px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; }
+  ]]></style>
+
+  <rect class="bg" x="0" y="0" width="1440" height="1080" />
+
+  <!-- Header -->
+  <rect class="surface border" x="80" y="36" width="1280" height="112" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="title" x="112" y="80">Dashboard</text>
+  <text class="subtitle" x="112" y="106">Overview, Decision Center, Progress &amp; Health, Analytics</text>
+  <rect class="btn" x="1088" y="66" width="120" height="36" fill="#eff6ff" stroke="#93c5fd"/>
+  <text class="btnLabel" x="1116" y="90" fill="#1d4ed8">Add Goal</text>
+  <rect class="btn" x="1220" y="66" width="120" height="36" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="btnLabel" x="1244" y="90" fill="#0f172a">Review Budget</text>
+
+  <!-- Overview KPI rail -->
+  <text class="sectionTitle" x="80" y="168">OVERVIEW</text>
+  <rect class="muted-surface border" x="80" y="180" width="1280" height="136" rx="12" fill="#fbfdff" stroke="#e6eef9"/>
+  <rect class="surface border" x="96" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="116" y="220">MONTHLY SURPLUS</text>
+  <text class="metric" x="116" y="248">KES 90,500</text>
+
+  <rect class="surface border" x="404" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="424" y="220">AFTER‑GOALS SURPLUS</text>
+  <text class="metric" x="424" y="248">KES 24,000</text>
+
+  <rect class="surface border" x="712" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="732" y="220">ALIGNMENT</text>
+  <text class="metric" x="732" y="248">84%</text>
+
+  <rect class="surface border" x="1020" y="196" width="324" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="1040" y="220">NEXT MILESTONE</text>
+  <text class="small" x="1040" y="248">Home Deposit • 12m</text>
+
+  <!-- Body grid titles -->
+  <text class="sectionTitle" x="80" y="336">DECISION CENTER</text>
+  <text class="sectionTitle" x="940" y="336">PROGRESS &amp; HEALTH</text>
+
+  <!-- Decision Center -->
+  <rect class="surface border" x="80" y="350" width="840" height="156" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="382">Next Best Action</text>
+  <text class="small" x="112" y="406">Allocate KES 20,000 surplus to Home Deposit to pull target in by 3 months.</text>
+  <rect class="btn" x="112" y="420" width="170" height="36" fill="#eff6ff" stroke="#93c5fd"/>
+  <text class="btnLabel" x="134" y="444" fill="#1d4ed8">Apply Allocation</text>
+  <rect class="btn" x="292" y="420" width="180" height="36" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="btnLabel" x="314" y="444" fill="#0f172a">Preview Pro‑Forma</text>
+
+  <rect class="surface border" x="80" y="520" width="840" height="220" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="552">Recommendations</text>
+  <text class="small" x="112" y="574">• Raise emergency reserve target</text>
+  <text class="small" x="112" y="594">• Shift 5% from cash to growth</text>
+  <text class="small" x="112" y="614">• Automate goal transfer on payday</text>
+
+  <!-- Progress & Health -->
+  <rect class="surface border" x="940" y="350" width="420" height="206" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="382">Timeline Progress</text>
+  <rect x="972" y="396" width="360" height="8" rx="4" fill="#e5e7eb"/>
+  <rect x="972" y="396" width="302" height="8" rx="4" fill="#93c5fd"/>
+  <text class="small" x="972" y="420">5/7 milestones • aligned</text>
+
+  <rect class="surface border" x="940" y="570" width="420" height="110" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="600">Budget Healthy</text>
+  <text class="small" x="972" y="620">Surplus after goals; consider accelerating a milestone.</text>
+
+  <!-- Analytics & Evidence -->
+  <text class="sectionTitle" x="80" y="774">ANALYTICS &amp; EVIDENCE</text>
+  <rect class="surface border" x="80" y="788" width="840" height="210" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="820">Spending Trend (analytics‑v2)</text>
+  <rect x="112" y="836" width="42" height="26" rx="3" fill="#e5e7eb"/>
+  <rect x="160" y="836" width="42" height="30" rx="3" fill="#e5e7eb"/>
+  <rect x="208" y="836" width="42" height="22" rx="3" fill="#e5e7eb"/>
+  <rect x="256" y="836" width="42" height="32" rx="3" fill="#e5e7eb"/>
+  <rect x="304" y="836" width="42" height="24" rx="3" fill="#e5e7eb"/>
+  <rect x="352" y="836" width="42" height="36" rx="3" fill="#e5e7eb"/>
+
+  <rect class="surface border" x="940" y="788" width="420" height="210" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="820">Ledger Journal (read‑only)</text>
+  <text class="small" x="972" y="842">Entries 1,245 • Last updated: 2m ago</text>
+  <rect x="972" y="858" width="360" height="24" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text class="small" x="982" y="875">2025‑10‑01 • Cash • +KES 10,000 • Salary</text>
+  <rect x="972" y="888" width="360" height="24" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text class="small" x="982" y="905">2025‑10‑02 • Groceries • −KES 4,200</text>
+
+</svg>
+

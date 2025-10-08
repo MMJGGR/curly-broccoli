@@ -4,9 +4,11 @@
  * Emphasizes actionable insights and phase-appropriate guidance
  */
 import React, { useState, useEffect } from 'react';
+import { STRUCTURED_UX } from '../../config';
+import DashboardStructured from '../structured/DashboardStructured';
 import { useNavigate } from 'react-router-dom';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import { 
   LifecyclePhaseIndicator, 
   ContextualGuidance, 
@@ -34,12 +36,46 @@ const ContextualTimelineDashboard = () => {
   } = useTimeline();
 
   const {
-    budgetData,
-    actualSurplus,
-    formatAmount,
-    isBudgetReady,
+    expenses,
+    incomes = [],
     loading: budgetLoading,
-  } = useBudget();
+    selectNetCashFlow,
+    selectBudgetSummary,
+    selectSurplusAfterGoals,
+    selectGoalAllocationsTotal,
+    fetchBudgetCategories,
+    budgetCategories = [],
+    planningStartDate,
+    setPlanningStartDate
+  } = useUnifiedFinancialContext();
+
+  // Calculate derived values from unified context
+  const budget = selectBudgetSummary ? selectBudgetSummary() : null;
+  const actualSurplus = selectNetCashFlow ? selectNetCashFlow() : 0;
+  const afterGoalsSurplus = selectSurplusAfterGoals ? selectSurplusAfterGoals() : actualSurplus;
+  const goalAllocationsTotal = selectGoalAllocationsTotal ? selectGoalAllocationsTotal() : 0;
+  const totalIncome = budget?.total_budgeted ?? (Array.isArray(incomes)
+    ? incomes.reduce((sum, inc) => sum + (inc.monthly_amount || inc.amount || 0), 0)
+    : (incomes?.total_monthly_income || 0));
+  const totalExpenses = budget?.total_spent ?? (expenses?.reduce((sum, expense) => sum + (expense.monthly_equivalent || 0), 0) || 0);
+  const formatAmount = (amount) => `KES ${Math.round(amount).toLocaleString()}`;
+  const isBudgetReady = !budgetLoading?.global && Array.isArray(expenses) && (Array.isArray(incomes) ? incomes.length >= 0 : true);
+
+  // Mock budgetData structure for compatibility
+  const budgetData = {
+    monthlyIncome: totalIncome,
+    expenses: expenses?.reduce((acc, expense) => {
+      const category = expense.expense_category || 'miscellaneous';
+      acc[category] = (acc[category] || 0) + (expense.monthly_equivalent || 0);
+      return acc;
+    }, {}) || {},
+    goalAllocations: {
+      emergencyFund: 0,
+      retirement: 0,
+      education: 0,
+      investments: 0
+    }
+  };
 
   const [activeView, setActiveView] = useState('insights');
   const navigate = useNavigate();
@@ -50,10 +86,28 @@ const ContextualTimelineDashboard = () => {
     if (!isTimelineReady) {
       loadTimelineJourney();
     }
+    // Ensure budget categories (for goal allocations) are present
+    try {
+      if ((budgetCategories || []).length === 0 && fetchBudgetCategories) {
+        fetchBudgetCategories();
+      }
+    } catch {}
   }, [isTimelineReady, loadTimelineJourney]);
 
   // Loading state
-  if (loading || budgetLoading) {
+  // Fallback: if loading persists, allow user to continue anyway
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
+  const [forceContinue, setForceContinue] = useState(false);
+  useEffect(() => {
+    if (!(loading || budgetLoading?.global)) return;
+    const t = setTimeout(() => setLoadTimedOut(true), 3500);
+    return () => clearTimeout(t);
+  }, [loading, budgetLoading?.global]);
+
+  if (STRUCTURED_UX) {
+    return <DashboardStructured />;
+  }
+  if (!forceContinue && (loading || budgetLoading?.global)) {
     return (
       <div className="contextual-timeline-dashboard h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center bg-white p-8 rounded-xl shadow-lg">
@@ -65,6 +119,14 @@ const ContextualTimelineDashboard = () => {
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Loading Dashboard...</h2>
           <p className="text-gray-600">Preparing your personalized financial insights</p>
+          {loadTimedOut && (
+            <div className="mt-4">
+              <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => setForceContinue(true)}>
+                Continue anyway
+              </button>
+              <div className="text-xs text-gray-500 mt-2">You can view the dashboard while data finishes loading.</div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -106,9 +168,14 @@ const ContextualTimelineDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center space-x-4 mb-2">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                {personaWelcome || `Financial Dashboard`}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  {personaWelcome || `Financial Dashboard`}
+                </h1>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200" title="UI build marker">
+                  vCR011
+                </span>
+              </div>
               <LifecyclePhaseIndicator size="medium" showDetails={true} />
             </div>
             <div className="flex items-center space-x-6 text-sm text-gray-600">
@@ -169,7 +236,7 @@ const ContextualTimelineDashboard = () => {
               {activeView === 'insights' && (
                 <>
                   {/* Key Metrics Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
                       <div className="flex items-center justify-between">
                         <div>
@@ -179,6 +246,18 @@ const ContextualTimelineDashboard = () => {
                           </div>
                         </div>
                         <div className="text-3xl">💰</div>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-emerald-800">After Goals Surplus</div>
+                          <div className={`text-2xl font-bold ${afterGoalsSurplus >= 0 ? 'text-emerald-600' : 'text-orange-600'} mt-1`}>
+                            {formatAmount(afterGoalsSurplus || 0)}
+                          </div>
+                          <div className="text-[11px] text-gray-600 mt-1">Goals allocations: {formatAmount(goalAllocationsTotal || 0)}</div>
+                        </div>
+                        <div className="text-3xl">🎯</div>
                       </div>
                     </div>
                     
@@ -193,6 +272,19 @@ const ContextualTimelineDashboard = () => {
                         <div className="text-3xl">📊</div>
                       </div>
                     </div>
+                    {/* Planning start month control */}
+                    <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-200">
+                      <div className="text-sm font-medium text-gray-800 mb-1">Planning Start</div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="month"
+                          value={(planningStartDate || '').slice(0,7)}
+                          onChange={(e) => setPlanningStartDate(e.target.value)}
+                          className="border rounded px-2 py-1 text-sm"
+                        />
+                      </div>
+                      <div className="text-[11px] text-gray-500 mt-1">Base month for schedules and labels</div>
+                    </div>
                     
                     <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-200">
                       <div className="flex items-center justify-between">
@@ -204,6 +296,26 @@ const ContextualTimelineDashboard = () => {
                         </div>
                         <div className="text-3xl">🎯</div>
                       </div>
+                      {nextMilestone && (
+                        <div className="mt-3">
+                          <button
+                            className="text-xs px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                            onClick={() => {
+                              try {
+                                const monthsAhead = Math.max(0, Math.round(((nextMilestone.age - (currentAge || 0)) * 12)));
+                                const d = new Date(); d.setMonth(d.getMonth() + monthsAhead);
+                                const iso = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                                localStorage.setItem('pro_forma_target_date', iso);
+                                navigate('/app/balance-sheet?proFormaMonths=' + monthsAhead);
+                              } catch {
+                                navigate('/app/balance-sheet');
+                              }
+                            }}
+                          >
+                            Open Pro Forma snapshot
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 

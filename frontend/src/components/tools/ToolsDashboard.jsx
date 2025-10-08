@@ -1,12 +1,31 @@
-import React, { useState } from 'react';
-import IncomeOverview from '../income/IncomeOverview';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import IncomeManagement from './IncomeManagement';
+import Layout from '../layout/Layout';
 import GoalsOverview from '../goals/GoalsOverview';
 import ExpenseManagement from './ExpenseManagement';
 import AssetManagement from './AssetManagement';
 import LiabilityManagement from './LiabilityManagement';
+import GoalRealityCheck from './GoalRealityCheck';
+import CashFlowStatement from './CashFlowStatement';
+import IncomeStatement from './IncomeStatement';
+import TrialBalanceAudit from './TrialBalanceAudit';
 
 const ToolsDashboard = () => {
-  const [activeSection, setActiveSection] = useState('overview');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialSection = useMemo(() => {
+    const sec = new URLSearchParams(location.search).get('section') || 'overview';
+    return sec;
+  }, [location.search]);
+  const [activeSection, setActiveSection] = useState(initialSection);
+
+  // Keep section in sync with query param
+  useEffect(() => {
+    const current = new URLSearchParams(location.search).get('section') || 'overview';
+    if (current !== activeSection) setActiveSection(current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   const toolSections = [
     {
@@ -23,9 +42,9 @@ const ToolsDashboard = () => {
     },
     {
       id: 'goals',
-      name: 'Goals Management', 
+      name: 'Goals & Reality Check', 
       icon: '🎯',
-      description: 'SMART goals framework and tracking'
+      description: 'Set goals and validate timelines vs surplus'
     },
     {
       id: 'expenses',
@@ -44,6 +63,30 @@ const ToolsDashboard = () => {
       name: 'Liability Management',
       icon: '📋',
       description: 'Debt and liability tracking'
+    },
+    {
+      id: 'trial-balance',
+      name: 'Trial Balance (Audit)',
+      icon: '🧾',
+      description: 'Monthly totals, reconciliation, and suggestions'
+    },
+    {
+      id: 'cashflow',
+      name: 'Cash Flow Statement',
+      icon: '💧',
+      description: 'Operating/Investing/Financing net cash per month'
+    },
+    {
+      id: 'pnl',
+      name: 'Income Statement',
+      icon: '📈',
+      description: 'Monthly P&L with goal contributions'
+    },
+    {
+      id: 'reports',
+      name: 'Reports & Exports',
+      icon: '📤',
+      description: 'Download basic CSV exports (coming soon)'
     },
     {
       id: 'calculators',
@@ -77,10 +120,14 @@ const ToolsDashboard = () => {
           <div
             key={section.id}
             className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300 cursor-pointer border border-gray-100"
-            onClick={() => setActiveSection(section.id)}
+            onClick={() => {
+              setActiveSection(section.id);
+              const params = new URLSearchParams(location.search);
+              params.set('section', section.id);
+              navigate({ search: params.toString() }, { replace: true });
+            }}
           >
             <div className="flex items-center mb-4">
-              <div className="text-3xl mr-4">{section.icon}</div>
               <h3 className="text-xl font-semibold text-gray-800">{section.name}</h3>
             </div>
             <p className="text-gray-600 mb-4">{section.description}</p>
@@ -110,8 +157,14 @@ const ToolsDashboard = () => {
           >
             Create New Goal
           </button>
-          <button className="bg-white text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            Run Financial Health Check
+          <button onClick={() => setActiveSection('goals')} className="bg-white text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            Run Goal Reality Check
+          </button>
+          <button
+            onClick={() => setActiveSection('trial-balance')}
+            className="bg-white text-blue-700 px-4 py-2 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+          >
+            Open Trial Balance
           </button>
         </div>
       </div>
@@ -121,7 +174,7 @@ const ToolsDashboard = () => {
   const renderPlaceholder = (title, description) => (
     <div className="flex-1 flex items-center justify-center">
       <div className="text-center max-w-md">
-        <div className="text-6xl mb-4">🚧</div>
+        <div className="mb-4" aria-hidden></div>
         <h2 className="text-2xl font-bold text-gray-700 mb-2">{title}</h2>
         <p className="text-gray-600 mb-6">{description}</p>
         <button
@@ -134,11 +187,15 @@ const ToolsDashboard = () => {
     </div>
   );
 
+  // Fallback for unknown section ids
+  const knownIds = new Set(toolSections.map(s => s.id));
+  const safeSection = knownIds.has(activeSection) ? activeSection : 'overview';
+
   return (
     <div className="h-full bg-gray-50">
       {/* Header with Section Tabs */}
       <div className="bg-white shadow-sm border-b">
-        <div className="px-6 py-4">
+        <Layout className="py-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-800">Financial Tools</h1>
             {activeSection !== 'overview' && (
@@ -154,36 +211,59 @@ const ToolsDashboard = () => {
           {/* Current Section Info */}
           {activeSection !== 'overview' && (
             <div className="flex items-center text-sm text-gray-600">
-              <span className="text-lg mr-2">{toolSections.find(s => s.id === activeSection)?.icon}</span>
               <span className="font-medium">{toolSections.find(s => s.id === activeSection)?.name}</span>
               <span className="mx-2">•</span>
               <span>{toolSections.find(s => s.id === activeSection)?.description}</span>
             </div>
           )}
-        </div>
+        </Layout>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-auto">
-        {activeSection === 'overview' && renderOverview()}
-        {activeSection === 'income' && <IncomeOverview />}
-        {activeSection === 'goals' && <GoalsOverview />}
-        {activeSection === 'expenses' && <ExpenseManagement />}
-        {activeSection === 'assets' && <AssetManagement />}
-        {activeSection === 'liabilities' && <LiabilityManagement />}
-        {activeSection === 'calculators' && renderPlaceholder(
+      <Layout className="flex-1 overflow-auto py-6">
+        {safeSection === 'overview' && renderOverview()}
+        {safeSection === 'income' && <IncomeManagement />}
+        {safeSection === 'goals' && (
+          <div className="space-y-6">
+            <GoalsOverview />
+            <div className="max-w-6xl mx-auto">
+              <GoalRealityCheck />
+            </div>
+          </div>
+        )}
+        {safeSection === 'expenses' && <ExpenseManagement />}
+        {safeSection === 'assets' && <AssetManagement />}
+        {safeSection === 'liabilities' && <LiabilityManagement />}
+        {safeSection === 'trial-balance' && <TrialBalanceAudit />}
+        {safeSection === 'cashflow' && <CashFlowStatement />}
+        {safeSection === 'pnl' && (
+          <div className="max-w-6xl mx-auto">
+            <IncomeStatement months={12} />
+          </div>
+        )}
+        {safeSection === 'reports' && (
+          <div className="p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-3">Reports & Exports</h2>
+            <p className="text-gray-600 mb-4">Download CSV exports for P&L and Journal.</p>
+            <div className="flex flex-wrap gap-3">
+              <a href={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/pl/statement.csv?months=12`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Download P&L (12m)</a>
+              <a href={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/ledger/journal.csv`} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Download Journal (all)</a>
+            </div>
+          </div>
+        )}
+        {safeSection === 'calculators' && renderPlaceholder(
           'Financial Calculators',
           'Professional calculators for loan payments, investment returns, retirement planning, and more.'
         )}
-        {activeSection === 'analysis' && renderPlaceholder(
+        {safeSection === 'analysis' && renderPlaceholder(
           'Portfolio Analysis',
           'Advanced portfolio optimization, risk analysis, and asset allocation tools.'
         )}
-        {activeSection === 'planning' && renderPlaceholder(
+        {safeSection === 'planning' && renderPlaceholder(
           'Financial Planning',
           'Comprehensive financial planning tools including estate planning, tax optimization, and scenario analysis.'
         )}
-      </div>
+      </Layout>
     </div>
   );
 };

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="1120" viewBox="0 0 1440 1120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style><![CDATA[
+    .bg { fill: #f8fafc; }
+    .muted-surface { fill: #fbfdff; }
+    .surface { fill: #ffffff; }
+    .border { stroke: #e2e8f0; }
+    .muted { fill: #64748b; }
+    .fg { fill: #0f172a; }
+    .title { font: 700 24px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .subtitle { font: 400 14px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; }
+    .sectionTitle { font: 600 13px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; letter-spacing: 0.3px; }
+    .h2 { font: 600 16px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .label { font: 600 11px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; letter-spacing: 0.25px; }
+    .metric { font: 700 22px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #0f172a; }
+    .small { font: 400 12px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; fill: #475569; }
+    .btn { rx: 8; }
+    .btnLabel { font: 600 13px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, sans-serif; }
+  ]]></style>
+
+  <rect class="bg" x="0" y="0" width="1440" height="1120" />
+
+  <!-- Header -->
+  <rect class="surface border" x="80" y="36" width="1280" height="112" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="title" x="112" y="80">Plan</text>
+  <text class="subtitle" x="112" y="106">Goals, allocations, scenarios, and readiness — fully wired</text>
+  <rect class="btn" x="1088" y="66" width="120" height="36" fill="#eff6ff" stroke="#93c5fd"/>
+  <text class="btnLabel" x="1120" y="90" fill="#1d4ed8">Add Goal</text>
+  <rect class="btn" x="1220" y="66" width="120" height="36" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="btnLabel" x="1242" y="90" fill="#0f172a">Rebalance</text>
+
+  <!-- Scenario Toggles -->
+  <rect class="btn" x="800" y="66" width="220" height="36" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <rect class="btn" x="802" y="68" width="72" height="32" fill="#eff6ff" stroke="#93c5fd"/>
+  <text class="btnLabel" x="822" y="90" fill="#1d4ed8">Base</text>
+  <text class="btnLabel" x="878" y="90" fill="#0f172a">What‑if</text>
+  <text class="btnLabel" x="934" y="90" fill="#0f172a">Applied</text>
+
+  <!-- Overview -->
+  <text class="sectionTitle" x="80" y="168">OVERVIEW</text>
+  <rect class="muted-surface border" x="80" y="180" width="1280" height="136" rx="12" fill="#fbfdff" stroke="#e6eef9"/>
+  <rect class="surface border" x="96" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="116" y="220">GOALS COVERAGE</text>
+  <text class="metric" x="116" y="248">88%</text>
+
+  <rect class="surface border" x="404" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="424" y="220">AFTER‑GOALS SURPLUS</text>
+  <text class="metric" x="424" y="248">KES 24,000</text>
+
+  <rect class="surface border" x="712" y="196" width="292" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="732" y="220">READINESS</text>
+  <circle cx="784" cy="248" r="20" stroke="#93c5fd" fill="#eff6ff" />
+  <text class="small" x="774" y="252">A</text>
+  <text class="small" x="808" y="252">Strong</text>
+
+  <rect class="surface border" x="1020" y="196" width="324" height="104" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="label" x="1040" y="220">RISK ALIGNMENT</text>
+  <text class="small" x="1040" y="248">Within tolerance • Stable</text>
+
+  <!-- Decision Center -->
+  <text class="sectionTitle" x="80" y="336">DECISION CENTER</text>
+  <rect class="surface border" x="80" y="350" width="840" height="160" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="382">Next Best Action</text>
+  <text class="small" x="112" y="406">Increase Home Deposit contribution by KES 5,000/mo (ETA −2 months)</text>
+  <rect class="btn" x="112" y="420" width="170" height="36" fill="#eff6ff" stroke="#93c5fd"/>
+  <text class="btnLabel" x="134" y="444" fill="#1d4ed8">Apply Adjustment</text>
+  <rect class="btn" x="292" y="420" width="180" height="36" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="btnLabel" x="314" y="444" fill="#0f172a">Preview Pro‑Forma</text>
+
+  <rect class="surface border" x="80" y="520" width="840" height="300" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="552">Goal Portfolio (goals‑v2)</text>
+  <text class="small" x="112" y="574">Home Deposit • Required 25,000 • Budgeted 20,000 • 80%</text>
+  <rect x="112" y="586" width="780" height="8" rx="4" fill="#e5e7eb"/>
+  <rect x="112" y="586" width="624" height="8" rx="4" fill="#93c5fd"/>
+  <rect x="112" y="602" width="640" height="6" rx="3" fill="#f1f5f9" stroke="#e2e8f0"/>
+  <rect x="112" y="602" width="512" height="6" rx="3" fill="#93c5fd"/>
+  <text class="small" x="112" y="620">Contribution: 20,000/mo</text>
+  <text class="small" x="320" y="620">Target: 25,000</text>
+  <text class="small" x="540" y="620">Adj: +2,000</text>
+
+  <text class="small" x="112" y="644">Education Fund • Required 15,000 • Budgeted 15,000 • 100%</text>
+  <rect x="112" y="656" width="780" height="8" rx="4" fill="#e5e7eb"/>
+  <rect x="112" y="656" width="780" height="8" rx="4" fill="#93c5fd"/>
+
+  <text class="small" x="112" y="684">Emergency Fund • Target 600k • Saved 420k • 70%</text>
+  <rect x="112" y="696" width="780" height="8" rx="4" fill="#e5e7eb"/>
+  <rect x="112" y="696" width="546" height="8" rx="4" fill="#93c5fd"/>
+
+  <!-- Right column: Progress & Health -->
+  <text class="sectionTitle" x="940" y="336">PROGRESS &amp; HEALTH</text>
+  <rect class="surface border" x="940" y="350" width="420" height="206" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="382">Milestone Outlook</text>
+  <text class="small" x="972" y="404">3/7 completed • 2 at risk (minor)</text>
+  <rect x="972" y="416" width="360" height="8" rx="4" fill="#e5e7eb"/>
+  <rect x="972" y="416" width="302" height="8" rx="4" fill="#93c5fd"/>
+
+  <rect class="surface border" x="940" y="570" width="420" height="120" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="602">Budget Impact Summary</text>
+  <text class="small" x="972" y="624">Adjustments: +KES 5,000 goals • −KES 5,000 discretionary</text>
+  <text class="small" x="972" y="644">Runway: Stable • Savings rate +2pp</text>
+
+  <!-- Analytics & Evidence -->
+  <text class="sectionTitle" x="80" y="808">ANALYTICS &amp; EVIDENCE</text>
+  <rect class="surface border" x="80" y="820" width="840" height="200" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="112" y="852">Pro‑Forma Impact Preview</text>
+  <text class="small" x="112" y="874">Net worth @ 12m: +KES 180k vs baseline • Cash runway stable</text>
+  <rect x="112" y="888" width="780" height="100" rx="6" fill="#f8fafc" stroke="#e2e8f0"/>
+
+  <rect class="surface border" x="940" y="820" width="420" height="200" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+  <text class="h2" x="972" y="852">Spending Trend (analytics‑v2)</text>
+  <rect x="972" y="868" width="40" height="22" rx="3" fill="#e5e7eb"/>
+  <rect x="1018" y="868" width="40" height="28" rx="3" fill="#e5e7eb"/>
+  <rect x="1064" y="868" width="40" height="18" rx="3" fill="#e5e7eb"/>
+  <rect x="1110" y="868" width="40" height="30" rx="3" fill="#e5e7eb"/>
+  <rect x="1156" y="868" width="40" height="24" rx="3" fill="#e5e7eb"/>
+  <rect x="1202" y="868" width="40" height="34" rx="3" fill="#e5e7eb"/>
+
+</svg>

@@ -12,9 +12,6 @@ from app.core.exceptions import UnprocessableEntityException
 from app.database     import get_db
 from app.models import User, Profile
 from app.schemas.user import ProfileOut, ProfileUpdate, Dependents
-ProfileOut.Config.orm_mode = True
-ProfileOut.Config.orm_mode = True
-ProfileOut.Config.orm_mode = True
 from app.security     import SECRET_KEY, ALGORITHM
 from compute.risk_engine import compute_risk_score, compute_risk_level
 from app.utils import normalize_questionnaire
@@ -58,7 +55,7 @@ def read_profile(
         questionnaire=questionnaire,
     )
     level = compute_risk_level(score)
-    data = ProfileOut.from_orm(profile).dict()
+    data = ProfileOut.model_validate(profile).model_dump()
     data.update({"risk_score": score, "risk_level": level})
     return data
 
@@ -96,7 +93,7 @@ def update_profile(
 
     db.commit()
     db.refresh(profile)
-    data = ProfileOut.from_orm(profile).dict()
+    data = ProfileOut.model_validate(profile).model_dump()
     data.update({
         "risk_score": profile.risk_score,
         "risk_level": profile.risk_level,

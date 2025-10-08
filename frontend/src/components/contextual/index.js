@@ -3,16 +3,25 @@
  * Professional-grade contextual financial intelligence components
  */
 
-// Core contextual timeline components
+// Core contextual timeline components (imports)
+import LifecyclePhaseIndicator from './LifecyclePhaseIndicator';
+import ContextualGuidanceWidget from './ContextualGuidanceWidget';
+import TimelineStatusBadge from './TimelineStatusBadge';
+import ContextualTimelineDashboard from './ContextualTimelineDashboard';
+
+// Utility services (imports)
+import phaseAppropriateDefaults from './PhaseAppropriateDefaults';
+
+// Hooks and services (imports)
+import useLifecyclePhase, { LIFECYCLE_PHASES } from '../../hooks/useLifecyclePhase';
+import cfaGuidanceService from '../../services/cfaGuidance';
+
+// Re-exports for convenience
 export { default as LifecyclePhaseIndicator } from './LifecyclePhaseIndicator';
 export { default as ContextualGuidanceWidget } from './ContextualGuidanceWidget';
 export { default as TimelineStatusBadge } from './TimelineStatusBadge';
 export { default as ContextualTimelineDashboard } from './ContextualTimelineDashboard';
-
-// Utility services
 export { default as phaseAppropriateDefaults } from './PhaseAppropriateDefaults';
-
-// Hooks and services (re-exports for convenience)
 export { default as useLifecyclePhase, LIFECYCLE_PHASES } from '../../hooks/useLifecyclePhase';
 export { default as cfaGuidanceService } from '../../services/cfaGuidance';
 
@@ -80,7 +89,7 @@ export const contextualHelpers = {
    * @returns {Array} Priority actions
    */
   getContextualPriorities: (lifecyclePhase, financialStatus) => {
-    const { surplus, emergencyFund, goals } = financialStatus;
+    const { surplus, emergencyFund } = financialStatus;
     const priorities = [];
 
     // Cash flow priority
@@ -172,15 +181,18 @@ export const SUCCESS_CRITERIA = {
   }
 };
 
-export default {
+const contextualExports = {
   LifecyclePhaseIndicator,
   ContextualGuidanceWidget, 
   TimelineStatusBadge,
   ContextualTimelineDashboard,
   phaseAppropriateDefaults,
   useLifecyclePhase,
+  LIFECYCLE_PHASES,
   cfaGuidanceService,
   contextualHelpers,
   CONTEXTUAL_COMPONENTS_CONFIG,
   SUCCESS_CRITERIA
 };
+
+export default contextualExports;

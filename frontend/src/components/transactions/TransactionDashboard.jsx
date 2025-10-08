@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useTransactions } from '../../contexts/TransactionContext';
 import TransactionList from './TransactionList';
 import TransactionForm from './TransactionForm';
+import { EmptyState } from '../ui/empty-state';
 // Import temporarily disabled - TransactionImportNew component not found
 // import TransactionImportNew from './TransactionImportNew';
 import BudgetOverview from '../budget/BudgetOverview';
+import { Stat } from '../ui/stat';
+import Layout from '../layout/Layout';
 
 const TransactionDashboard = () => {
   const {
@@ -48,12 +51,21 @@ const TransactionDashboard = () => {
   }, []);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-KE', {
-      style: 'currency',
-      currency: 'KES',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(Math.abs(amount || 0));
+    try {
+      return new Intl.NumberFormat('en-KE', {
+        style: 'currency',
+        currency: 'KES',
+        notation: 'compact',
+        maximumFractionDigits: 0
+      }).format(Math.abs(amount || 0));
+    } catch {
+      return new Intl.NumberFormat('en-KE', {
+        style: 'currency',
+        currency: 'KES',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(Math.abs(amount || 0));
+    }
   };
 
   const getTotalIncome = () => {
@@ -101,7 +113,7 @@ const TransactionDashboard = () => {
 
   return (
     <div className=\"min-h-screen bg-gray-50\">
-      <div className=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8\">
+      <Layout className=\"py-8\">
         {/* Header */}
         <div className=\"mb-8\">
           <div className=\"flex justify-between items-center\">
@@ -154,90 +166,11 @@ const TransactionDashboard = () => {
           <div className=\"space-y-8\">
             {/* Financial Summary Cards */}
             <div className=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6\">
-              <div className=\"bg-white overflow-hidden shadow-sm rounded-lg\">
-                <div className=\"p-6\">
-                  <div className=\"flex items-center\">
-                    <div className=\"flex-shrink-0\">
-                      <div className=\"w-8 h-8 bg-green-100 rounded-full flex items-center justify-center\">
-                        <span className=\"text-green-600 text-lg\">💰</span>
-                      </div>
-                    </div>
-                    <div className=\"ml-4 w-0 flex-1\">
-                      <dl>
-                        <dt className=\"text-sm font-medium text-gray-500 truncate\">Total Income</dt>
-                        <dd className=\"text-lg font-semibold text-green-600\">
-                          {formatCurrency(getTotalIncome())}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className=\"bg-white overflow-hidden shadow-sm rounded-lg\">
-                <div className=\"p-6\">
-                  <div className=\"flex items-center\">
-                    <div className=\"flex-shrink-0\">
-                      <div className=\"w-8 h-8 bg-red-100 rounded-full flex items-center justify-center\">
-                        <span className=\"text-red-600 text-lg\">💸</span>
-                      </div>
-                    </div>
-                    <div className=\"ml-4 w-0 flex-1\">
-                      <dl>
-                        <dt className=\"text-sm font-medium text-gray-500 truncate\">Total Expenses</dt>
-                        <dd className=\"text-lg font-semibold text-red-600\">
-                          {formatCurrency(getTotalExpenses())}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className=\"bg-white overflow-hidden shadow-sm rounded-lg\">
-                <div className=\"p-6\">
-                  <div className=\"flex items-center\">
-                    <div className=\"flex-shrink-0\">
-                      <div className={`w-8 h-8 ${getNetCashFlow() >= 0 ? 'bg-blue-100' : 'bg-orange-100'} rounded-full flex items-center justify-center`}>
-                        <span className={`${getNetCashFlow() >= 0 ? 'text-blue-600' : 'text-orange-600'} text-lg`}>
-                          {getNetCashFlow() >= 0 ? '📈' : '📉'}
-                        </span>
-                      </div>
-                    </div>
-                    <div className=\"ml-4 w-0 flex-1\">
-                      <dl>
-                        <dt className=\"text-sm font-medium text-gray-500 truncate\">Net Cash Flow</dt>
-                        <dd className={`text-lg font-semibold ${getNetCashFlow() >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
-                          {formatCurrency(getNetCashFlow())}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className=\"bg-white overflow-hidden shadow-sm rounded-lg\">
-                <div className=\"p-6\">
-                  <div className=\"flex items-center\">
-                    <div className=\"flex-shrink-0\">
-                      <div className=\"w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center\">
-                        <span className=\"text-purple-600 text-lg\">🏦</span>
-                      </div>
-                    </div>
-                    <div className=\"ml-4 w-0 flex-1\">
-                      <dl>
-                        <dt className=\"text-sm font-medium text-gray-500 truncate\">Net Worth</dt>
-                        <dd className=\"text-lg font-semibold text-purple-600\">
-                          {formatCurrency(budgetOverview?.netWorth || 0)}
-                        </dd>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Budget Overview */}
+              <Stat label=\"Total Income\" value={formatCurrency(getTotalIncome())} icon=\"💰\" tone=\"success\" />
+              <Stat label=\"Total Expenses\" value={formatCurrency(getTotalExpenses())} icon=\"💸\" tone=\"danger\" />
+              <Stat label=\"Net Cash Flow\" value={formatCurrency(getNetCashFlow())} icon={getNetCashFlow() >= 0 ? '📈' : '📉'} tone=\"info\" />
+              <Stat label=\"Net Worth\" value={formatCurrency(budgetOverview?.netWorth || 0)} icon=\"🏦\" />
+            </div>/* Quick Budget Overview */}
             {budgetComparison && (
               <div className=\"bg-white shadow-sm rounded-lg\">
                 <div className=\"px-6 py-4 border-b border-gray-200\">
@@ -346,9 +279,13 @@ const TransactionDashboard = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className=\"text-center py-8\">
-                    <p className=\"text-gray-500\">No spending data available</p>
-                  </div>
+                  <EmptyState
+                    icon="📊"
+                    title="No Spending Data"
+                    description="When transactions are available, we will analyze category spend."
+                    actionLabel={transactions.length === 0 ? 'Add Transaction' : undefined}
+                    onAction={() => setActiveTab('transactions')}
+                  />
                 )}
               </div>
             </div>
@@ -380,7 +317,7 @@ const TransactionDashboard = () => {
             </div>
           </div>
         )}
-      </div>
+      </Layout>
     </div>
   );
 };

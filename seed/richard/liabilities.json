@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Mortgage",
+    "liability_type": "mortgage",
+    "current_balance": 9800000,
+    "interest_rate": 11.5,
+    "monthly_payment": 145000,
+    "maturity_date": "2049-12-01T00:00:00Z"
+  },
+  {
+    "name": "Auto Loan",
+    "liability_type": "auto_loan",
+    "current_balance": 850000,
+    "interest_rate": 13.0,
+    "monthly_payment": 38000,
+    "maturity_date": "2026-12-01T00:00:00Z"
+  }
+]
+

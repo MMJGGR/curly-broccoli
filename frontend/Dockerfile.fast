@@ -7,10 +7,11 @@ WORKDIR /app
 COPY package.json ./
 
 # Install dependencies with optimizations
+ENV NODE_ENV=production
 RUN npm config set registry https://registry.npmjs.org/ && \
     npm config set fund false && \
     npm config set audit false && \
-    npm install --silent --no-optional --prefer-offline
+    npm install --silent --no-optional --prefer-offline --omit=dev
 
 # Copy source code
 COPY . .

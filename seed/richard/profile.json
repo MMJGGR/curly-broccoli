@@ -1,0 +1,55 @@
+{
+  "personalData": {
+    "firstName": "Richard",
+    "lastName": "Macharia",
+    "email": "richard.mmacharia@gmail.com",
+    "age": 32,
+    "location": "Nairobi"
+  },
+  "riskData": {
+    "riskLevel": "moderate",
+    "riskTolerance": 6,
+    "investmentExperience": "intermediate"
+  },
+  "financialData": {
+    "monthlyIncome": 150000,
+    "incomeFrequency": "Monthly",
+    "rent": 45000,
+    "utilities": 12000,
+    "groceries": 25000,
+    "transport": 18000,
+    "loanRepayments": 22000,
+    "currentSavings": 420000,
+    "customExpenses": [
+      { "name": "Entertainment", "amount": 8000 },
+      { "name": "Health Insurance", "amount": 6000 }
+    ],
+    "customIncomes": [
+      { "name": "Freelance Consulting", "amount": 25000 },
+      { "name": "Investment Dividends", "amount": 3000 }
+    ]
+  },
+  "goalsData": {
+    "emergencyFund": 600000,
+    "homeDownPayment": 1500000,
+    "education": 500000,
+    "retirement": 2400000,
+    "investment": 200000,
+    "debtPayoff": 150000,
+    "timeframes": {
+      "emergencyFund": "1-year",
+      "homeDownPayment": "3-years",
+      "education": "5-years",
+      "retirement": "25-years",
+      "investment": "5-years",
+      "debtPayoff": "2-years"
+    }
+  },
+  "employmentData": {
+    "jobTitle": "Senior Software Engineer",
+    "company": "Tech Solutions Ltd",
+    "employmentType": "full-time",
+    "industry": "Technology"
+  }
+}
+

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import Layout from '../layout/Layout';
+import { Stat } from '../ui/stat';
 import { Button } from '../ui/button';
+import { Alert } from '../ui/alert';
+import { Skeleton, SkeletonText } from '../ui/skeleton';
 import { Plus, Calendar, Target, AlertCircle, DollarSign } from '../ui/icons';
 import { Badge } from '../ui/badge';
 import ExpenseForm from './ExpenseForm';
@@ -37,23 +41,38 @@ const ExpenseDashboard = () => {
   // Calculate summary and analysis from expenses data
   useEffect(() => {
     if (expenses.length > 0) {
-      const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-      const monthlyRecurring = expenses.filter(e => e.is_recurring).reduce((sum, expense) => sum + expense.amount, 0);
-      
-      setSummary({
-        total_expenses: totalAmount,
-        monthly_recurring: monthlyRecurring,
-        one_time_expenses: totalAmount - monthlyRecurring,
-        expense_count: expenses.length
-      });
-
-      // Basic analysis
-      const typeBreakdown = expenses.reduce((acc, expense) => {
-        acc[expense.expense_type] = (acc[expense.expense_type] || 0) + expense.amount;
+      const toMonthly = e => (typeof e.monthly_equivalent === 'number' ? e.monthly_equivalent : (parseFloat(e.amount) || 0));
+      const totalAmount = expenses.reduce((sum, e) => sum + toMonthly(e), 0);
+      const monthlyRecurring = expenses.filter(e => e.is_recurring).reduce((sum, e) => sum + toMonthly(e), 0);
+      const essentialCount = expenses.filter(e => !!e.is_essential).length;
+      const discretionaryCount = expenses.length - essentialCount;
+      const countByCategory = expenses.reduce((acc, e) => {
+        const cat = e.expense_category || 'miscellaneous';
+        acc[cat] = (acc[cat] || 0) + 1;
         return acc;
       }, {});
 
-      setAnalysis({ type_breakdown: typeBreakdown });
+      setSummary({
+        total_expenses: totalAmount,
+        monthly_recurring: monthlyRecurring,
+        one_time_expenses: Math.max(0, totalAmount - monthlyRecurring),
+        expense_count: expenses.length,
+        essential_expenses: essentialCount,
+        discretionary_expenses: discretionaryCount,
+        expense_count_by_category: countByCategory
+      });
+
+      // Basic analysis (by expense type amounts)
+      const typeBreakdown = expenses.reduce((acc, e) => {
+        const t = e.expense_type || 'other';
+        acc[t] = (acc[t] || 0) + toMonthly(e);
+        return acc;
+      }, {});
+
+      setAnalysis({ type_breakdown: typeBreakdown, budget_status: totalAmount <= monthlyRecurring ? 'on_track' : 'on_track' });
+    } else {
+      setSummary(null);
+      setAnalysis(null);
     }
   }, [expenses]);
 
@@ -87,31 +106,36 @@ const ExpenseDashboard = () => {
 
   if (loading.expenses || loading.global) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-lg">Loading expenses...</div>
-      </div>
+      <Layout className="py-6 space-y-4">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <SkeletonText lines={2} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <SkeletonText lines={5} />
+          </CardContent>
+        </Card>
+      </Layout>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center space-x-2 text-red-700">
-              <AlertCircle className="h-5 w-5" />
-              <span>Error loading expenses: {error}</span>
-            </div>
-            <Button 
-              onClick={() => fetchAllFinancialData()} 
-              className="mt-4"
-              variant="outline"
-            >
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <Layout className="py-6">
+        <Alert variant="danger" title="Error loading expenses">
+          {error}
+        </Alert>
+        <Button onClick={() => fetchAllFinancialData()} className="mt-4" variant="outline" aria-label="Retry loading expenses">
+          Retry
+        </Button>
+      </Layout>
     );
   }
 
@@ -125,7 +149,7 @@ const ExpenseDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <Layout className="py-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -138,6 +162,7 @@ const ExpenseDashboard = () => {
             setShowExpenseForm(true);
           }}
           className="flex items-center space-x-2"
+          aria-label="Add expense"
         >
           <Plus className="h-4 w-4" />
           <span>Add Expense</span>
@@ -146,75 +171,10 @@ const ExpenseDashboard = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(summary?.total_amount?.amount || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {summary?.total_expenses || 0} expenses tracked
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Recurring</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(summary?.monthly_recurring_total?.amount || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Fixed monthly commitments
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Essential vs Discretionary</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Essential:</span>
-                <span className="font-semibold">{summary?.essential_expenses || 0}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Discretionary:</span>
-                <span className="font-semibold">{summary?.discretionary_expenses || 0}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Budget Status</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <Badge 
-              className={analysis?.budget_status === 'on_track' ? 
-                'bg-green-100 text-green-800 border-green-200' : 
-                'bg-yellow-100 text-yellow-800 border-yellow-200'
-              }
-              variant="outline"
-            >
-              {analysis?.budget_status === 'on_track' ? 'ON TRACK' : 'REVIEW NEEDED'}
-            </Badge>
-            <p className="text-xs text-muted-foreground mt-2">
-              Spending efficiency analysis
-            </p>
-          </CardContent>
-        </Card>
+        <Stat label="Total Expenses" value={formatCurrency(summary?.total_expenses || 0)} icon={<DollarSign className="h-4 w-4" />} tone="danger" />
+        <Stat label="Monthly Recurring" value={formatCurrency(summary?.monthly_recurring || 0)} icon={<Calendar className="h-4 w-4" />} tone="info" />
+        <Stat label="Essential" value={summary?.essential_expenses || 0} icon={<Target className="h-4 w-4" />} />
+        <Stat label="Discretionary" value={summary?.discretionary_expenses || 0} icon={<Target className="h-4 w-4" />} />
       </div>
 
       {/* Category Breakdown */}
@@ -239,7 +199,7 @@ const ExpenseDashboard = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-semibold">
-                    {((count / (summary.total_expenses || 1)) * 100).toFixed(0)}%
+                    {((count / (summary.expense_count || 1)) * 100).toFixed(0)}%
                   </div>
                   <p className="text-xs text-gray-500">of total</p>
                 </div>
@@ -274,7 +234,7 @@ const ExpenseDashboard = () => {
         onEditExpense={handleEditExpense}
         onDeleteExpense={handleDeleteExpense}
       />
-    </div>
+    </Layout>
   );
 };
 

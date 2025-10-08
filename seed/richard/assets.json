@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Primary Residence",
+    "asset_type": "real_estate_residential",
+    "current_value": 14500000,
+    "acquisition_cost": 12000000,
+    "acquisition_date": "2019-06-01T00:00:00Z",
+    "description": "Family home in Nairobi"
+  },
+  {
+    "name": "Investment Account",
+    "asset_type": "investment_brokerage",
+    "current_value": 2600000,
+    "acquisition_cost": 1800000,
+    "acquisition_date": "2020-02-01T00:00:00Z",
+    "description": "Mixed stock and bond portfolio"
+  },
+  {
+    "name": "Emergency Fund",
+    "asset_type": "cash_savings",
+    "current_value": 420000,
+    "acquisition_cost": 420000,
+    "acquisition_date": "2020-06-01T00:00:00Z",
+    "description": "High-yield savings"
+  }
+]
+

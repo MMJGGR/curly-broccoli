@@ -6,12 +6,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTimeline } from '../../contexts/TimelineContext';
-import { useBudget } from '../../contexts/BudgetContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 import useLifecyclePhase from '../../hooks/useLifecyclePhase';
 import LifecyclePhaseIndicator from './LifecyclePhaseIndicator';
+import { formatCurrency } from '../../utils/formatters';
 import ContextualGuidanceWidget from './ContextualGuidanceWidget';
 import TimelineStatusBadge from './TimelineStatusBadge';
 import phaseAppropriateDefaults from './PhaseAppropriateDefaults';
+import { PageHeader } from '../ui';
 
 const ContextualTimelineDashboard = () => {
   const navigate = useNavigate();
@@ -32,13 +34,16 @@ const ContextualTimelineDashboard = () => {
   } = useTimeline();
 
   const {
-    budgetData,
-    actualSurplus,
-    budgetHealth,
-    formatAmount,
-    isBudgetReady,
-    loading: budgetLoading,
-  } = useBudget();
+    incomes = [],
+    expenses = [],
+    selectNetCashFlow,
+  } = useUnifiedFinancialContext();
+  const actualSurplus = typeof selectNetCashFlow === 'function' ? selectNetCashFlow() : 0;
+  const monthlyIncome = Array.isArray(incomes) ? incomes.reduce((s, i) => s + (i.monthly_amount || i.amount || 0), 0) : (incomes?.total_monthly_income || 0);
+  const monthlyExpenses = Array.isArray(expenses) ? expenses.reduce((s, e) => s + (e.monthly_equivalent || e.amount || 0), 0) : 0;
+  const budgetData = { monthlyIncome, monthlyExpenses };
+  const budgetLoading = { global: false };
+  const isBudgetReady = true;
 
   // User profile for lifecycle analysis
   const userProfile = {
@@ -90,7 +95,7 @@ const ContextualTimelineDashboard = () => {
 
   if (loading) {
     return (
-      <div className="contextual-timeline-dashboard h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="contextual-timeline-dashboard h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center bg-white p-8 rounded-xl shadow-lg">
           <div className="w-16 h-16 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
             <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -107,7 +112,7 @@ const ContextualTimelineDashboard = () => {
 
   if (error) {
     return (
-      <div className="contextual-timeline-dashboard h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-100">
+      <div className="contextual-timeline-dashboard h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center bg-white p-8 rounded-xl shadow-lg max-w-md">
           <div className="w-16 h-16 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
             <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -128,73 +133,8 @@ const ContextualTimelineDashboard = () => {
   }
 
   return (
-    <div className="contextual-timeline-dashboard min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      
-      {/* Contextual Header - Phase and Status Integration */}
-      <div className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            
-            {/* Left: Phase Indicator and Welcome */}
-            <div className="flex items-center space-x-4">
-              <LifecyclePhaseIndicator size="default" showDetails={true} />
-              <div className="hidden md:block">
-                <h1 className="text-lg font-semibold text-gray-800">
-                  {persona ? `${persona}'s Dashboard` : 'Financial Dashboard'}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Age {currentAge} • {phase} Phase
-                </p>
-              </div>
-            </div>
-
-            {/* Center: Quick Actions */}
-            <div className="hidden md:flex items-center space-x-2">
-              {actualSurplus > 30000 && (
-                <button
-                  onClick={() => setActiveGuidanceContext('investment_allocation')}
-                  className="px-3 py-1.5 bg-green-100 text-green-800 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
-                >
-                  💰 Optimize {formatAmount(actualSurplus)} Surplus
-                </button>
-              )}
-              
-              {!budgetData?.currentAssets?.emergency_fund && (
-                <button
-                  onClick={() => setActiveGuidanceContext('emergency_fund')}
-                  className="px-3 py-1.5 bg-orange-100 text-orange-800 rounded-lg text-sm font-medium hover:bg-orange-200 transition-colors"
-                >
-                  🆘 Build Emergency Fund
-                </button>
-              )}
-
-              {milestones.length === 0 && (
-                <button
-                  onClick={() => setActiveGuidanceContext('goal_setting')}
-                  className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
-                >
-                  🎯 Set Goals
-                </button>
-              )}
-            </div>
-
-            {/* Right: Timeline Health and Compact Toggle */}
-            <div className="flex items-center space-x-3">
-              <TimelineStatusBadge size="default" showPercentage={true} />
-              
-              <button
-                onClick={() => setShowCompactTimeline(!showCompactTimeline)}
-                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Toggle compact timeline"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="contextual-timeline-dashboard min-h-screen bg-gray-50">
+      <PageHeader title="Dashboard" description="Timeline alignment and contextual guidance" />
 
       {/* Main Content - Contextual Intelligence Focus */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -263,7 +203,7 @@ const ContextualTimelineDashboard = () => {
             <div className="bg-white rounded-xl shadow-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-gray-800">{phase} Health</h3>
-                <span className="text-2xl">{health?.level === 'excellent' ? '🎯' : health?.level === 'good' ? '📊' : '⚠️'}</span>
+                <span className="text-gray-400" aria-hidden>•</span>
               </div>
               
               {health && (
@@ -282,7 +222,7 @@ const ContextualTimelineDashboard = () => {
                         factor.status === 'excellent' ? 'text-green-600' :
                         factor.status === 'good' ? 'text-blue-600' : 'text-amber-600'
                       }`}>
-                        {factor.status === 'excellent' ? '✅' : factor.status === 'good' ? '📊' : '⚠️'}
+                        {factor.status}
                       </span>
                     </div>
                   ))}
@@ -301,7 +241,7 @@ const ContextualTimelineDashboard = () => {
                     <div className="text-xs text-gray-600 mt-1">Age {nextMilestone.age}</div>
                     {nextMilestone.target_amount && (
                       <div className="text-sm font-semibold text-green-600 mt-1">
-                        {formatAmount(nextMilestone.target_amount)}
+                        {formatCurrency(nextMilestone.target_amount)}
                       </div>
                     )}
                   </div>
@@ -317,7 +257,7 @@ const ContextualTimelineDashboard = () => {
                   <div className="flex justify-between">
                     <span className="text-sm text-gray-600">Monthly Surplus</span>
                     <span className={`font-semibold ${actualSurplus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatAmount(actualSurplus)}
+                      {formatCurrency(actualSurplus)}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -326,8 +266,8 @@ const ContextualTimelineDashboard = () => {
                       budgetHealth === 'healthy' ? 'text-green-600' :
                       budgetHealth === 'fair' ? 'text-yellow-600' : 'text-red-600'
                     }`}>
-                      {budgetHealth === 'healthy' ? '✅ Healthy' :
-                       budgetHealth === 'fair' ? '⚠️ Fair' : '🚨 Needs Attention'}
+                      {budgetHealth === 'healthy' ? 'Healthy' :
+                       budgetHealth === 'fair' ? 'Fair' : 'Needs Attention'}
                     </span>
                   </div>
                 </div>
@@ -391,7 +331,7 @@ const ContextualTimelineDashboard = () => {
             <div className="font-medium text-gray-800 mb-1">Budget Review</div>
             <div className="text-sm text-gray-600">
               {isBudgetReady ? 
-                `${actualSurplus >= 0 ? 'Surplus' : 'Deficit'}: ${formatAmount(Math.abs(actualSurplus))}` :
+                `${actualSurplus >= 0 ? 'Surplus' : 'Deficit'}: ${formatCurrency(Math.abs(actualSurplus))}` :
                 'Set up your budget'
               }
             </div>
@@ -402,7 +342,7 @@ const ContextualTimelineDashboard = () => {
             className="p-4 bg-white rounded-xl shadow-lg text-left hover:shadow-xl transition-shadow"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">📈</span>
+              <span className="text-gray-400" aria-hidden>•</span>
               <span className="text-xs text-blue-600 font-medium">{phase}</span>
             </div>
             <div className="font-medium text-gray-800 mb-1">Asset Allocation</div>
@@ -416,7 +356,7 @@ const ContextualTimelineDashboard = () => {
             className="p-4 bg-white rounded-xl shadow-lg text-left hover:shadow-xl transition-shadow"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">🎯</span>
+              <span className="text-gray-400" aria-hidden>•</span>
               <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">{milestones.length}</span>
             </div>
             <div className="font-medium text-gray-800 mb-1">Financial Goals</div>
@@ -430,7 +370,7 @@ const ContextualTimelineDashboard = () => {
             className="p-4 bg-white rounded-xl shadow-lg text-left hover:shadow-xl transition-shadow"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl">🛡️</span>
+              <span className="text-gray-400" aria-hidden>•</span>
               <span className="text-xs text-purple-600 font-medium">CFA</span>
             </div>
             <div className="font-medium text-gray-800 mb-1">Risk Management</div>
@@ -472,17 +412,6 @@ const ContextualTimelineDashboard = () => {
 };
 
 // Helper function for milestone icons
-const getMilestoneIcon = (category) => {
-  const icons = {
-    retirement: '🏖️',
-    education: '🎓',
-    housing: '🏠',
-    investment: '📈',
-    emergency: '🛡️',
-    healthcare: '⚕️',
-    travel: '✈️'
-  };
-  return icons[category?.toLowerCase()] || '🎯';
-};
+const getMilestoneIcon = () => '';
 
 export default ContextualTimelineDashboard;

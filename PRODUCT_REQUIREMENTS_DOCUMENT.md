@@ -363,3 +363,58 @@ Before any release, the following test must pass:
 **Last Updated**: 2025-09-05  
 **Next Review**: After Phase 2 implementation completion  
 **Owner**: Product Team + Development Team + CFA Compliance Officer
+## 6. Client Core Journeys (Advisor‑Guided, v1.0)
+
+We optimize for a small set of client journeys that fit most users and always work end‑to‑end:
+
+1) Baseline Plan
+- After onboarding, compute budget baseline, surplus, and after‑goals surplus; surface 2–3 highest‑impact actions.
+
+2) Debt Paydown
+- For each liability, show payoff plan with interest saved; allow snowball/avalanche; ensure expense payments are linked to liabilities.
+
+3) Goal Coverage
+- For each goal, show required/month vs budgeted and one‑tap adjusters; reflect in milestones and timeline.
+
+4) Position & Trajectory
+- Personal balance sheet (KPIs, allocation, liability composition, net worth trend) and P&L/Cash Flow statements (server‑side canonical).
+
+5) What‑If Scenarios
+- Simple toggles (e.g., +10% income, −15% discretionary) with 12‑month diffs; apply to plan.
+
+6) Retirement Readiness (v1)
+- Compute basic readiness score and monthly gap using user age, income, expenses, liabilities and assumptions.
+
+## 7. Advisor Journeys (Separate Track)
+
+Advisor journeys (portal, IPS, recommendations, client lists) are managed under CR013 and are not part of this client scope. Documentation, testing, and acceptance criteria for advisor flows will be added in CR013.
+
+## 8. Canonical Calculations & Data Contracts
+
+- Server‑side P&L endpoint is canonical; FE falls back only when service is unavailable.
+- Relationships v2 must use real repositories; mock repos are not sufficient for production behavior.
+- Asset categories/types must be served by API (no hardcoded domain lists in FE forms).
+- Transactions should drive budget variance and basic alerts; modeled expenses alone are not sufficient.
+
+## 9. Structured IA (Cross‑Tab UX)
+
+To ensure consistency while preserving each tab’s unique purpose, the application adopts a structured IA across the five primary tabs.
+
+Principles
+- Sections: Overview → Decision Center → Progress/Health → Analytics/Evidence → Utilities
+- Scaffolding: Layout wrapper, PageHeader, Card containers, tokenized radii/shadows/spacing
+- Action‑first: one Next Best Action with supporting recommendations and rationale
+- States: localized Skeleton/EmptyState/Alert; WCAG AA contrast; keyboard focus and ARIA labels
+
+Per‑tab nuances
+- Dashboard: aggregator KPIs; Decision Center; Timeline progress; Spending Trend (analytics‑v2); Ledger journal teaser
+- Plan: scenarios (Base/What‑if/Applied); Readiness gauge; Goal Portfolio coverage + adjustments; Pro‑Forma preview; Budget Impact summary
+- Balance Sheet: asset composition with Policy Bands; Top Accounts + liability schedule microtrend; Net Worth trend; Reconciliation & Journal status
+- Cash Flow: Server P&L (12m); monthly Waterfall for net income drivers; Variance table (Budget vs Actual); Cash Runway gauge
+- Timeline: lane‑based milestones (Financial Health/Debt/Goals); dependency markers; Event Log (recent)
+
+Acceptance
+- All five tabs implement the structured IA with tokenized scaffolding and states
+- Each tab surfaces a Next Best Action and evidence‑backed recommendations
+- Panels wire to backend endpoints where available (graceful EmptyState otherwise)
+- A11y and performance standards met (localized skeletons; no blocking spinners)
