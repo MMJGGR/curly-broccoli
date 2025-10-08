@@ -79,7 +79,9 @@ const ProfileDynamic = () => {
       selectNetCashFlow,
       selectBudgetSummary,
       fetchAllFinancialData,
-      applyBaselineToBudget
+      applyBaselineToBudget,
+      planningStartDate,
+      setPlanningStartDate
     } = useUnifiedFinancialContext();
 
     useEffect(() => {
@@ -124,6 +126,7 @@ const ProfileDynamic = () => {
       firstName: profile?.first_name || '',
       lastName: profile?.last_name || '',
       dateOfBirth: profile?.date_of_birth || null,
+      maritalStatus: profile?.marital_status || '',
       phone: profile?.phone || '',
       nationalId: profile?.national_id || '',
       kraPin: profile?.kra_pin || '',
@@ -183,6 +186,7 @@ const ProfileDynamic = () => {
                       <p><strong>Date of Birth:</strong> {profile?.date_of_birth || 'Not provided'}</p>
                       <p><strong>Age:</strong> {profile?.age ?? 'Not provided'}</p>
                       <p><strong>Employment:</strong> {profile?.employment_status || 'Not specified'}</p>
+                      <p><strong>Marital Status:</strong> {profile?.marital_status || 'Not specified'}</p>
                       <p><strong>Dependents:</strong> {profile?.dependents ?? 'Not specified'}</p>
                     </div>
                     <button
@@ -204,6 +208,7 @@ const ProfileDynamic = () => {
                         </div>
                         <div>
                             <p><strong>Employment:</strong> {personal.employmentStatus || 'Not specified'}</p>
+                            <p><strong>Marital:</strong> {personal.maritalStatus || 'Not specified'}</p>
                             <p><strong>Dependents:</strong> {personal.dependents !== undefined ? personal.dependents : 'Not specified'}</p>
                         </div>
                         <div className="flex items-start md:items-center">
@@ -218,6 +223,22 @@ const ProfileDynamic = () => {
                             </button>
                         </div>
                     </div>
+                </div>
+
+                {/* Planning Settings (CR025 — planning start supports historical) */}
+                <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+                  <h2 className="text-xl font-semibold text-gray-800 mb-2">Planning Settings</h2>
+                  <div className="text-gray-700">
+                    <label className="block text-sm text-gray-600 mb-1">Planning Start Month</label>
+                    <input
+                      type="month"
+                      value={(planningStartDate || '').slice(0,7)}
+                      onChange={(e) => setPlanningStartDate(e.target.value)}
+                      className="border rounded-lg px-3 py-2"
+                      data-testid="planning-start-month"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Base month for schedules and timeline labels (e.g., 2020-01).</p>
+                  </div>
                 </div>
 
                 {/* Risk Assessment */}

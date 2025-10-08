@@ -199,6 +199,62 @@ Owner: Engineering
 
 ---
 
+## 📦 Upcoming CRs (Bundled with Scenario Catalog)
+
+New cluster CRs (bidirectional links to scenarios and tasks). Each CR lists the scenario tags it closes so we can bulk advance the catalog from Partial/Fail → Pass.
+
+### CR019 — Unified CRUD from Onboarding → Ongoing (Linked & Intuitive)
+- Why: Users must create/update income, expenses, liabilities, assets seamlessly during onboarding and later, with links (loan↔payment, asset↔maintenance/insurance) and instant propagation to selectors.
+- Scenarios closed: [CR-CRUD] across DB/PL/BS/CF/TL
+- Deliverables
+  - FE: Consolidate CRUD forms under context; consistent field sets; inline link controls (e.g., “link to liability”)
+  - UFC: Ensure normalization and link persistence; idempotent upserts; recalc on save
+  - BE: Confirm v2 write paths parity for accounts/transactions
+  - QA: Persona journeys for CRUD/linking; degraded states
+- Tasks
+  - FE: Unified entity form wrappers (Income/Expense/Liability/Asset)
+  - FE: Inline link pickers + badges (asset↔expense, liability↔expense)
+  - UFC: Normalize temporal/end_date; recalc triggers
+  - QA: CRUD/linking e2e matrix (personas x entities)
+
+### CR020 — Suggestion Apply Pipeline
+- Why: Insights must become actions — one‑click apply creates/updates the right entities, sets relationships, and refreshes summaries.
+- Scenarios closed: [CR-SUGGEST] across PL/BS/TL/CF
+- Deliverables: FE apply buttons, UFC apply handlers; journal entries for traceability
+- Tasks: Map suggestion types → action creators; confirm idempotency; UI affordances
+
+### CR021 — Debt Payoff Execution (Snowball/Avalanche + Apply)
+- Why: Move beyond “insight only” — strategy toggle, extra payment, and “apply plan” that updates loan‑payment expenses and budget/goal allocations.
+- Scenarios closed: [CR-DEBT] across PL/BS/TL
+- Deliverables: Strategy UI; plan preview; apply flow; recalc; undo
+- Tasks: Toggle & extra; per‑debt breakdown; apply creates/updates recurring payments; adjust after‑goals surplus
+
+### CR022 — Variance Without Bank Data (Manual & CSV)
+- Why: Budget must be useful without connected accounts; provide manual/CSV workflows with clear guidance.
+- Scenarios closed: [CR-VAR] in CF/DB
+- Deliverables: Variance UX without txns; CSV import flows; educational copy
+- Tasks: Manual actuals entry; CSV categorization; alerts based on actuals
+
+### CR023 — Asset Sale → Debt Paydown Workflow
+- Why: Common user intent; model selling asset; post proceeds; allocate to debt or goals; reflect in flows/net worth.
+- Scenarios closed: [CR-ASSET-SALE] in BS/PL/TL
+- Deliverables: Sell flow; proceeds allocation; confirm schedule/net worth updates
+- Tasks: UI wizard; UFC action; balance/expense updates; tests
+
+### CR024 — Invest vs Debt Tradeoff
+- Why: Show tradeoffs and capture the decision as actions (goal contributions vs extra debt payments).
+- Scenarios closed: [CR-INV-TRADEOFF] in BS/PL/DB
+- Deliverables: Compare view; decision capture → budget/goals or debt payments; summary deltas
+- Tasks: Comparison calculator; UI panel; apply actions; recalcs
+
+### CR025 — Guided Profile Completion (Point‑in‑Time + History)
+- Why: Resolve missing profile fields and the “point‑in‑time vs historical” tension.
+- Scenarios closed: [CR-PROFILE], [CR-HISTORY] across tabs
+- Deliverables: As‑of snapshot + planning start; optional event backfill; household minimal model; guided CTAs
+- Tasks: Profile prompts — Completed; planning start polish — Completed; household fields — Completed; selector compatibility (exposed control) — Completed; household-driven selectors — Next
+
+---
+
 ## 🧭 New Initiative — CR017 Structured UX (Unified IA + Panels)
 Status: Implementation (Phase 1–2 completed, Phase 3 in progress)
 

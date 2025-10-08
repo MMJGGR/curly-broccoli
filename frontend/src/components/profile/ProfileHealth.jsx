@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
+import { useNavigate } from 'react-router-dom';
 
 const ProfileHealth = () => {
   const { profile } = useUnifiedFinancialContext();
+  const navigate = useNavigate();
   const [onboarding, setOnboarding] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -69,6 +71,42 @@ const ProfileHealth = () => {
                   <li key={m}>{m}</li>
                 ))}
               </ul>
+              {/* Inline CTAs for guided completion (CR025) */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {missing.includes('Date of birth') && (
+                  <button
+                    className="px-3 py-1.5 rounded-md text-sm bg-blue-600 text-white hover:bg-blue-700"
+                    onClick={() => {
+                      try {
+                        const el = document.getElementById('edit-personal-section');
+                        if (el) {
+                          el.scrollIntoView({ behavior: 'smooth' });
+                          return;
+                        }
+                      } catch {}
+                      navigate('/app/profile');
+                    }}
+                  >
+                    Add Date of Birth
+                  </button>
+                )}
+                {missing.includes('Income') && (
+                  <button
+                    className="px-3 py-1.5 rounded-md text-sm bg-green-600 text-white hover:bg-green-700"
+                    onClick={() => navigate('/app/income')}
+                  >
+                    Add Income
+                  </button>
+                )}
+                {missing.includes('Risk questionnaire') && (
+                  <button
+                    className="px-3 py-1.5 rounded-md text-sm bg-purple-600 text-white hover:bg-purple-700"
+                    onClick={() => navigate('/retake-risk-assessment')}
+                  >
+                    Complete Risk Questionnaire
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -78,4 +116,3 @@ const ProfileHealth = () => {
 };
 
 export default ProfileHealth;
-

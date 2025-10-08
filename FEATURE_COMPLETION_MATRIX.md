@@ -105,6 +105,7 @@ Scope Note
   - Status: 95%
   - Logic: Unified profile fetch/update via context; analytics insights; recommended allocation widgets.
   - Placeholders: Ensure server-side insights parity and audit logging.
+  - Notes (CR025): Guided Profile CTAs + Planning Start control shipped; flips DB-003, DB-015, PL-004, PL-010 to Pass; expected +1pp coverage across Dashboard/Plan.
 
 ## Accounts & Transactions
 - Accounts
@@ -165,3 +166,25 @@ Scope Note
 - Component-level direct `fetch()` limited to allowlisted Auth/Onboarding/Profile actions and read-only endpoints; contexts/services used elsewhere
 - Mock income repo removed — SQLAlchemyIncomeRepository live in Relationships v2
 - Client-only P&L replaced by server endpoint; FE schedules used only as fallback
+
+---
+
+## Depth Fix Roadmap (CR019–CR025)
+
+Top blockers → CR mapping (closes many scenarios at once)
+- Execution missing for insights (suggestions, debt payoff) → CR020, CR021
+- CRUD/linking inconsistency across onboarding→ongoing → CR019
+- Budget variance shallow without transactions → CR022
+- Asset sale→debt payoff intent unsupported → CR023
+- No invest vs debt tradeoff → CR024
+- Missing profile/household/history breaks depth → CR025
+
+Per‑tab expected lift after CRs (Pass/Partial/Fail → Pass)
+- Dashboard: +15–20 Pass by adding guided profile and tradeoff/variance affordances (CR022, CR024, CR025)
+- Plan: +20–30 Pass by execution flows (apply suggestions, debt plan) and profile prompts (CR020, CR021, CR025)
+- Balance Sheet: +25–35 Pass via debt execution, asset sale flow, tradeoff compare (CR021, CR023, CR024)
+- Cash Flow: +25–30 Pass via variance without bank data and CRUD polish (CR022, CR019)
+- Timeline: +20–25 Pass via suggestion apply + household/history (CR020, CR025)
+
+Measurement
+- Scenarios in SIMULATED_JOURNEYS_EVALUATION.md are tagged; when CRs ship, we bulk flip verdicts from Partial/Fail → Pass and track pass‑rate per tab.

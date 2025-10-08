@@ -15,10 +15,13 @@ const LiabilityManagement = () => {
   // Use UnifiedFinancialContext instead of local state
   const {
     liabilities,
+    expenses,
     loading,
     createLiability,
     updateLiability,
     deleteLiability,
+    createExpense,
+    updateExpense,
     fetchAllFinancialData
   } = useUnifiedFinancialContext();
 
@@ -223,6 +226,9 @@ const LiabilityManagement = () => {
               </div>
             ) : (
               liabilities.map((liability) => {
+                const existingPayment = (expenses || []).find(
+                  (e) => e.related_liability_id === liability.id && (e.relationship_type || '') === 'loan_payment'
+                );
                 const typeInfo = getLiabilityTypeInfo(liability.liability_type);
                 const paidInfo = calculatePaidAmount(liability);
                 const payoffInfo = calculatePayoffTime(liability);
@@ -301,6 +307,46 @@ const LiabilityManagement = () => {
                             </div>
                           </div>
                         )}
+
+                        {/* CR019: Inline linking for loan payment expense */}
+                        <div className="mt-3 pt-3 border-t">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const payload = {
+                                    description: `Loan Payment: ${liability.name}`,
+                                    amount: parseFloat(liability.monthly_payment || 0) || 0,
+                                    expense_type: 'debt_payments',
+                                    frequency: 'monthly',
+                                    is_recurring: true,
+                                    related_liability_id: liability.id,
+                                    relationship_type: 'loan_payment',
+                                    is_finite_payment: true,
+                                    payment_end_date: liability.due_date || null
+                                  };
+                                  if (existingPayment && existingPayment.id) {
+                                    await updateExpense(existingPayment.id, payload);
+                                  } else {
+                                    await createExpense(payload);
+                                  }
+                                } catch (e) {
+                                  console.warn('Failed to link loan payment expense:', e?.message || e);
+                                }
+                              }}
+                              data-testid={`link-loan-expense-${liability.id}`}
+                            >
+                              {existingPayment ? 'Update Loan Payment Link' : 'Link Loan Payment'}
+                            </Button>
+                            {existingPayment && (
+                              <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                                Payment linked
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
 
                         {liability.due_date && (
                           <div className="mt-2">

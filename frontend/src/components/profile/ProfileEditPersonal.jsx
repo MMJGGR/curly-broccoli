@@ -7,6 +7,7 @@ const ProfileEditPersonal = () => {
     first_name: profile?.first_name || '',
     last_name: profile?.last_name || '',
     date_of_birth: profile?.date_of_birth || '',
+    marital_status: profile?.marital_status || '',
     phone: profile?.phone || '',
     nationalId: profile?.national_id || profile?.nationalId || '',
     kra_pin: profile?.kra_pin || '',
@@ -54,6 +55,16 @@ const ProfileEditPersonal = () => {
         <div>
           <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
           <input type="date" name="date_of_birth" value={form.date_of_birth || ''} onChange={onChange} className="w-full border rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Marital Status</label>
+          <select name="marital_status" value={form.marital_status} onChange={onChange} className="w-full border rounded-lg px-3 py-2">
+            <option value="">Select</option>
+            <option value="single">Single</option>
+            <option value="married">Married</option>
+            <option value="divorced">Divorced</option>
+            <option value="widowed">Widowed</option>
+          </select>
         </div>
         <div>
           <label className="block text-sm text-gray-600 mb-1">Phone</label>
