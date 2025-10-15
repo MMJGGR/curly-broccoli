@@ -17,11 +17,10 @@ export const EXPENSE_TYPE_DEFS = [
   { value: 'utilities', label: 'Utilities', Icon: BarChart },
   { value: 'healthcare', label: 'Healthcare', Icon: Shield },
   { value: 'insurance', label: 'Insurance', Icon: Shield },
-  { value: 'debt_payments', label: 'Debt Payments', Icon: CreditCard },
+  { value: 'debt_payment', label: 'Debt Payment', Icon: CreditCard },
   { value: 'personal_care', label: 'Personal Care', Icon: TrendingDown },
   { value: 'business_operating', label: 'Business Operating', Icon: BarChart },
   { value: 'taxes', label: 'Taxes', Icon: DollarSign },
   { value: 'entertainment', label: 'Entertainment', Icon: PieChart },
   { value: 'other', label: 'Other', Icon: TrendingDown }
 ];
-

@@ -317,6 +317,21 @@ def update_user_profile(
     for field, value in update_data.items():
         if hasattr(profile, field):
             setattr(profile, field, value)
+
+    # Persist planning_start_date inside investment_preferences JSON (no schema change)
+    try:
+        psd = update_data.get('planning_start_date')
+        if psd:
+            psd_str = str(psd)
+            if len(psd_str) == 7 and psd_str.count('-') == 1:
+                psd_str = f"{psd_str}-01"
+            prefs = profile.investment_preferences or {}
+            if not isinstance(prefs, dict):
+                prefs = {}
+            prefs['planning_start_date'] = psd_str
+            profile.investment_preferences = prefs
+    except Exception:
+        pass
     
     # Recalculate risk score if relevant fields changed
     if any(field in update_data for field in ['annual_income', 'dependents', 'questionnaire', 'date_of_birth']):

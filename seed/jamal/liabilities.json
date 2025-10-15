@@ -1,0 +1,4 @@
+[
+  { "name": "Margin Loan", "liability_type": "personal_loan", "current_balance": 250000, "interest_rate": 12.0, "monthly_payment": 15000, "maturity_date": "2027-06-01T00:00:00Z" }
+]
+

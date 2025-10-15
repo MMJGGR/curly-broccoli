@@ -16,7 +16,7 @@ export const EXPENSE_CATEGORY_BY_TYPE = {
   subscriptions: 'fixed_expenses',
   // Debt payments (accept both singular/plural keys)
   debt_payment: 'fixed_expenses',
-  debt_payments: 'fixed_expenses',
+  debt_payment: 'fixed_expenses',
   student_loan: 'fixed_expenses',
   personal_loan: 'fixed_expenses',
 

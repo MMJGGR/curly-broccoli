@@ -24,6 +24,7 @@ const AssetManagement = () => {
   } = useUnifiedFinancialContext();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formError, setFormError] = useState('');
   const [editingAsset, setEditingAsset] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -58,6 +59,7 @@ const AssetManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setFormError('');
       const payload = {
         ...formData,
         current_value: parseFloat(formData.current_value),
@@ -75,6 +77,7 @@ const AssetManagement = () => {
       resetForm();
     } catch (error) {
       console.error('Failed to save asset:', error);
+      setFormError(error?.message || 'Failed to save asset');
     }
   };
 
@@ -252,10 +255,11 @@ const AssetManagement = () => {
                               onClick={async () => {
                                 try {
                                   const est = Math.round(((parseFloat(asset.current_value || 0) || 0) * 0.01) / 12);
+                                  const et = (asset.asset_type || '').toLowerCase() === 'vehicle' ? 'vehicle_maintenance' : 'maintenance_repairs';
                                   await createExpense({
                                     description: `Maintenance: ${asset.name}`,
                                     amount: est,
-                                    expense_type: 'maintenance',
+                                    expense_type: et,
                                     frequency: 'monthly',
                                     is_recurring: true,
                                     related_asset_id: asset.id,
@@ -275,10 +279,11 @@ const AssetManagement = () => {
                               size="sm"
                               onClick={async () => {
                                 try {
+                                  const it = (asset.asset_type || '').toLowerCase() === 'vehicle' ? 'vehicle_insurance' : (asset.asset_type || '').toLowerCase() === 'real_estate' ? 'home_insurance' : 'insurance';
                                   await createExpense({
                                     description: `Insurance: ${asset.name}`,
                                     amount: 5000,
-                                    expense_type: 'insurance',
+                                    expense_type: it,
                                     frequency: 'monthly',
                                     is_recurring: true,
                                     related_asset_id: asset.id,
@@ -322,6 +327,11 @@ const AssetManagement = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {formError && (
+                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                  {formError}
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Asset Name *</Label>

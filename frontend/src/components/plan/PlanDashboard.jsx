@@ -140,6 +140,11 @@ const PlanDashboard = () => {
     try { return selectRetirementReadiness ? selectRetirementReadiness() : null; } catch { return null; }
   }, [selectRetirementReadiness]);
 
+  // Suggestions from trial balance (current period)
+  const suggestions = useMemo(() => {
+    try { return ctx.selectTrialBalance ? (ctx.selectTrialBalance(0)?.suggestions || []) : []; } catch { return []; }
+  }, [ctx.selectTrialBalance, ctx.expenses, ctx.liabilities, ctx.assets, ctx.goals]);
+
   return (
     <div className="min-h-screen bg-gray-50 text-scale break-words">
       <PageHeader
@@ -200,7 +205,26 @@ const PlanDashboard = () => {
           <div className="bg-white rounded-xl shadow p-4">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">Debt Paydown Plan (v1)</h2>
             {debtPlan ? (
-              <div className="text-sm text-gray-800">
+              <div className="text-sm text-gray-800 space-y-2">
+                <div className="flex items-center gap-3">
+                  <label className="text-gray-700">Strategy</label>
+                  <select id="debt_strategy" className="border rounded px-2 py-1" onChange={(e)=>setEditState({...editState, debtStrategy: e.target.value})} defaultValue="snowball">
+                    <option value="snowball">Snowball</option>
+                    <option value="avalanche">Avalanche</option>
+                  </select>
+                  <label className="text-gray-700 ml-3">Monthly Extra (KES)</label>
+                  <input type="number" className="border rounded px-2 py-1 w-28" defaultValue={0} onChange={(e)=>setEditState({...editState, debtExtra: e.target.value})} />
+                  <button
+                    className="ml-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    onClick={async()=>{
+                      try {
+                        const s = (editState.debtStrategy || 'snowball');
+                        const x = parseFloat(editState.debtExtra||0) || 0;
+                        await ctx.applyDebtPlan({ strategy: s, monthlyExtra: x });
+                      } catch {}
+                    }}
+                  >Apply Plan</button>
+                </div>
                 <div>Strategy: <span className="font-medium">{debtPlan.strategy}</span></div>
                 <div>Months to pay off: <span className="font-medium">{debtPlan.months ?? '—'}</span></div>
                 <div>Estimated interest saved: <span className="font-medium text-green-700">KES {Math.round(debtPlan.interest_saved || 0).toLocaleString()}</span></div>
@@ -220,6 +244,16 @@ const PlanDashboard = () => {
             ) : (
               <div className="text-sm text-gray-600">Add age and retirement age to see readiness.</div>
             )}
+          </div>
+          <div className="bg-white rounded-xl shadow p-4">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Invest vs Debt (v1)</h2>
+            <div className="flex items-center gap-3 text-sm">
+              <label className="text-gray-700">Available Extra (KES)</label>
+              <input type="number" className="border rounded px-2 py-1 w-28" defaultValue={0} onChange={(e)=>setEditState({...editState, investDebtExtra: e.target.value})} />
+              <button className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700" onClick={async()=>{ try{ const x = parseFloat(editState.investDebtExtra||0)||0; await ctx.applyDebtPlan({ strategy: 'snowball', monthlyExtra: x }); }catch{} }}>Apply to Debt</button>
+              <button className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700" onClick={async()=>{ try{ const x = parseFloat(editState.investDebtExtra||0)||0; const name = 'Goal: Investments'; const cats = ctx.selectBudgetCategories ? (ctx.selectBudgetCategories()||[]) : []; const found = cats.find(c => String(c.name||'').toLowerCase() === name.toLowerCase()); if (!found) await ctx.createBudgetCategory({ name, budgeted_amount: x }); else await ctx.updateBudgetCategory(found.id, { budgeted_amount: x }); }catch{} }}>Apply to Invest</button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">v1: Applies extra to either loan payments (debt) or investment goal category.</p>
           </div>
         </div>
 
@@ -254,6 +288,35 @@ const PlanDashboard = () => {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+
+        {/* Suggestions (Apply Pipeline) */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-800">Suggestions</h2>
+            <button className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700" onClick={async()=>{ try{ if (suggestions.length>0) await ctx.applySuggestions(suggestions); }catch{} }}>Apply All</button>
+          </div>
+          {suggestions.length === 0 ? (
+            <p className="text-sm text-gray-600">No suggestions at the moment.</p>
+          ) : (
+            <ul className="text-sm text-gray-700 space-y-1">
+              {suggestions.slice(0,8).map((s, i) => (
+                <li key={i} className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-medium">{s.type.replaceAll('_',' ')}</span>
+                    {s.name ? <span> — {s.name}</span> : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {s.amount ? <span className="text-gray-500">KES {Math.round(s.amount).toLocaleString()}</span> : null}
+                    <button
+                      className="px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+                      onClick={async()=>{ try { await ctx.applySuggestions([s]); } catch {} }}
+                    >Apply</button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 

@@ -12,6 +12,8 @@ const ProfileBudgetPreferences = () => {
     overspend_alert_threshold_pct: existingBudget.overspend_alert_threshold_pct ?? 10,
     carryover_remaining: existingBudget.carryover_remaining ?? false,
     rounding_increment: existingBudget.rounding_increment ?? 50,
+    // Household (saved under investment_preferences.household)
+    spouse_monthly_income: (existingPrefs.household && (existingPrefs.household.spouse_monthly_income || existingPrefs.household.spouse_income)) || 0,
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -28,9 +30,14 @@ const ProfileBudgetPreferences = () => {
     setSaving(true);
     setMessage('');
     try {
+      const { spouse_monthly_income, ...budgetForm } = form;
       const merged = {
         ...(existingPrefs || {}),
-        budget_preferences: { ...form },
+        budget_preferences: { ...budgetForm },
+        household: {
+          ...(existingPrefs.household || {}),
+          spouse_monthly_income: Number(spouse_monthly_income) || 0
+        }
       };
       await updateProfile({ investment_preferences: merged });
       setMessage('Budget preferences saved');
@@ -77,6 +84,19 @@ const ProfileBudgetPreferences = () => {
             step="10"
           />
         </div>
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Spouse Monthly Income (KES)</label>
+          <input
+            type="number"
+            name="spouse_monthly_income"
+            value={form.spouse_monthly_income}
+            onChange={onChange}
+            className="w-full border rounded-lg px-3 py-2"
+            min="0"
+            step="500"
+          />
+          <p className="text-xs text-gray-500 mt-1">Used in combined household totals (FE selectors).</p>
+        </div>
       </div>
       <div className="mt-4 flex items-center gap-3">
         <button onClick={onSave} disabled={saving} className={`px-4 py-2 rounded-lg text-white ${saving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
@@ -89,4 +109,3 @@ const ProfileBudgetPreferences = () => {
 };
 
 export default ProfileBudgetPreferences;
-

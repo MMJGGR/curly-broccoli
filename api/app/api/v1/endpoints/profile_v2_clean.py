@@ -66,6 +66,15 @@ async def get_user_profile_v2(
         planning = result["financial_planning"]
         
         # Convert to API response format
+        # Attempt to surface planning_start_date from investment_preferences if present
+        planning_start = None
+        try:
+            iprefs = getattr(profile, 'investment_preferences', None)
+            if isinstance(iprefs, dict):
+                planning_start = iprefs.get('planning_start_date')
+        except Exception:
+            planning_start = None
+
         response = {
             "user_id": current_user.id,
             "email": current_user.email,
@@ -84,7 +93,8 @@ async def get_user_profile_v2(
                 "age_category": planning["age_category"],
                 "emergency_fund_target": float(planning["emergency_fund_target"].amount),
                 "monthly_income": float(planning["monthly_income"].amount),
-                "currency": "KES"
+                "currency": "KES",
+                "planning_start_date": planning_start
             }
         }
         
@@ -242,6 +252,22 @@ async def update_user_profile_v2(
                 setattr(existing_profile, k, v)
                 changed_fields[k] = v
 
+        # Persist planning_start_date into investment_preferences JSON (no schema change)
+        try:
+            if 'planning_start_date' in profile_data and profile_data['planning_start_date']:
+                psd = str(profile_data['planning_start_date'])
+                # Normalize YYYY-MM to YYYY-MM-01 if needed
+                if len(psd) == 7 and psd.count('-') == 1:
+                    psd = f"{psd}-01"
+                prefs = existing_profile.investment_preferences or {}
+                if not isinstance(prefs, dict):
+                    prefs = {}
+                prefs['planning_start_date'] = psd
+                existing_profile.investment_preferences = prefs
+                changed_fields['investment_preferences'] = prefs
+        except Exception:
+            pass
+
         # Ensure name fields reflect full_name when provided
         if full_name and (profile_data.get("full_name") or (first_name or last_name)):
             parts = full_name.strip().split(" ", 1)
@@ -289,6 +315,14 @@ async def update_user_profile_v2(
             "updated_at": updated_profile_entity.updated_at if updated_profile_entity else None
         }
 
+        # Surface planning_start_date if stored in preferences
+        planning_start = None
+        try:
+            if isinstance(existing_profile.investment_preferences, dict):
+                planning_start = existing_profile.investment_preferences.get('planning_start_date')
+        except Exception:
+            planning_start = None
+
         return {
             "message": "Profile updated successfully",
             "profile": resp_profile,
@@ -296,6 +330,9 @@ async def update_user_profile_v2(
                 "validation_passed": updated_profile_entity is not None,
                 "cfa_compliant": True,
                 "currency": "KES"
+            },
+            "settings": {
+                "planning_start_date": planning_start
             }
         }
 

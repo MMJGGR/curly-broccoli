@@ -295,7 +295,7 @@ const ExpenseOverview = ({ onNextScreen }) => {
                     <option value="utilities">Utilities</option>
                     <option value="food_dining">Food & Dining</option>
                     <option value="transportation">Transportation</option>
-                    <option value="debt_payments">Debt Payments</option>
+                    <option value="debt_payment">Debt Payment</option>
                     <option value="healthcare">Healthcare</option>
                     <option value="insurance">Insurance</option>
                     <option value="entertainment">Entertainment</option>

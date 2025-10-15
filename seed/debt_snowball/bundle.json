@@ -1,0 +1,11 @@
+{
+  "income": { "sources": [ { "source_name": "Salary", "monthly_amount": 100000, "frequency": "monthly", "source_type": "salary" } ] },
+  "liabilities": [
+    { "name": "Loan A", "liability_type": "personal_loan", "current_balance": 120000, "interest_rate": 22.0, "monthly_payment": 8000, "maturity_date": "2027-01-01T00:00:00Z" },
+    { "name": "Loan B", "liability_type": "personal_loan", "current_balance": 200000, "interest_rate": 12.0, "monthly_payment": 10000, "maturity_date": "2028-01-01T00:00:00Z" }
+  ],
+  "expenses": [
+    { "description": "Rent", "amount": 30000, "frequency": "monthly", "expense_type": "housing", "expense_date": "2024-06-05T00:00:00Z" },
+    { "description": "Food", "amount": 15000, "frequency": "monthly", "expense_type": "food", "expense_date": "2024-06-10T00:00:00Z" }
+  ]
+}

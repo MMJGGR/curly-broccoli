@@ -287,7 +287,14 @@ const BalanceSheetDashboard = () => {
         .map(f => ({ t: f.t, amount: f.amount }));
 
       const mode = customRates.valuationMode || 'nominal';
-      const lifetimeHumanCapital = pvHumanCapital({ monthlyIncome: profile?.monthly_income || 0, age, retirementAge: retireAge }, customRates.incomeGrowthRate / 100, customRates.incomeDiscountRate / 100);
+      // Household-aware: include spouse monthly income if provided on profile
+      const spouseMonthly = parseFloat(
+        (profile && (profile.spouse_monthly_income || profile.spouse_income)) ||
+        (profile && profile.household && (profile.household.spouse_monthly_income || profile.household.spouse_income)) ||
+        (profile && profile.investment_preferences && profile.investment_preferences.household && (profile.investment_preferences.household.spouse_monthly_income || profile.investment_preferences.household.spouse_income)) ||
+        0
+      ) || 0;
+      const lifetimeHumanCapital = pvHumanCapital({ monthlyIncome: (profile?.monthly_income || 0) + spouseMonthly, age, retirementAge: retireAge }, customRates.incomeGrowthRate / 100, customRates.incomeDiscountRate / 100);
       const lifetimeExpenseLiabilities = pvOfExpenses(expenseFlows, customRates.expenseDiscountRate / 100, customRates.expenseInflationRate / 100, mode);
       const lifetimeAssets = traditionalAssets + lifetimeHumanCapital;
       const totalLifetimeLiabilities = traditionalLiabilities + lifetimeExpenseLiabilities;
@@ -505,7 +512,7 @@ const BalanceSheetDashboard = () => {
       for (const expense of expensesData.expenses) {
         // Check for loan payments or expenses with end dates
         const type = String(expense.expense_type || '').toLowerCase();
-        if (type === 'debt_payments' ||
+        if (type === 'debt_payment' ||
             expense.category === 'debt_payment' ||
             expense.end_date || expense.payment_end_date ||
             expense.is_temporal) {
@@ -535,7 +542,7 @@ const BalanceSheetDashboard = () => {
           name: 'Personal Loan Payment (Detected)',
           monthly_amount: 33253,
           end_date: '2028-12-31',  // ~4 years from 2025
-          expense_type: 'debt_payments'
+          expense_type: 'debt_payment'
         });
         
         temporalExpenses.monthlyTotal = 33253;

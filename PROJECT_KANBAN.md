@@ -217,41 +217,56 @@ New cluster CRs (bidirectional links to scenarios and tasks). Each CR lists the 
   - UFC: Normalize temporal/end_date; recalc triggers
   - QA: CRUD/linking e2e matrix (personas x entities)
 
+Status: Completed
+- Implemented: Unified entity forms (Assets/Liabilities) with inline linking; Profile quick‑add income; UFC normalization + propagation; onboarding income parity; form error surfacing and required fields
+- Notes: Inline link pickers for asset↔maintenance/insurance and liability↔loan payment; recalc triggers validated
+
 ### CR020 — Suggestion Apply Pipeline
 - Why: Insights must become actions — one‑click apply creates/updates the right entities, sets relationships, and refreshes summaries.
 - Scenarios closed: [CR-SUGGEST] across PL/BS/TL/CF
 - Deliverables: FE apply buttons, UFC apply handlers; journal entries for traceability
-- Tasks: Map suggestion types → action creators; confirm idempotency; UI affordances
+Status: Completed
+- Implemented: `applySuggestions` handlers for set_goal_contribution, end_expense, asset maintenance/insurance/property tax, loan payments, and amount updates; audit + journal entries; Apply buttons in Timeline and Trial Balance audit
+- Notes: Idempotent create/update paths; fetch + refresh wired
 
 ### CR021 — Debt Payoff Execution (Snowball/Avalanche + Apply)
 - Why: Move beyond “insight only” — strategy toggle, extra payment, and “apply plan” that updates loan‑payment expenses and budget/goal allocations.
 - Scenarios closed: [CR-DEBT] across PL/BS/TL
 - Deliverables: Strategy UI; plan preview; apply flow; recalc; undo
-- Tasks: Toggle & extra; per‑debt breakdown; apply creates/updates recurring payments; adjust after‑goals surplus
+Status: Completed
+- Implemented: Strategy toggle (snowball/avalanche), monthly extra input, plan preview; Apply flow creates/updates recurring loan payment expenses; refresh + summary
+- Notes: Journal+audit piggyback via suggestions pipeline
 
 ### CR022 — Variance Without Bank Data (Manual & CSV)
 - Why: Budget must be useful without connected accounts; provide manual/CSV workflows with clear guidance.
 - Scenarios closed: [CR-VAR] in CF/DB
 - Deliverables: Variance UX without txns; CSV import flows; educational copy
-- Tasks: Manual actuals entry; CSV categorization; alerts based on actuals
+Status: Completed
+- Implemented: Manual Actuals modal (stores month actuals locally) included in Budget tools; CSV importer (seed modal) for transactions/expenses/income/goals/assets/liabilities/budget categories; variance and alerts computed client‑side
+- Notes: Works with/without connected accounts; variance table shown in Structured Cash Flow
 
 ### CR023 — Asset Sale → Debt Paydown Workflow
 - Why: Common user intent; model selling asset; post proceeds; allocate to debt or goals; reflect in flows/net worth.
 - Scenarios closed: [CR-ASSET-SALE] in BS/PL/TL
 - Deliverables: Sell flow; proceeds allocation; confirm schedule/net worth updates
-- Tasks: UI wizard; UFC action; balance/expense updates; tests
+Status: Completed
+- Implemented: Asset Sale Wizard (Tools) with proceeds allocation to debts/goals; UFC `applyAssetSale` posts journal entries, updates asset value, creates one‑time loan payments, deposits to goals; summary refresh
+- Notes: Net worth and cash flow reflect allocations; idempotent operations guarded per entity
 
 ### CR024 — Invest vs Debt Tradeoff
 - Why: Show tradeoffs and capture the decision as actions (goal contributions vs extra debt payments).
 - Scenarios closed: [CR-INV-TRADEOFF] in BS/PL/DB
 - Deliverables: Compare view; decision capture → budget/goals or debt payments; summary deltas
-- Tasks: Comparison calculator; UI panel; apply actions; recalcs
+Status: Completed
+- Implemented: Invest vs Debt panel (Tools) — compare monthly extra allocation between debt strategy and goals coverage lift; Apply actions wire to debt plan and goals budget categories; `selectDebtPaydownPlan` supports extra override
+- Notes: Quick, actionable control integrated into Tools
 
 ### CR025 — Guided Profile Completion (Point‑in‑Time + History)
 - Why: Resolve missing profile fields and the “point‑in‑time vs historical” tension.
 - Scenarios closed: [CR-PROFILE], [CR-HISTORY] across tabs
 - Deliverables: As‑of snapshot + planning start; optional event backfill; household minimal model; guided CTAs
-- Tasks: Profile prompts — Completed; planning start polish — Completed; household fields — Completed; selector compatibility (exposed control) — Completed; household-driven selectors — Next
+Status: Completed
+- Implemented: Guided CTAs in Profile Health; Planning Start control; household‑aware selectors and computations; prompts wired to sections
 
 ---
 

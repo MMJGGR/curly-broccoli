@@ -1,0 +1,4 @@
+[
+  { "name": "Loan A", "liability_type": "personal_loan", "current_balance": 120000, "interest_rate": 22.0, "monthly_payment": 8000, "maturity_date": "2027-01-01T00:00:00Z" },
+  { "name": "Loan B", "liability_type": "personal_loan", "current_balance": 200000, "interest_rate": 12.0, "monthly_payment": 10000, "maturity_date": "2028-01-01T00:00:00Z" }
+]

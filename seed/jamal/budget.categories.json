@@ -1,0 +1,7 @@
+[
+  { "name": "Housing", "allocated_amount": 60000, "category_type": "expense" },
+  { "name": "Food & Groceries", "allocated_amount": 25000, "category_type": "expense" },
+  { "name": "Transport", "allocated_amount": 15000, "category_type": "expense" },
+  { "name": "Goal: Invest Portfolio", "allocated_amount": 30000, "category_type": "expense" }
+]
+

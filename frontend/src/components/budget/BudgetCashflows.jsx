@@ -11,6 +11,7 @@ import { Card, CardContent } from '../ui/card';
 import PageHeader from '../ui/PageHeader';
 import { Stat } from '../ui/stat';
 import SeedDataImportModal from '../seed/SeedDataImportModal';
+import ManualActualsModal from './ManualActualsModal';
 import { EXPENSE_TYPE_DEFS } from '../expenses/expenseTypeDefs';
 import BudgetCategoryForm from './BudgetCategoryForm';
 
@@ -26,7 +27,8 @@ const BudgetCashflows = () => {
     incomes = [],
     loading,
     fetchBudgetCategories,
-    selectBudgetCategories
+    selectBudgetCategories,
+    profile
   } = useUnifiedFinancialContext();
   const goalCategories = React.useMemo(() => {
     const list = selectBudgetCategories ? selectBudgetCategories() : [];
@@ -73,6 +75,7 @@ const BudgetCashflows = () => {
   const [activeTab, setActiveTab] = useState('planning');
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showManualActuals, setShowManualActuals] = useState(false);
 
   // Calculate total goal allocations - hardcoded for now since goals come from a different API
   const totalGoalAllocations = React.useMemo(() => {
@@ -87,6 +90,8 @@ const BudgetCashflows = () => {
   const monthlyIncome = getBudgetValue('monthlyIncome', 0);
   const totalBudgetedExpenses = totalExpenses || 0;
   const surplus = actualSurplus || (monthlyIncome - totalBudgetedExpenses);
+  const currentSavings = parseFloat(profile?.current_savings || 0) || 0;
+  const runwayMonths = surplus < 0 ? Math.max(0, Math.floor(currentSavings / Math.abs(surplus))) : null;
 
   // Import handlers
   const handleImportClose = () => {
@@ -147,10 +152,15 @@ const BudgetCashflows = () => {
         primaryAction={{ label: 'Import Data', onClick: () => setShowImportModal(true), 'aria-label': 'Import seed data' }}
         secondaryAction={{ label: 'Profile', href: '/app/profile', 'aria-label': 'Open profile' }}
       >
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
           <Stat label="Monthly Income" value={formatAmount ? formatAmount(monthlyIncome) : `KES ${monthlyIncome.toLocaleString()}`} tone="success" />
           <Stat label="Total Expenses" value={formatAmount ? formatAmount(totalBudgetedExpenses) : `KES ${totalBudgetedExpenses.toLocaleString()}`} tone="danger" />
           <Stat label={surplus >= 0 ? 'Surplus' : 'Deficit'} value={formatAmount ? formatAmount(Math.abs(surplus)) : `KES ${Math.abs(surplus).toLocaleString()}`} tone={surplus >= 0 ? 'info' : 'warning'} />
+          {runwayMonths !== null ? (
+            <Stat label="Runway" value={`${runwayMonths} mo`} tone="warning" />
+          ) : (
+            <div />
+          )}
         </div>
       </PageHeader>
 
@@ -302,6 +312,12 @@ const BudgetCashflows = () => {
             >
               Import Data
             </button>
+            <button
+              onClick={() => setShowManualActuals(true)}
+              className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Enter Manual Actuals (Variance)
+            </button>
             
             <button
               onClick={() => console.warn('Data refreshes automatically')}
@@ -362,6 +378,13 @@ const BudgetCashflows = () => {
           {/* Import Modal */}
           {showImportModal && (
             <SeedDataImportModal open={showImportModal} onClose={handleImportClose} onImported={() => { /* no-op */ }} />
+          )}
+          {showManualActuals && (
+            <ManualActualsModal
+              open={showManualActuals}
+              onClose={() => setShowManualActuals(false)}
+              categories={(selectBudgetCategories ? (selectBudgetCategories()||[]) : []).map(c => ({ name: c.name }))}
+            />
           )}
           </div>
           </div>

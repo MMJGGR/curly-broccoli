@@ -968,13 +968,23 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
       
       const token = localStorage.getItem('jwt');
+      // Normalize to API contract: require ISO expense_date; for recurring, require frequency_months
+      const nowIso = new Date().toISOString();
+      const normalized = { ...expenseData };
+      if (!normalized.expense_date) normalized.expense_date = nowIso;
+      if (normalized.is_recurring) {
+        if (!normalized.frequency_months) {
+          const f = String(normalized.frequency || '').toLowerCase();
+          normalized.frequency_months = f === 'monthly' ? 1 : (f === 'quarterly' ? 3 : (f === 'biannual' ? 6 : (f === 'annual' ? 12 : 1)));
+        }
+      }
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(expenseData)
+        body: JSON.stringify(normalized)
       });
 
       if (!response.ok) throw new Error('Failed to create expense');
@@ -995,13 +1005,18 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { expenses: true } });
       
       const token = localStorage.getItem('jwt');
+      const normalized = { ...expenseData };
+      if (normalized.is_recurring && !normalized.frequency_months) {
+        const f = String(normalized.frequency || '').toLowerCase();
+        normalized.frequency_months = f === 'monthly' ? 1 : (f === 'quarterly' ? 3 : (f === 'biannual' ? 6 : (f === 'annual' ? 12 : 1)));
+      }
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/expenses-v2/${expenseId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(expenseData)
+        body: JSON.stringify(normalized)
       });
 
       if (!response.ok) throw new Error('Failed to update expense');
@@ -1066,13 +1081,29 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: true } });
       
       const token = localStorage.getItem('jwt');
+      // Accept simplified payload (name/monthly_amount) and map to API model
+      const apiBody = {
+        description: incomeData.description || incomeData.name || 'Income',
+        amount: typeof incomeData.amount === 'number' ? incomeData.amount : (parseFloat(incomeData.monthly_amount) || 0),
+        currency: incomeData.currency || 'KES',
+        income_type: incomeData.income_type || 'salary',
+        frequency: incomeData.frequency || 'monthly',
+        is_recurring: incomeData.is_recurring !== undefined ? !!incomeData.is_recurring : true,
+        start_date: incomeData.start_date || null,
+        end_date: incomeData.end_date || null,
+        temporal_pattern: incomeData.temporal_pattern || 'permanent',
+        linked_asset_id: incomeData.linked_asset_id || null,
+        asset_relationship_type: incomeData.asset_relationship_type || null,
+        growth_rate: incomeData.growth_rate || null,
+        notes: incomeData.notes || null
+      };
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(incomeData)
+        body: JSON.stringify(apiBody)
       });
 
       if (!response.ok) throw new Error('Failed to create income');
@@ -1081,17 +1112,17 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.CREATE_INCOME_SOURCE, payload: newIncome });
 
       // Optional: create asset→income relationship if requested
-      if (incomeData.linked_asset_id) {
+      if (apiBody.linked_asset_id) {
         try {
           const relBody = {
             relationship_type: 'asset_income',
             source_type: 'asset',
-            source_id: incomeData.linked_asset_id,
+            source_id: apiBody.linked_asset_id,
             target_type: 'income',
             target_id: newIncome.id,
-            amount: incomeData.monthly_amount,
-            frequency: incomeData.frequency || 'monthly',
-            description: incomeData.asset_relationship_type || 'Linked via IncomeManagement'
+            amount: apiBody.amount,
+            frequency: apiBody.frequency || 'monthly',
+            description: apiBody.asset_relationship_type || 'Linked via IncomeManagement'
           };
           await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/relationships-v2/`, {
             method: 'POST',
@@ -1119,13 +1150,28 @@ export const UnifiedFinancialProvider = ({ children }) => {
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_LOADING, payload: { income: true } });
       
       const token = localStorage.getItem('jwt');
+      const apiBody = {
+        description: incomeData.description || incomeData.name,
+        amount: typeof incomeData.amount === 'number' ? incomeData.amount : (parseFloat(incomeData.monthly_amount) || undefined),
+        currency: incomeData.currency,
+        income_type: incomeData.income_type,
+        frequency: incomeData.frequency,
+        is_recurring: incomeData.is_recurring,
+        start_date: incomeData.start_date,
+        end_date: incomeData.end_date,
+        temporal_pattern: incomeData.temporal_pattern,
+        linked_asset_id: incomeData.linked_asset_id,
+        asset_relationship_type: incomeData.asset_relationship_type,
+        growth_rate: incomeData.growth_rate,
+        notes: incomeData.notes
+      };
       const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/income-v2/${incomeId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(incomeData)
+        body: JSON.stringify(apiBody)
       });
 
       if (!response.ok) throw new Error('Failed to update income');
@@ -1133,17 +1179,17 @@ export const UnifiedFinancialProvider = ({ children }) => {
       const updatedIncome = await response.json();
       dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.UPDATE_INCOME_SOURCE, payload: updatedIncome });
       // Update relationship if linked_asset_id provided
-      if (incomeData.linked_asset_id) {
+      if (apiBody.linked_asset_id) {
         try {
           const relBody = {
             relationship_type: 'asset_income',
             source_type: 'asset',
-            source_id: incomeData.linked_asset_id,
+            source_id: apiBody.linked_asset_id,
             target_type: 'income',
             target_id: incomeId,
-            amount: incomeData.monthly_amount,
-            frequency: incomeData.frequency || 'monthly',
-            description: incomeData.asset_relationship_type || 'Linked via IncomeManagement'
+            amount: apiBody.amount,
+            frequency: apiBody.frequency || 'monthly',
+            description: apiBody.asset_relationship_type || 'Linked via IncomeManagement'
           };
           await fetch(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/v1/relationships-v2/`, {
             method: 'POST',
@@ -1331,6 +1377,15 @@ export const UnifiedFinancialProvider = ({ children }) => {
               expected_return_rate: data?.risk_profile?.expected_return_rate ?? data?.financial_planning?.expected_return_rate,
               recommended_asset_allocation: data?.risk_profile?.recommended_asset_allocation || null,
             };
+            // Sync planning start if present
+            try {
+              const psd = data?.financial_planning?.planning_start_date;
+              if (psd && typeof psd === 'string') {
+                const val = /^\d{4}-\d{2}$/.test(psd) ? `${psd}-01` : psd;
+                localStorage.setItem('planning_start_date', val);
+                dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PLANNING_START_DATE, payload: val });
+              }
+            } catch {}
           }
         } catch (e) {
           // Insights endpoint optional; ignore failures
@@ -1345,6 +1400,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
           const me = await res.json();
           const p = me?.profile;
           if (p && (p.first_name || p.annual_income || p.monthly_income || p.dependents !== null)) {
+            const prefs = p.investment_preferences || null;
             profilePayload = {
               // normalized profile model for consumers
               id: p.id,
@@ -1364,7 +1420,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
               risk_tolerance: p.risk_tolerance || null,
               // Preferences mapping
               preferences: p.preferences || p.investment_preferences || null,
-              investment_preferences: p.investment_preferences || null,
+              investment_preferences: prefs,
               // Planning insights from clean-arch
               age_category: insights?.age_category,
               emergency_fund_target: insights?.emergency_fund_target,
@@ -1372,6 +1428,15 @@ export const UnifiedFinancialProvider = ({ children }) => {
               recommended_asset_allocation: insights?.recommended_asset_allocation
             };
             hasProfile = true;
+            // Sync planning_start_date from server if present in preferences
+            try {
+              const psd = prefs && (prefs.planning_start_date || prefs['planning_start_date']);
+              if (psd && typeof psd === 'string') {
+                const val = /^\d{4}-\d{2}$/.test(psd) ? `${psd}-01` : psd;
+                localStorage.setItem('planning_start_date', val);
+                dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PLANNING_START_DATE, payload: val });
+              }
+            } catch {}
           }
         }
 
@@ -1408,6 +1473,16 @@ export const UnifiedFinancialProvider = ({ children }) => {
               expected_return_rate: insights?.expected_return_rate,
               recommended_asset_allocation: insights?.recommended_asset_allocation
             };
+            // Attempt to read planning start from preferences_data if present
+            try {
+              const prefs = onboarding?.preferences_data || {};
+              const psd = prefs?.planning_start_date || prefs?.planningStartDate || null;
+              if (psd) {
+                const val = /^\d{4}-\d{2}$/.test(psd) ? `${psd}-01` : String(psd);
+                localStorage.setItem('planning_start_date', val);
+                dispatch({ type: UNIFIED_FINANCIAL_ACTIONS.SET_PLANNING_START_DATE, payload: val });
+              }
+            } catch {}
           }
         }
 
@@ -1629,6 +1704,20 @@ export const UnifiedFinancialProvider = ({ children }) => {
             return map;
           } catch { return map; }
         }, new Map());
+        // Manual actuals fallback (when transactions are absent or sparse)
+        try {
+          const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+          const key = `manual_actuals_${ym}`;
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const obj = JSON.parse(raw);
+            Object.entries(obj).forEach(([name, val]) => {
+              const k = String(name || '').toLowerCase();
+              const v = Math.abs(parseFloat(val) || 0);
+              actualByCat.set(k, (actualByCat.get(k) || 0) + v);
+            });
+          }
+        } catch {}
         const rows = cats.map(c => {
           const key = String(c.name || '').toLowerCase();
           const budgeted = parseFloat(c.budgeted_amount || 0) || 0;
@@ -1751,10 +1840,13 @@ export const UnifiedFinancialProvider = ({ children }) => {
     selectRiskProfile: () => computeRiskProfile(state.userProfile),
     selectBudgetCategories: () => state.budgetCategories,
     // Debt payoff optimizer (v1) — snowball by default; returns summary
-    selectDebtPaydownPlan: (opts = { strategy: 'snowball' }) => {
+    selectDebtPaydownPlan: (opts = { strategy: 'snowball', monthlyExtra: undefined }) => {
       try {
-        const strategy = opts.strategy === 'avalanche' ? 'avalanche' : 'snowball';
-        const monthlyExtra = Math.max(0, value.selectSurplusAfterGoals ? value.selectSurplusAfterGoals() : 0);
+        const strategy = opts && opts.strategy === 'avalanche' ? 'avalanche' : 'snowball';
+        const override = (opts && typeof opts.monthlyExtra === 'number') ? Math.max(0, opts.monthlyExtra) : undefined;
+        const monthlyExtra = override !== undefined
+          ? override
+          : Math.max(0, value.selectSurplusAfterGoals ? value.selectSurplusAfterGoals() : 0);
         const plan = computeDebtPaydownPlan(state.liabilities || [], monthlyExtra, strategy);
         return plan;
       } catch { return null; }
@@ -1920,7 +2012,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
         pushItem('Utilities', fin.utilities, 'utilities');
         pushItem('Groceries', fin.groceries, 'food_dining');
         pushItem('Transport', fin.transport, 'transportation');
-        pushItem('Loan Repayments', fin.loanRepayments, 'debt_payments');
+        pushItem('Loan Repayments', fin.loanRepayments, 'debt_payment');
         if (Array.isArray(fin.customExpenses)) {
           fin.customExpenses.forEach((ce) => pushItem(ce?.name || 'Custom Expense', ce?.amount, 'other'));
         }
@@ -1978,7 +2070,15 @@ export const UnifiedFinancialProvider = ({ children }) => {
       const monthFlows = schedules.filter(s => s.t === periodIndex);
       const income = monthFlows.filter(f => f.type === 'income').reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
       const totalExpenses = monthFlows.filter(f => f.type === 'expense' || f.type === 'goal_contribution').reduce((s, f) => s + (parseFloat(f.amount) || 0), 0);
-      const netCashFlow = income + totalExpenses; // expenses are negative
+      // Household-aware: include spouse monthly income in totals (display)
+      const spouseMonthly = parseFloat(
+        profile.spouse_monthly_income ||
+        (profile.household && (profile.household.spouse_monthly_income || profile.household.spouse_income)) ||
+        profile.spouse_income ||
+        0
+      ) || 0;
+      const incomeWithHousehold = income + spouseMonthly;
+      const netCashFlow = incomeWithHousehold + totalExpenses; // expenses are negative
       const totalAssets = (state.assets || []).reduce((s, a) => s + (parseFloat(a.current_value || 0) || 0), 0);
       const totalLiabilities = (state.liabilities || []).reduce((s, l) => s + (parseFloat(l.current_balance || 0) || 0), 0);
       const netWorth = totalAssets - totalLiabilities;
@@ -2034,7 +2134,7 @@ export const UnifiedFinancialProvider = ({ children }) => {
       return {
         periodIndex,
         totals: {
-          income,
+          income: incomeWithHousehold,
           expenses,
           netCashFlow,
           assets: totalAssets,
@@ -2062,16 +2162,27 @@ export const UnifiedFinancialProvider = ({ children }) => {
             await value.createBudgetCategory({ name, budgeted_amount: s.monthly_amount });
           }
           if (s.type === 'create_expense_asset_maintenance') {
-            await value.createExpense({ description: `Maintenance: ${s.name}`, amount: s.estimate || 0, expense_type: 'maintenance', frequency: 'monthly', is_recurring: true, related_asset_id: s.assetId, relationship_type: 'asset_maintenance' });
+            {
+              // Map maintenance type based on asset type if available
+              const asset = (state.assets || []).find(a => a.id === s.assetId);
+              const at = String(asset?.asset_type || '').toLowerCase();
+              const et = at === 'vehicle' ? 'vehicle_maintenance' : 'maintenance_repairs';
+              await value.createExpense({ description: `Maintenance: ${s.name}`, amount: s.estimate || 0, expense_type: et, frequency: 'monthly', is_recurring: true, related_asset_id: s.assetId, relationship_type: 'asset_maintenance' });
+            }
           }
           if (s.type === 'create_expense_insurance_premium') {
-            await value.createExpense({ description: `Insurance: ${s.name}`, amount: s.estimate || 0, expense_type: 'insurance', frequency: 'monthly', is_recurring: true, related_asset_id: s.assetId, relationship_type: 'insurance_premium' });
+            {
+              const asset = (state.assets || []).find(a => a.id === s.assetId);
+              const at = String(asset?.asset_type || '').toLowerCase();
+              const et = at === 'vehicle' ? 'vehicle_insurance' : (at === 'real_estate' ? 'home_insurance' : 'insurance');
+              await value.createExpense({ description: `Insurance: ${s.name}`, amount: s.estimate || 0, expense_type: et, frequency: 'monthly', is_recurring: true, related_asset_id: s.assetId, relationship_type: 'insurance_premium' });
+            }
           }
           if (s.type === 'create_expense_property_tax') {
             await value.createExpense({ description: `Property Tax: ${s.name}`, amount: s.estimate || 0, expense_type: 'property_tax', frequency: 'monthly', is_recurring: true, related_asset_id: s.assetId, relationship_type: 'property_tax' });
           }
           if (s.type === 'create_expense_loan_payment') {
-            await value.createExpense({ description: `Loan Payment: ${s.name}`, amount: s.amount || 0, expense_type: 'debt_payments', frequency: 'monthly', is_recurring: true, related_liability_id: s.liabilityId, relationship_type: 'loan_payment', is_finite_payment: !!s.is_finite_payment, payment_end_date: s.due_date || null });
+            await value.createExpense({ description: `Loan Payment: ${s.name}`, amount: s.amount || 0, expense_type: 'debt_payment', frequency: 'monthly', is_recurring: true, related_liability_id: s.liabilityId, relationship_type: 'loan_payment', is_finite_payment: !!s.is_finite_payment, payment_end_date: s.due_date || null });
           }
           if (s.type === 'update_expense_amount' && s.id) {
             await value.updateExpense(s.id, { amount: s.amount });
@@ -2128,6 +2239,128 @@ export const UnifiedFinancialProvider = ({ children }) => {
       await fetchAllFinancialData();
       return true;
     }
+    ,
+    // CR021: Apply a simple debt payoff plan to create/update loan payment expenses
+    applyDebtPlan: async ({ strategy = 'snowball', monthlyExtra = 0 } = {}) => {
+      try {
+        const extra = Math.max(0, parseFloat(monthlyExtra) || 0);
+        const liabs = Array.isArray(state.liabilities) ? state.liabilities.slice() : [];
+        if (liabs.length === 0) return false;
+        const sortFn = strategy === 'avalanche'
+          ? (a, b) => (parseFloat(b.interest_rate||0)||0) - (parseFloat(a.interest_rate||0)||0)
+          : (a, b) => (parseFloat(a.current_balance||0)||0) - (parseFloat(b.current_balance||0)||0);
+        const target = liabs.slice().sort(sortFn)[0];
+        const token = localStorage.getItem('jwt');
+        const API = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+        for (const l of liabs) {
+          const minPay = Math.max(0, parseFloat(l.minimum_payment || l.monthly_payment || 0) || 0);
+          const amount = l === target ? (minPay + extra) : minPay;
+          if (amount <= 0) continue;
+          const existing = (state.expenses||[]).find(e => e.related_liability_id === l.id && (e.relationship_type||'') === 'loan_payment');
+          const body = {
+            description: `Loan Payment: ${l.name}`,
+            amount,
+            expense_type: 'debt_payment',
+            expense_date: new Date().toISOString(),
+            frequency_months: 1,
+            is_recurring: true,
+            related_liability_id: l.id,
+            relationship_type: 'loan_payment',
+            is_finite_payment: true
+          };
+          if (existing && existing.id) {
+            await fetch(`${API}/api/v1/expenses-v2/${existing.id}`, { method: 'PUT', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          } else {
+            await fetch(`${API}/api/v1/expenses-v2/`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+          }
+        }
+        await fetchAllFinancialData();
+        return true;
+      } catch (e) {
+        console.warn('applyDebtPlan failed:', e?.message || e);
+        return false;
+      }
+    }
+    ,
+    // CR023: Asset sale → allocate proceeds to debts and goals, post journal, update asset value
+    applyAssetSale: async ({ assetId, salePrice = 0, fees = 0, allocations = { debts: [], goals: [] }, markAssetSold = true } = {}) => {
+      const API = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('jwt');
+      try {
+        const netProceeds = Math.max(0, (parseFloat(salePrice) || 0) - (parseFloat(fees) || 0));
+        if (!assetId || netProceeds <= 0) return { ok: false, reason: 'invalid_input' };
+        // 1) Journal: record sale (Dr Cash, Dr Fees, Cr Asset)
+        try {
+          const entry = {
+            timestamp: new Date().toISOString(),
+            description: `Asset Sale (CR023): ${assetId}`,
+            lines: [
+              { account_type: 'asset', debit: Math.round(netProceeds), credit: 0, entity_type: 'cash', entity_id: null, memo: 'Sale proceeds' },
+              ...(fees > 0 ? [{ account_type: 'expense', debit: Math.round(fees), credit: 0, entity_type: 'selling_fees', entity_id: assetId, memo: 'Sale fees' }] : []),
+              { account_type: 'asset', debit: 0, credit: Math.round(parseFloat(salePrice) || 0), entity_type: 'asset', entity_id: assetId, memo: 'Asset derecognition' }
+            ],
+            meta: { cr: 'CR023', type: 'asset_sale', assetId, salePrice, fees }
+          };
+          await fetch(`${API}/api/v1/ledger/journal`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
+        } catch {}
+        // 2) Optionally mark asset as sold (set value=0, append note)
+        try {
+          if (markAssetSold) {
+            const a = (state.assets || []).find(x => x.id === assetId);
+            const nextNotes = `${(a?.notes || '').trim()}${(a?.notes ? ' ' : '')}(SOLD ${new Date().toISOString().slice(0,10)})`;
+            await value.updateAsset(assetId, { current_value: 0, notes: nextNotes });
+          }
+        } catch {}
+        // 3) Allocate to debts as one-time payments
+        try {
+          for (const d of (allocations?.debts || [])) {
+            const lid = d.liabilityId || d.id;
+            const amt = Math.max(0, parseFloat(d.amount) || 0);
+            if (!lid || amt <= 0) continue;
+            await value.createExpense({
+              description: `Extra Loan Payment (Asset Sale)`,
+              amount: amt,
+              expense_type: 'debt_payment',
+              frequency: 'one_time',
+              is_recurring: false,
+              related_liability_id: lid,
+              relationship_type: 'loan_payment',
+              is_finite_payment: true,
+              payment_end_date: new Date().toISOString().slice(0,10)
+            });
+          }
+        } catch {}
+        // 4) Allocate to goals by increasing current_amount instantly
+        try {
+          for (const g of (allocations?.goals || [])) {
+            const gid = g.goalId || g.id;
+            const amt = Math.max(0, parseFloat(g.amount) || 0);
+            if (!gid || amt <= 0) continue;
+            const goal = (state.goals || []).find(x => x.id === gid);
+            const current = Math.max(0, parseFloat(goal?.current_amount || goal?.current || 0) || 0);
+            await value.updateGoal(gid, { current_amount: current + amt });
+            // Journal a goal fund transfer (Dr Goal Fund, Cr Cash)
+            try {
+              const entry = {
+                timestamp: new Date().toISOString(),
+                description: `Goal Deposit (CR023): ${gid}`,
+                lines: [
+                  { account_type: 'asset', debit: Math.round(amt), credit: 0, entity_type: 'goal_fund', entity_id: gid, memo: 'Asset sale allocation' },
+                  { account_type: 'asset', debit: 0, credit: Math.round(amt), entity_type: 'cash', entity_id: null, memo: 'From proceeds' }
+                ],
+                meta: { cr: 'CR023', type: 'goal_deposit', goalId: gid, amount: amt }
+              };
+              await fetch(`${API}/api/v1/ledger/journal`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
+            } catch {}
+          }
+        } catch {}
+        await fetchAllFinancialData();
+        return { ok: true };
+      } catch (e) {
+        console.warn('applyAssetSale failed:', e?.message || e);
+        return { ok: false, reason: 'error' };
+      }
+    }
   };
 
   // Expose selectors to window for test/dev introspection (no-op in production)
@@ -2150,7 +2383,15 @@ export const UnifiedFinancialProvider = ({ children }) => {
     const age = profile.age || 25;
     const retirementAge = profile.retirement_age || 65;
     const years = Math.max(0, retirementAge - age);
-    const annualIncome = (profile.monthly_income || 0) * 12;
+    // Household-aware income: include spouse monthly income if provided on profile
+    const spouseMonthly = parseFloat(
+      profile.spouse_monthly_income ||
+      (profile.household && (profile.household.spouse_monthly_income || profile.household.spouse_income)) ||
+      (profile.investment_preferences && profile.investment_preferences.household && (profile.investment_preferences.household.spouse_monthly_income || profile.investment_preferences.household.spouse_income)) ||
+      profile.spouse_income ||
+      0
+    ) || 0;
+    const annualIncome = ((profile.monthly_income || 0) + spouseMonthly) * 12;
     const g = 0.03; // income growth 3%
     const r = 0.125; // discount 12.5%
     // Growing annuity PV: PV = P1 * (1 - ((1+g)/(1+r))^n) / (r - g)
@@ -2171,13 +2412,30 @@ export const UnifiedFinancialProvider = ({ children }) => {
   }
 
   function computeNetCashFlow(incomeSource, expenses) {
-    const inc = sumMonthlyIncome(incomeSource);
+    // Household-aware: add spouse monthly income if present on profile
+    const prof = state.userProfile || {};
+    const spouseMonthly = parseFloat(
+      prof.spouse_monthly_income ||
+      (prof.household && (prof.household.spouse_monthly_income || prof.household.spouse_income)) ||
+      (prof.investment_preferences && prof.investment_preferences.household && (prof.investment_preferences.household.spouse_monthly_income || prof.investment_preferences.household.spouse_income)) ||
+      prof.spouse_income ||
+      0
+    ) || 0;
+    const inc = sumMonthlyIncome(incomeSource) + spouseMonthly;
     const exp = sumMonthlyExpenses(expenses);
     return inc - exp;
   }
 
   function computeBudgetSummary(incomeSource, expenses) {
-    const monthlyIncome = sumMonthlyIncome(incomeSource);
+    const prof = state.userProfile || {};
+    const spouseMonthly = parseFloat(
+      prof.spouse_monthly_income ||
+      (prof.household && (prof.household.spouse_monthly_income || prof.household.spouse_income)) ||
+      (prof.investment_preferences && prof.investment_preferences.household && (prof.investment_preferences.household.spouse_monthly_income || prof.investment_preferences.household.spouse_income)) ||
+      prof.spouse_income ||
+      0
+    ) || 0;
+    const monthlyIncome = sumMonthlyIncome(incomeSource) + spouseMonthly;
     const monthlyExpenses = sumMonthlyExpenses(expenses);
     const remaining = monthlyIncome - monthlyExpenses;
     const utilization = monthlyIncome > 0 ? (monthlyExpenses / monthlyIncome) * 100 : 0;

@@ -1,0 +1,5 @@
+[
+  { "name": "Invest Portfolio", "target_amount": 1200000, "current_amount": 200000, "target_date": "2027-12-01T00:00:00Z" },
+  { "name": "Emergency Fund", "target_amount": 900000, "current_amount": 300000, "target_date": "2025-12-01T00:00:00Z" }
+]
+

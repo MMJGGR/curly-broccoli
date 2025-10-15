@@ -11,7 +11,9 @@ import ProfileBudgetPreferences from './profile/ProfileBudgetPreferences';
 import ProfilePlanningAssumptions from './profile/ProfilePlanningAssumptions';
 import ProfileActions from './profile/ProfileActions';
 import RecommendedAllocation from './profile/RecommendedAllocation';
+import ProfileIncomeQuickAdd from './profile/ProfileIncomeQuickAdd';
 import { useUnifiedFinancialContext as useUFC } from '../contexts/TransactionContext';
+import PageHeader from './ui/PageHeader';
 
 // Compact goals overview used in Profile
 const GoalsMiniOverview = () => {
@@ -170,6 +172,7 @@ const ProfileDynamic = () => {
 
     return (
         <div className="bg-gray-100 min-h-screen flex flex-col">
+            <PageHeader title="Profile" description="Personal info, preferences, planning and income" />
             <main className="flex-grow container mx-auto p-6 md:p-8">
                 <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Profile</h1>
 
@@ -303,6 +306,9 @@ const ProfileDynamic = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Quick add income (CR019 parity in Profile) */}
+                <ProfileIncomeQuickAdd />
 
                 {/* Goals Overview (reads from unified context goals) */}
                 <GoalsMiniOverview />

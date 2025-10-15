@@ -1,0 +1,19 @@
+{
+  "income": { "sources": [ { "source_name": "Salary", "monthly_amount": 95000, "frequency": "monthly", "source_type": "salary" } ] },
+  "expenses": [
+    { "description": "Rent", "amount": 30000, "frequency": "monthly", "expense_type": "housing", "expense_date": "2024-06-05T00:00:00Z" },
+    { "description": "Childcare", "amount": 12000, "frequency": "monthly", "expense_type": "family", "expense_date": "2024-06-07T00:00:00Z" },
+    { "description": "Food", "amount": 20000, "frequency": "monthly", "expense_type": "food", "expense_date": "2024-06-10T00:00:00Z" }
+  ],
+  "goals": [
+    { "name": "Education Fund", "target_amount": 600000, "current_amount": 50000, "target_date": "2027-06-01T00:00:00Z" },
+    { "name": "Emergency Fund", "target_amount": 400000, "current_amount": 50000, "target_date": "2026-12-01T00:00:00Z" }
+  ],
+  "liabilities": [ { "name": "Personal Loan", "liability_type": "personal_loan", "current_balance": 250000, "interest_rate": 16.0, "monthly_payment": 12500, "maturity_date": "2028-01-01T00:00:00Z" } ],
+  "budget_categories": [
+    { "name": "Housing", "allocated_amount": 30000, "category_type": "expense" },
+    { "name": "Food & Groceries", "allocated_amount": 20000, "category_type": "expense" },
+    { "name": "Childcare", "allocated_amount": 12000, "category_type": "expense" },
+    { "name": "Goal: Education Fund", "allocated_amount": 8000, "category_type": "expense" }
+  ]
+}

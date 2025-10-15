@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import IncomeManagement from './IncomeManagement';
+import PageHeader from '../ui/PageHeader';
 import Layout from '../layout/Layout';
 import GoalsOverview from '../goals/GoalsOverview';
 import ExpenseManagement from './ExpenseManagement';
@@ -10,6 +11,8 @@ import GoalRealityCheck from './GoalRealityCheck';
 import CashFlowStatement from './CashFlowStatement';
 import IncomeStatement from './IncomeStatement';
 import TrialBalanceAudit from './TrialBalanceAudit';
+import AssetSaleWizard from './AssetSaleWizard';
+import InvestVsDebtTradeoff from './InvestVsDebtTradeoff';
 
 const ToolsDashboard = () => {
   const location = useLocation();
@@ -69,6 +72,18 @@ const ToolsDashboard = () => {
       name: 'Trial Balance (Audit)',
       icon: '🧾',
       description: 'Monthly totals, reconciliation, and suggestions'
+    },
+    {
+      id: 'asset-sale',
+      name: 'Asset Sale → Debt/Goals',
+      icon: '🔁',
+      description: 'Sell asset and allocate proceeds to debts/goals'
+    },
+    {
+      id: 'invest-vs-debt',
+      name: 'Invest vs Debt',
+      icon: '⚖️',
+      description: 'Compare allocating surplus to goals vs debt'
     },
     {
       id: 'cashflow',
@@ -193,31 +208,11 @@ const ToolsDashboard = () => {
 
   return (
     <div className="h-full bg-gray-50">
-      {/* Header with Section Tabs */}
-      <div className="bg-white shadow-sm border-b">
-        <Layout className="py-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">Financial Tools</h1>
-            {activeSection !== 'overview' && (
-              <button
-                onClick={() => setActiveSection('overview')}
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                ← Back to Tools
-              </button>
-            )}
-          </div>
-          
-          {/* Current Section Info */}
-          {activeSection !== 'overview' && (
-            <div className="flex items-center text-sm text-gray-600">
-              <span className="font-medium">{toolSections.find(s => s.id === activeSection)?.name}</span>
-              <span className="mx-2">•</span>
-              <span>{toolSections.find(s => s.id === activeSection)?.description}</span>
-            </div>
-          )}
-        </Layout>
-      </div>
+      <PageHeader
+        title="Financial Tools"
+        description={activeSection !== 'overview' ? (toolSections.find(s => s.id === activeSection)?.description || '') : 'CFA-compliant tools for income, expenses, assets, liabilities and analysis'}
+        secondaryAction={activeSection !== 'overview' ? { label: 'Back to Tools', href: '/app/tools', 'aria-label': 'Back to tools' } : null}
+      />
 
       {/* Content Area */}
       <Layout className="flex-1 overflow-auto py-6">
@@ -235,6 +230,8 @@ const ToolsDashboard = () => {
         {safeSection === 'assets' && <AssetManagement />}
         {safeSection === 'liabilities' && <LiabilityManagement />}
         {safeSection === 'trial-balance' && <TrialBalanceAudit />}
+        {safeSection === 'asset-sale' && <AssetSaleWizard />}
+        {safeSection === 'invest-vs-debt' && <InvestVsDebtTradeoff />}
         {safeSection === 'cashflow' && <CashFlowStatement />}
         {safeSection === 'pnl' && (
           <div className="max-w-6xl mx-auto">

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const ProfilePlanningAssumptions = () => {
-  const { profile, updateProfile } = useUnifiedFinancialContext();
+  const { profile, updateProfile, setPlanningStartDate, planningStartDate } = useUnifiedFinancialContext();
 
   const existingPrefs = useMemo(() => profile?.investment_preferences || {}, [profile]);
   const existingAssumptions = useMemo(() => existingPrefs.planning_assumptions || {}, [existingPrefs]);
@@ -15,6 +15,11 @@ const ProfilePlanningAssumptions = () => {
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [planningStart, setPlanningStart] = useState(() => {
+    try {
+      return (localStorage.getItem('planning_start_date') || planningStartDate || '').slice(0,7);
+    } catch { return planningStartDate ? String(planningStartDate).slice(0,7) : ''; }
+  });
 
   const onChange = (e) => {
     const { name, value } = e.target;
@@ -35,6 +40,19 @@ const ProfilePlanningAssumptions = () => {
       setMessage('Failed to save planning assumptions');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onSavePlanningStart = async () => {
+    try {
+      if (planningStart && /^\d{4}-\d{2}$/.test(planningStart)) {
+        await setPlanningStartDate(planningStart);
+        setMessage('Planning start saved');
+      } else {
+        setMessage('Enter YYYY-MM');
+      }
+    } catch {
+      setMessage('Failed to save planning start');
     }
   };
 
@@ -59,6 +77,18 @@ const ProfilePlanningAssumptions = () => {
     <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Planning Assumptions</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm text-gray-600 mb-1">Planning Start (YYYY-MM)</label>
+          <input
+            type="month"
+            name="planning_start"
+            value={planningStart}
+            onChange={(e) => setPlanningStart(e.target.value)}
+            className="w-full border rounded-lg px-3 py-2"
+          />
+          <button onClick={onSavePlanningStart} className="mt-2 px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700">Save Planning Start</button>
+          <p className="text-xs text-gray-500 mt-1">Used by statements and timeline; supports historical (e.g., 2020-01).</p>
+        </div>
         <Field label="Inflation Rate" name="inflation_rate" />
         <Field label="Expected Return Rate" name="expected_return_rate" />
         <Field label="Discount Rate" name="discount_rate" />
@@ -75,4 +105,3 @@ const ProfilePlanningAssumptions = () => {
 };
 
 export default ProfilePlanningAssumptions;
-

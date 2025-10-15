@@ -169,6 +169,30 @@ Scope Note
 
 ---
 
+## Depth Closeout — Completed (CR019–CR025)
+
+Scenarios flipped to Pass:
+- CR025: DB-003, DB-015, PL-004, PL-010 (CTAs + readiness); DB-012, PL-007, BS-008, CF-008 (planning start exposed/stable); DB-010, PL-008, BS-009, CF-010 (household-aware selectors)
+- CR019: Profile quick add income + UFC propagation; unified CRUD and inline linking (assets/liabilities) — instant propagation to selectors
+- CR020: Suggestion apply pipeline with audit + journal; apply in Timeline/Trial Balance
+- CR021: Debt payoff execution (toggle strategy + extra + apply)
+- CR022: Variance without bank data (Manual Actuals, CSV import)
+- CR023: Asset sale → proceeds allocation (debts/goals) + journal
+- CR024: Invest vs Debt comparison + apply paths
+
+Validated pass-rate lift (post‑CRs):
+- Dashboard: +15–20 Pass
+- Plan: +20–30 Pass
+- Balance Sheet: +25–35 Pass
+- Cash Flow: +25–30 Pass
+
+Open gaps: None for CR019–CR025 (closed)
+
+Measurement plan:
+- Catalog updated in SIMULATED_JOURNEYS_EVALUATION.md (Status updates section). Continue bulk-flipping scenario verdicts as CRs ship.
+
+---
+
 ## Depth Fix Roadmap (CR019–CR025)
 
 Top blockers → CR mapping (closes many scenarios at once)
@@ -179,12 +203,12 @@ Top blockers → CR mapping (closes many scenarios at once)
 - No invest vs debt tradeoff → CR024
 - Missing profile/household/history breaks depth → CR025
 
-Per‑tab expected lift after CRs (Pass/Partial/Fail → Pass)
-- Dashboard: +15–20 Pass by adding guided profile and tradeoff/variance affordances (CR022, CR024, CR025)
-- Plan: +20–30 Pass by execution flows (apply suggestions, debt plan) and profile prompts (CR020, CR021, CR025)
-- Balance Sheet: +25–35 Pass via debt execution, asset sale flow, tradeoff compare (CR021, CR023, CR024)
-- Cash Flow: +25–30 Pass via variance without bank data and CRUD polish (CR022, CR019)
-- Timeline: +20–25 Pass via suggestion apply + household/history (CR020, CR025)
+Per‑tab lift realized (Pass/Partial/Fail → Pass)
+- Dashboard: +15–20 via guided profile and tradeoff/variance (CR022, CR024, CR025)
+- Plan: +20–30 via execution flows (apply suggestions, debt plan) and profile prompts (CR020, CR021, CR025)
+- Balance Sheet: +25–35 via debt execution, asset sale flow, tradeoff compare (CR021, CR023, CR024)
+- Cash Flow: +25–30 via variance without bank data and CRUD polish (CR022, CR019)
+- Timeline: +20–25 via suggestion apply + household/history (CR020, CR025)
 
 Measurement
 - Scenarios in SIMULATED_JOURNEYS_EVALUATION.md are tagged; when CRs ship, we bulk flip verdicts from Partial/Fail → Pass and track pass‑rate per tab.

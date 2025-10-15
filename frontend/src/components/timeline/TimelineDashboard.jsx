@@ -12,6 +12,7 @@ import TimelineVisualization from './TimelineVisualization';
 import AlignmentDashboard from './AlignmentDashboard';
 import GoalAnalyticsDashboard from '../analytics/GoalAnalyticsDashboard';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
+import { useUnifiedFinancialContext } from '../../contexts/TransactionContext';
 
 const TimelineDashboard = () => {
   // Helper function for milestone icons
@@ -75,6 +76,7 @@ const TimelineDashboard = () => {
   const [timelineCollapsed, setTimelineCollapsed] = useState(false);
   const navigate = useNavigate();
   const analytics = useAnalytics();
+  const { selectTrialBalance, applySuggestions, fetchAllFinancialData } = useUnifiedFinancialContext();
 
   const loadDashboardAnalytics = useCallback(async () => {
     setLoadingAnalytics(true);
@@ -86,7 +88,13 @@ const TimelineDashboard = () => {
       // Load analytics for each milestone/goal
       if (milestones && milestones.length > 0) {
         const analyticsPromises = milestones
-          .filter(milestone => milestone.id)
+          .filter(milestone => {
+            // Only analyze real goal ids; skip meta entries (strings like 'goals_meta', 'planPreference')
+            const id = milestone && milestone.id;
+            if (!id) return false;
+            const isNumeric = typeof id === 'number' || (/^\d+$/.test(String(id)));
+            return isNumeric;
+          })
           .slice(0, 5) // Limit to first 5 for performance
           .map(async (milestone) => {
             try {
@@ -134,6 +142,18 @@ const TimelineDashboard = () => {
     // Clear cache and reload analytics
     analytics.clearCache();
     await loadDashboardAnalytics();
+  };
+
+  const onApplySuggestions = async () => {
+    try {
+      const tb = selectTrialBalance ? selectTrialBalance(0) : null;
+      const suggestions = (tb && tb.suggestions) || [];
+      if (suggestions.length === 0) return;
+      await applySuggestions(suggestions);
+      await fetchAllFinancialData();
+    } catch (e) {
+      console.warn('Apply suggestions failed:', e?.message || e);
+    }
   };
 
   if (STRUCTURED_UX) {
@@ -435,6 +455,12 @@ const TimelineDashboard = () => {
                 <div className="quick-actions">
                   <h4 className="font-medium text-gray-800 mb-3">Quick Actions</h4>
                   <div className="space-y-2">
+                    <button
+                      onClick={onApplySuggestions}
+                      className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                    >
+                      Apply Suggested Actions
+                    </button>
                     {/* Budget-specific actions */}
                     {isBudgetReady && (
                       <>

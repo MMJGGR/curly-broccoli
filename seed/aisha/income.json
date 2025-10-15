@@ -1,0 +1,5 @@
+{
+  "sources": [
+    { "source_name": "Salary", "monthly_amount": 95000, "frequency": "monthly", "source_type": "salary" }
+  ]
+}

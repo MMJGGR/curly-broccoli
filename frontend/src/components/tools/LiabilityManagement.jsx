@@ -26,6 +26,7 @@ const LiabilityManagement = () => {
   } = useUnifiedFinancialContext();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formError, setFormError] = useState('');
   const [editingLiability, setEditingLiability] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -63,6 +64,7 @@ const LiabilityManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setFormError('');
       
       const payload = {
         ...formData,
@@ -83,6 +85,7 @@ const LiabilityManagement = () => {
       resetForm();
     } catch (error) {
       console.error('Failed to save liability:', error);
+      setFormError(error?.message || 'Failed to save liability');
     }
   };
 
@@ -319,7 +322,7 @@ const LiabilityManagement = () => {
                                   const payload = {
                                     description: `Loan Payment: ${liability.name}`,
                                     amount: parseFloat(liability.monthly_payment || 0) || 0,
-                                    expense_type: 'debt_payments',
+                                    expense_type: 'debt_payment',
                                     frequency: 'monthly',
                                     is_recurring: true,
                                     related_liability_id: liability.id,
@@ -398,6 +401,11 @@ const LiabilityManagement = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {formError && (
+                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
+                  {formError}
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Liability Name *</Label>

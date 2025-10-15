@@ -1,0 +1,4 @@
+[
+  { "description": "Rent", "amount": 20000, "frequency": "monthly", "expense_type": "housing", "expense_date": "2024-06-01T00:00:00Z" },
+  { "description": "Health", "amount": 10000, "frequency": "monthly", "expense_type": "healthcare", "expense_date": "2024-06-05T00:00:00Z" }
+]

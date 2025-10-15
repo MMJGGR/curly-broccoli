@@ -250,3 +250,11 @@ Legend
 
 Measurement & Bulk Closure
 - Each scenario ID belongs to one tab and is tagged with CR(s). When a CR ships, we bulk‑flip all scenarios carrying its tag from Partial/Fail → Pass (subject to any noted exceptions), and update the Feature Matrix counts per tab.
+Status updates (CR019 + CR025)
+- Household scenarios now Pass where combined income applies in selectors:
+  - DB-010, PL-008, BS-009, CF-010 → Pass (household-aware totals and PV)
+- Profile CTAs and Readiness now Pass:
+  - DB-003, DB-015, PL-004, PL-010 → Pass (guided completion)
+- Historical start control surfaced and stable across tabs:
+  - DB-012, PL-007, BS-008, CF-008 → Pass (visible planning start)
+- Timeline analytics 422 (meta ids) fixed by guarding non-goal ids.

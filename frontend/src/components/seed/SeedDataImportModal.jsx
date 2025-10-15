@@ -56,6 +56,7 @@ export default function SeedDataImportModal({ open, onClose, onImported }) {
   const [error, setError] = React.useState('');
   const [busy, setBusy] = React.useState(false);
   const fileRef = React.useRef(null);
+  const [persist, setPersist] = React.useState(false);
 
   if (!open) return null;
 
@@ -96,8 +97,24 @@ export default function SeedDataImportModal({ open, onClose, onImported }) {
           const guessIsTx = data[0] && (('amount' in data[0]) || ('debit' in data[0]) || ('credit' in data[0]));
           const payload = guessIsTx ? { transactions: data } : { expenses: data };
           await importSeedData(payload);
+          if (persist) {
+            try {
+              const API = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+              const token = localStorage.getItem('jwt');
+              const bundle = buildSeedBundleFromPayload(payload);
+              await fetch(`${API}/api/v1/seed/bundle`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(bundle) });
+            } catch (e) { console.warn('Persist bundle failed:', e?.message || e); }
+          }
         } else {
           await importSeedData(data);
+          if (persist) {
+            try {
+              const API = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+              const token = localStorage.getItem('jwt');
+              const bundle = buildSeedBundleFromPayload(data);
+              await fetch(`${API}/api/v1/seed/bundle`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(bundle) });
+            } catch (e) { console.warn('Persist bundle failed:', e?.message || e); }
+          }
         }
       } else {
         // CSV path
@@ -105,6 +122,16 @@ export default function SeedDataImportModal({ open, onClose, onImported }) {
         if (rows.length === 0) { setError('No CSV rows found'); setBusy(false); return; }
         const payload = { [csvType]: rows };
         await importSeedData(payload);
+        if (persist) {
+          try {
+            const API = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+            const token = localStorage.getItem('jwt');
+            const bundle = buildSeedBundleFromCsv(csvType, rows);
+            if (bundle) {
+              await fetch(`${API}/api/v1/seed/bundle`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(bundle) });
+            }
+          } catch (e) { console.warn('Persist bundle failed:', e?.message || e); }
+        }
       }
       if (onImported) onImported();
       onClose && onClose();
@@ -114,6 +141,65 @@ export default function SeedDataImportModal({ open, onClose, onImported }) {
       setBusy(false);
     }
   };
+
+  function buildSeedBundleFromPayload(obj) {
+    const out = {};
+    if (Array.isArray(obj.expenses)) out.expenses = normalizeExpenses(obj.expenses);
+    if (Array.isArray(obj.assets)) out.assets = obj.assets;
+    if (Array.isArray(obj.liabilities)) out.liabilities = obj.liabilities;
+    if (Array.isArray(obj.goals)) out.goals = obj.goals;
+    if (Array.isArray(obj.budgetCategories)) out.budget_categories = obj.budgetCategories;
+    if (obj.income && Array.isArray(obj.income.sources)) out.income = { sources: obj.income.sources };
+    if (Array.isArray(obj.transactions)) {
+      // Map transactions to expenses (debits only)
+      out.expenses = (out.expenses || []).concat(obj.transactions.map(t => ({
+        description: t.description || 'Txn',
+        amount: Math.abs(parseFloat(t.amount || t.debit || 0) || 0),
+        expense_type: (t.category || 'general').toLowerCase(),
+        expense_date: t.date || new Date().toISOString()
+      })).filter(e => e.amount > 0));
+    }
+    return out;
+  }
+
+  function normalizeExpenses(list) {
+    return list.map(e => ({
+      description: e.description || e.name || 'Expense',
+      amount: typeof e.amount === 'number' ? e.amount : (parseFloat(e.monthly_amount) || 0),
+      expense_type: (e.expense_type || e.category || 'general').toLowerCase(),
+      expense_date: e.expense_date || e.date || new Date().toISOString()
+    }));
+  }
+
+  function buildSeedBundleFromCsv(kind, rows) {
+    try {
+      if (kind === 'expenses' || kind === 'transactions') {
+        const expenses = rows.map(r => ({
+          description: r.description || r.name || r.memo || 'Expense',
+          amount: Math.abs(parseFloat(r.amount || r.debit || r.monthly_amount || 0) || 0),
+          expense_type: String(r.expense_type || r.category || 'general').toLowerCase(),
+          expense_date: r.expense_date || r.date || new Date().toISOString()
+        })).filter(e => e.amount > 0);
+        return { expenses };
+      }
+      if (kind === 'income') {
+        const sources = rows.map(r => ({
+          source_name: r.source_name || r.name || 'Income',
+          monthly_amount: Math.abs(parseFloat(r.monthly_amount || r.amount || 0) || 0),
+          frequency: String(r.frequency || 'monthly').toLowerCase()
+        }));
+        return { income: { sources } };
+      }
+      if (kind === 'assets') return { assets: rows };
+      if (kind === 'liabilities') return { liabilities: rows };
+      if (kind === 'goals') return { goals: rows };
+      if (kind === 'budgetCategories') return { budget_categories: rows };
+    } catch (e) {
+      console.warn('buildSeedBundleFromCsv failed:', e?.message || e);
+      return null;
+    }
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onDragOver={(e)=>e.preventDefault()} onDrop={onDrop}>
@@ -165,6 +251,10 @@ export default function SeedDataImportModal({ open, onClose, onImported }) {
                 <textarea className="w-full border rounded-md p-2 font-mono text-xs h-40" value={textPreview} onChange={(e)=>setTextPreview(e.target.value)} />
               </div>
             )}
+            <div className="mt-4 flex items-center gap-2">
+              <input id="persist" type="checkbox" checked={persist} onChange={e=>setPersist(e.target.checked)} />
+              <label htmlFor="persist" className="text-sm text-gray-700">Persist to backend (seed bundle)</label>
+            </div>
           </CardContent>
         </Card>
 
@@ -182,4 +272,3 @@ export default function SeedDataImportModal({ open, onClose, onImported }) {
     </div>
   );
 }
-
